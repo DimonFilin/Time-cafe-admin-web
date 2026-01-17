@@ -11,6 +11,7 @@ export type CafeListItem = {
   brandId: string;
   brandName?: string;
   distance?: number;
+  deletedAt?: string | null;
 };
 
 export type CafeListResponse = {
@@ -34,6 +35,7 @@ export type Cafe = {
   brandId: string;
   regionId: string;
   cafeApiUrl?: string;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
