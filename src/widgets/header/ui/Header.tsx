@@ -10,7 +10,7 @@ export async function Header() {
 
   return (
     <header className="border-b border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))]">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-[1224px] items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-3">
           <Logo />
           <nav className="hidden items-center gap-1 text-sm text-[rgb(var(--tc-muted))] sm:flex">
