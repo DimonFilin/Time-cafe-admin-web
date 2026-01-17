@@ -1,0 +1,39 @@
+:root {
+  /* Light (coffee / pastel) */
+  --tc-bg: 235 225 209; /* ~ rgb(235, 225, 209) */
+  --tc-fg: 39 27 19;
+  --tc-muted: 107 94 82;
+
+  --tc-surface: 248 244 238;
+  --tc-surface-2: 255 255 255;
+  --tc-border: 216 203 184;
+
+  --tc-accent: 128 78 46;
+  --tc-accent-2: 158 111 79;
+  --tc-accent-contrast: 255 248 241;
+
+  --tc-danger: 164 44 44;
+  --tc-success: 22 124 78;
+
+  --tc-ring: 158 111 79;
+}
+
+.dark {
+  /* Dark (coffee) */
+  --tc-bg: 18 15 13;
+  --tc-fg: 241 232 223;
+  --tc-muted: 182 166 152;
+
+  --tc-surface: 28 23 20;
+  --tc-surface-2: 36 29 25;
+  --tc-border: 62 50 43;
+
+  --tc-accent: 199 140 93;
+  --tc-accent-2: 222 170 126;
+  --tc-accent-contrast: 25 19 15;
+
+  --tc-danger: 224 93 93;
+  --tc-success: 67 196 140;
+
+  --tc-ring: 222 170 126;
+}
