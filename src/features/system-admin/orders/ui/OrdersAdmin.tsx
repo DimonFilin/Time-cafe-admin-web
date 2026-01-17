@@ -226,7 +226,6 @@ export function OrdersAdmin() {
 
       {cafesError && <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{cafesError}</Card>}
       {error && <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{error}</Card>}
-
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1">

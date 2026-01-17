@@ -11,6 +11,7 @@ const links = [
   { href: '/system-admin/cafes', label: 'Cafes' },
   { href: '/system-admin/workers', label: 'Workers' },
   { href: '/system-admin/orders', label: 'Orders' },
+  { href: '/system-admin/appointments', label: 'Appointments' },
 ];
 
 export function SystemAdminNav() {
