@@ -9,6 +9,7 @@ const links = [
   { href: '/system-admin', label: 'Обзор' },
   { href: '/system-admin/brands', label: 'Brands' },
   { href: '/system-admin/cafes', label: 'Cafes' },
+  { href: '/system-admin/workers', label: 'Workers' },
 ];
 
 export function SystemAdminNav() {
