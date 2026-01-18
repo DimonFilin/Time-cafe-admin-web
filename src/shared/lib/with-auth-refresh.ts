@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { refreshAccessToken, setTokenCookies } from './refresh-token';
+import { handleBackendError, processBackendResponse } from './handle-backend-error';
 
 export interface AuthFetchOptions {
   method?: string;
@@ -40,18 +41,35 @@ export async function fetchWithAuthRefresh(
       console.log('[with-auth-refresh] Using new access token for request');
 
       // Use refreshed token for the request
-      const response = await fetch(url, {
-        method: options.method || 'GET',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${refreshed.accessToken}`,
-          ...options.headers,
-        },
-        body: options.body,
-        cache: options.cache || 'no-store',
-      });
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: options.method || 'GET',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${refreshed.accessToken}`,
+            ...options.headers,
+          },
+          body: options.body,
+          cache: options.cache || 'no-store',
+        });
+      } catch (error) {
+        // Network error
+        console.error('[with-auth-refresh] Network error after refresh:', error);
+        return handleBackendError(error, url);
+      }
 
       if (response.ok || response.status !== 401) {
+        // Check for 5xx errors and transform them
+        const processed = await processBackendResponse(response, url);
+        if (processed) {
+          // 5xx error was transformed, but we still need to set cookies
+          await setTokenCookies(processed, refreshed);
+          console.log('[with-auth-refresh] Request returned 5xx, transformed to 503');
+          return processed;
+        }
+
+        // 2xx, 3xx, 4xx → proxy as is
         const text = await response.text();
         const nextResponse = new NextResponse(text, {
           status: response.status,
@@ -76,18 +94,25 @@ export async function fetchWithAuthRefresh(
   }
 
   // First attempt
-  const response = await fetch(url, {
-    method: options.method || 'GET',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${accessToken}`,
-      ...options.headers,
-    },
-    body: options.body,
-    cache: options.cache || 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: options.method || 'GET',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${accessToken}`,
+        ...options.headers,
+      },
+      body: options.body,
+      cache: options.cache || 'no-store',
+    });
 
-  console.log('[with-auth-refresh] First attempt status:', response.status);
+    console.log('[with-auth-refresh] First attempt status:', response.status);
+  } catch (error) {
+    // Network error
+    console.error('[with-auth-refresh] Network error on first attempt:', error);
+    return handleBackendError(error, url);
+  }
 
   // If 401, try to refresh token
   if (response.status === 401) {
@@ -101,20 +126,38 @@ export async function fetchWithAuthRefresh(
       console.log('[with-auth-refresh] Retrying request with new token');
 
       // Retry with new token
-      const retryResponse = await fetch(url, {
-        method: options.method || 'GET',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${refreshed.accessToken}`,
-          ...options.headers,
-        },
-        body: options.body,
-        cache: options.cache || 'no-store',
-      });
+      let retryResponse: Response;
+      try {
+        retryResponse = await fetch(url, {
+          method: options.method || 'GET',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${refreshed.accessToken}`,
+            ...options.headers,
+          },
+          body: options.body,
+          cache: options.cache || 'no-store',
+        });
+      } catch (error) {
+        // Network error on retry
+        console.error('[with-auth-refresh] Network error on retry:', error);
+        return handleBackendError(error, url);
+      }
 
       // If retry succeeded, update cookies
       if (retryResponse.ok || retryResponse.status !== 401) {
         console.log('[with-auth-refresh] Retry succeeded, updating cookies');
+
+        // Check for 5xx errors and transform them
+        const processed = await processBackendResponse(retryResponse, url);
+        if (processed) {
+          // 5xx error was transformed, but we still need to set cookies
+          await setTokenCookies(processed, refreshed);
+          console.log('[with-auth-refresh] Retry returned 5xx, transformed to 503');
+          return processed;
+        }
+
+        // 2xx, 3xx, 4xx → proxy as is
         const text = await retryResponse.text();
         const nextResponse = new NextResponse(text, {
           status: retryResponse.status,
@@ -163,7 +206,14 @@ export async function fetchWithAuthRefresh(
     return errorResponse;
   }
 
-  // Success or other error - return as is
+  // Check for 5xx errors and transform them
+  const processed = await processBackendResponse(response, url);
+  if (processed) {
+    console.log('[with-auth-refresh] Response was 5xx, transformed to 503');
+    return processed;
+  }
+
+  // Success or 4xx error - proxy as is
   const text = await response.text();
   return new NextResponse(text, {
     status: response.status,

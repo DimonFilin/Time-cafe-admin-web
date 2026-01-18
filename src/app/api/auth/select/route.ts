@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { env } from '@/shared/config/env';
+import { handleBackendError, processBackendResponse } from '@/shared/lib/handle-backend-error';
 
 type SelectRequestBody = {
   accountId?: string;
@@ -16,12 +17,26 @@ export async function POST(req: Request) {
   if (!lookupToken)
     return NextResponse.json({ message: 'lookupToken is required' }, { status: 400 });
 
-  const res = await fetch(`${env.backendUrl}/auth/login/select`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ accountId, lookupToken }),
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${env.backendUrl}/auth/login/select`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ accountId, lookupToken }),
+      cache: 'no-store',
+    });
+  } catch (error) {
+    // Network error
+    console.error('[auth/select] Network error:', error);
+    return handleBackendError(error, `${env.backendUrl}/auth/login/select`);
+  }
+
+  // Check for 5xx errors and transform them
+  const processed = await processBackendResponse(res, `${env.backendUrl}/auth/login/select`);
+  if (processed) {
+    console.log('[auth/select] Response was 5xx, transformed to 503');
+    return processed;
+  }
 
   const payloadText = await res.text();
   const next = new NextResponse(payloadText, {
@@ -29,6 +44,7 @@ export async function POST(req: Request) {
     headers: { 'content-type': res.headers.get('content-type') ?? 'application/json' },
   });
 
+  // 4xx errors → proxy as is (validation errors)
   if (!res.ok) return next;
 
   // Expected backend response: { accessToken, refreshToken, expiresIn, user }
