@@ -31,12 +31,6 @@ export async function Header() {
                 Login
               </Link>
             )}
-            <Link
-              className="rounded-lg px-3 py-2 hover:bg-[rgb(var(--tc-surface-2))] hover:text-[rgb(var(--tc-fg))]"
-              href="/admin"
-            >
-              Backend ping
-            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-2">

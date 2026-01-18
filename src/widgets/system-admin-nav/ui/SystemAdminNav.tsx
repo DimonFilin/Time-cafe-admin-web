@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/cn';
 
 const links = [
   { href: '/system-admin', label: 'Обзор' },
+  { href: '/system-admin/storage', label: 'Storage' },
   { href: '/system-admin/brands', label: 'Brands' },
   { href: '/system-admin/cafes', label: 'Cafes' },
   { href: '/system-admin/workers', label: 'Workers' },

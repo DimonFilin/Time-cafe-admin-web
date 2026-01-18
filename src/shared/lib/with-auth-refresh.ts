@@ -43,13 +43,17 @@ export async function fetchWithAuthRefresh(
       // Use refreshed token for the request
       let response: Response;
       try {
+        const headers: HeadersInit = {
+          authorization: `Bearer ${refreshed.accessToken}`,
+          ...options.headers,
+        };
+        // Don't set Content-Type for FormData, let browser set it with boundary
+        if (!(options.body instanceof FormData)) {
+          headers['content-type'] = 'application/json';
+        }
         response = await fetch(url, {
           method: options.method || 'GET',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${refreshed.accessToken}`,
-            ...options.headers,
-          },
+          headers,
           body: options.body,
           cache: options.cache || 'no-store',
         });
@@ -96,13 +100,17 @@ export async function fetchWithAuthRefresh(
   // First attempt
   let response: Response;
   try {
+    const headers: HeadersInit = {
+      authorization: `Bearer ${accessToken}`,
+      ...options.headers,
+    };
+    // Don't set Content-Type for FormData, let browser set it with boundary
+    if (!(options.body instanceof FormData)) {
+      headers['content-type'] = 'application/json';
+    }
     response = await fetch(url, {
       method: options.method || 'GET',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${accessToken}`,
-        ...options.headers,
-      },
+      headers,
       body: options.body,
       cache: options.cache || 'no-store',
     });
@@ -128,13 +136,17 @@ export async function fetchWithAuthRefresh(
       // Retry with new token
       let retryResponse: Response;
       try {
+        const retryHeaders: HeadersInit = {
+          authorization: `Bearer ${refreshed.accessToken}`,
+          ...options.headers,
+        };
+        // Don't set Content-Type for FormData, let browser set it with boundary
+        if (!(options.body instanceof FormData)) {
+          retryHeaders['content-type'] = 'application/json';
+        }
         retryResponse = await fetch(url, {
           method: options.method || 'GET',
-          headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${refreshed.accessToken}`,
-            ...options.headers,
-          },
+          headers: retryHeaders,
           body: options.body,
           cache: options.cache || 'no-store',
         });

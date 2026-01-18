@@ -1,5 +1,5 @@
-import { RoleDashboard } from '@/widgets/role-dashboard/ui/RoleDashboard';
+import { MonitoringDashboard } from '@/features/system-admin/monitoring/ui/MonitoringDashboard';
 
 export default function SystemAdminPage() {
-  return <RoleDashboard expectedRole="SYSTEM_ADMIN" />;
+  return <MonitoringDashboard />;
 }
