@@ -76,6 +76,13 @@ export function ReviewsAdmin() {
   const columns: DataTableColumn<Review>[] = useMemo(
     () => [
       {
+        key: 'id',
+        header: 'ID',
+        render: (r) => (
+          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{r.id}</span>
+        ),
+      },
+      {
         key: 'rating',
         header: 'Rating',
         render: (r) => <span className="font-mono text-xs">{r.rating}</span>,

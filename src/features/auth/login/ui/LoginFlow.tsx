@@ -115,9 +115,6 @@ export function LoginFlow() {
         <div className="text-2xl font-semibold tracking-tight text-[rgb(var(--tc-fg))]">
           {stepTitle(step)}
         </div>
-        <div className="mt-2 text-sm text-[rgb(var(--tc-muted))]">
-          Flow: lookup аккаунтов → выбор аккаунта → select.
-        </div>
       </div>
 
       <Card className="overflow-hidden bg-[rgb(var(--tc-surface))]">
@@ -157,9 +154,6 @@ export function LoginFlow() {
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </label>
-                <div className="text-xs text-[rgb(var(--tc-muted))]">
-                  Дальше будет вход и выбор аккаунта как в Google.
-                </div>
               </motion.div>
             )}
 

@@ -149,6 +149,13 @@ export function WorkersAdmin() {
   const columns: DataTableColumn<WorkerRow>[] = useMemo(
     () => [
       {
+        key: 'id',
+        header: 'ID',
+        render: (w) => (
+          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{w.id}</span>
+        ),
+      },
+      {
         key: 'name',
         header: 'ФИО',
         render: (w) => (

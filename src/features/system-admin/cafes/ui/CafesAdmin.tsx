@@ -127,6 +127,13 @@ export function CafesAdmin() {
   const columns: DataTableColumn<CafeListItem>[] = useMemo(
     () => [
       {
+        key: 'id',
+        header: 'ID',
+        render: (c) => (
+          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{c.id}</span>
+        ),
+      },
+      {
         key: 'name',
         header: 'Название',
         render: (c) => <div className="font-medium">{c.name}</div>,

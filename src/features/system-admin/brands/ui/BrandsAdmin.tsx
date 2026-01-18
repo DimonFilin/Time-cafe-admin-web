@@ -556,6 +556,11 @@ export function BrandsAdmin() {
   };
 
   const columns: DataTableColumn<Brand>[] = [
+    {
+      key: 'id',
+      header: 'ID',
+      render: (b) => <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{b.id}</span>,
+    },
     { key: 'name', header: 'Название', render: (b) => <div className="font-medium">{b.name}</div> },
     {
       key: 'status',

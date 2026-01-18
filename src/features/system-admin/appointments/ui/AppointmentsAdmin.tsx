@@ -133,6 +133,13 @@ export function AppointmentsAdmin() {
   const columns: DataTableColumn<Appointment>[] = useMemo(
     () => [
       {
+        key: 'id',
+        header: 'ID',
+        render: (a) => (
+          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{a.id}</span>
+        ),
+      },
+      {
         key: 'dt',
         header: 'DateTime',
         render: (a) => (

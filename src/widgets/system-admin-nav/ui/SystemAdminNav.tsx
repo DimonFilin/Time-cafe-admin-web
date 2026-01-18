@@ -13,6 +13,7 @@ const links = [
   { href: '/system-admin/orders', label: 'Orders' },
   { href: '/system-admin/appointments', label: 'Appointments' },
   { href: '/system-admin/reviews', label: 'Reviews' },
+  { href: '/system-admin/regions', label: 'Regions' },
 ];
 
 export function SystemAdminNav() {

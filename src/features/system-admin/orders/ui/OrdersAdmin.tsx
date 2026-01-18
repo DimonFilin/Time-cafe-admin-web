@@ -142,6 +142,13 @@ export function OrdersAdmin() {
   const columns: DataTableColumn<Order>[] = useMemo(
     () => [
       {
+        key: 'id',
+        header: 'ID',
+        render: (o) => (
+          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{o.id}</span>
+        ),
+      },
+      {
         key: 'orderNumber',
         header: 'Order',
         render: (o) => (
