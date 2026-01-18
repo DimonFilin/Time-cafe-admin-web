@@ -1,30 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 
 import { env } from '@/shared/config/env';
-
-async function getAccessToken() {
-  const store = await cookies();
-  return store.get('tc_access')?.value ?? null;
-}
+import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 
 export async function GET(req: NextRequest) {
-  const access = await getAccessToken();
-  if (!access) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
+  console.log('[users-route] GET /api/system-admin/users called');
   const { searchParams } = new URL(req.url);
   const query = searchParams.toString();
   const url = `${env.backendUrl}/admin/users${query ? `?${query}` : ''}`;
+  console.log('[users-route] Backend URL:', url);
 
-  const res = await fetch(url, {
+  const response = await fetchWithAuthRefresh(url, {
     method: 'GET',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${access}` },
     cache: 'no-store',
   });
 
-  const text = await res.text();
-  return new NextResponse(text, {
-    status: res.status,
-    headers: { 'content-type': res.headers.get('content-type') ?? 'application/json' },
-  });
+  console.log('[users-route] Response status:', response.status);
+  return response;
 }

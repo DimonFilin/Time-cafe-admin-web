@@ -7,6 +7,7 @@ import type {
   UserListQuery,
 } from '@/entities/user/types/user';
 import { formatApiErrorFromText } from '@/shared/lib/format-api-error';
+import { fetchWithAuthRetry } from '@/shared/lib/fetch-with-retry';
 
 async function readError(res: Response) {
   try {
@@ -28,25 +29,21 @@ export async function listUsers(query?: UserListQuery): Promise<UserListResponse
   const queryString = params.toString();
   const url = `/api/system-admin/users${queryString ? `?${queryString}` : ''}`;
 
-  const res = await fetch(url, {
-    cache: 'no-store',
-  });
+  const res = await fetchWithAuthRetry(url);
 
   if (!res.ok) throw new Error(await readError(res));
   return (await res.json()) as UserListResponse;
 }
 
 export async function getUser(id: string): Promise<User> {
-  const res = await fetch(`/api/system-admin/users/${id}`, {
-    cache: 'no-store',
-  });
+  const res = await fetchWithAuthRetry(`/api/system-admin/users/${id}`);
 
   if (!res.ok) throw new Error(await readError(res));
   return (await res.json()) as User;
 }
 
 export async function updateUser(id: string, data: UpdateUserData): Promise<User> {
-  const res = await fetch(`/api/system-admin/users/${id}`, {
+  const res = await fetchWithAuthRetry(`/api/system-admin/users/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +56,7 @@ export async function updateUser(id: string, data: UpdateUserData): Promise<User
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  const res = await fetch(`/api/system-admin/users/${id}`, {
+  const res = await fetchWithAuthRetry(`/api/system-admin/users/${id}`, {
     method: 'DELETE',
   });
 
