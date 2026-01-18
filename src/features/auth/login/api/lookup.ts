@@ -9,8 +9,14 @@ export async function lookupAccounts(input: { email: string; password: string })
   });
 
   if (!res.ok) {
-    const msg = await res.text().catch(() => '');
-    throw new Error(msg || `Lookup failed: ${res.status}`);
+    try {
+      const errorData = await res.json().catch(() => null);
+      const message = errorData?.message || `Ошибка входа: ${res.status}`;
+      throw new Error(message);
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      throw new Error(`Ошибка входа: ${res.status}`);
+    }
   }
 
   return (await res.json()) as LoginLookupResult;

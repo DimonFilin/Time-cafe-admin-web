@@ -7,8 +7,14 @@ export async function selectAccount(input: { accountId: string; lookupToken: str
   });
 
   if (!res.ok) {
-    const msg = await res.text().catch(() => '');
-    throw new Error(msg || `Select failed: ${res.status}`);
+    try {
+      const errorData = await res.json().catch(() => null);
+      const message = errorData?.message || `Ошибка выбора аккаунта: ${res.status}`;
+      throw new Error(message);
+    } catch (e) {
+      if (e instanceof Error) throw e;
+      throw new Error(`Ошибка выбора аккаунта: ${res.status}`);
+    }
   }
 
   return (await res.json()) as {
