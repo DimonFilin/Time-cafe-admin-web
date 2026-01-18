@@ -23,6 +23,7 @@ export function Modal({
   size = 'md',
   contentClassName,
   bodyClassName,
+  footer,
 }: {
   open: boolean;
   title?: string;
@@ -31,6 +32,7 @@ export function Modal({
   size?: ModalSize;
   contentClassName?: string;
   bodyClassName?: string;
+  footer?: ReactNode;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -66,6 +68,9 @@ export function Modal({
       >
         {title && <div className="text-base font-semibold">{title}</div>}
         <div className={cn(title ? 'mt-4' : '', 'overflow-auto', bodyClassName)}>{children}</div>
+        {footer && (
+          <div className="mt-4 border-t border-[rgb(var(--tc-border))] pt-4">{footer}</div>
+        )}
       </div>
     </div>
   );
