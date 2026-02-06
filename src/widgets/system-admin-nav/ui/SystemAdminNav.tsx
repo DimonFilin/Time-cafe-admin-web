@@ -11,6 +11,7 @@ const links = [
   { href: '/system-admin/brands', label: 'Brands' },
   { href: '/system-admin/cafes', label: 'Cafes' },
   { href: '/system-admin/workers', label: 'Workers' },
+  { href: '/system-admin/worker-accounts', label: 'Worker Accounts' },
   { href: '/system-admin/orders', label: 'Orders' },
   { href: '/system-admin/appointments', label: 'Appointments' },
   { href: '/system-admin/reviews', label: 'Reviews' },

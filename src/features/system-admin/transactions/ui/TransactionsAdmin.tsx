@@ -176,13 +176,12 @@ export function TransactionsAdmin() {
         header: 'Actions',
         render: (t) => (
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => openDetails(t.id)}>
+            <Button variant="secondary" onClick={() => openDetails(t.id)}>
               View
             </Button>
             {t.type === 'PAYMENT' && t.status === 'COMPLETED' && (
               <Button
-                size="sm"
-                variant="danger"
+                variant="ghost"
                 onClick={() => {
                   setRefundTransaction(t);
                   setRefundAmount('');

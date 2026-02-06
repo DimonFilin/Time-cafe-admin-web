@@ -158,7 +158,6 @@ export function RegionsAdmin() {
         render: (r) => (
           <div className="flex gap-2">
             <Button
-              size="sm"
               variant="secondary"
               onClick={() => {
                 setEditingRegion(r);
@@ -170,8 +169,7 @@ export function RegionsAdmin() {
               Edit
             </Button>
             <Button
-              size="sm"
-              variant="danger"
+              variant="ghost"
               onClick={() => {
                 setDeletingRegion(r);
                 setDeleteOpen(true);

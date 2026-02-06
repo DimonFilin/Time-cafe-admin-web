@@ -177,7 +177,6 @@ export function UsersAdmin() {
         render: (u) => (
           <div className="flex gap-2">
             <Button
-              size="sm"
               variant="secondary"
               onClick={() => {
                 setEditingUser(u);
@@ -189,8 +188,7 @@ export function UsersAdmin() {
               Edit
             </Button>
             <Button
-              size="sm"
-              variant="danger"
+              variant="ghost"
               onClick={() => {
                 setDeletingUser(u);
                 setDeleteOpen(true);

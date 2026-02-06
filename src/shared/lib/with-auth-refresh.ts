@@ -22,10 +22,7 @@ export async function fetchWithAuthRefresh(
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('tc_access')?.value;
   const refreshToken = cookieStore.get('tc_refresh')?.value;
-
-  console.log('[with-auth-refresh] Starting request to:', url);
-  console.log('[with-auth-refresh] Has access token:', !!accessToken);
-  console.log('[with-auth-refresh] Has refresh token:', !!refreshToken);
+  const accountId = cookieStore.get('tc_account_id')?.value;
 
   // If no access token but have refresh token, try to refresh first
   if (!accessToken && refreshToken) {
@@ -47,9 +44,13 @@ export async function fetchWithAuthRefresh(
           authorization: `Bearer ${refreshed.accessToken}`,
           ...options.headers,
         };
+        // Add account ID cookie if present
+        if (accountId) {
+          (headers as Record<string, string>)['cookie'] = `tc_account_id=${accountId}`;
+        }
         // Don't set Content-Type for FormData, let browser set it with boundary
         if (!(options.body instanceof FormData)) {
-          headers['content-type'] = 'application/json';
+          (headers as Record<string, string>)['content-type'] = 'application/json';
         }
         response = await fetch(url, {
           method: options.method || 'GET',
@@ -104,9 +105,13 @@ export async function fetchWithAuthRefresh(
       authorization: `Bearer ${accessToken}`,
       ...options.headers,
     };
+    // Add account ID cookie if present
+    if (accountId) {
+      (headers as Record<string, string>)['cookie'] = `tc_account_id=${accountId}`;
+    }
     // Don't set Content-Type for FormData, let browser set it with boundary
     if (!(options.body instanceof FormData)) {
-      headers['content-type'] = 'application/json';
+      (headers as Record<string, string>)['content-type'] = 'application/json';
     }
     response = await fetch(url, {
       method: options.method || 'GET',
@@ -140,9 +145,13 @@ export async function fetchWithAuthRefresh(
           authorization: `Bearer ${refreshed.accessToken}`,
           ...options.headers,
         };
+        // Add account ID cookie if present
+        if (accountId) {
+          (retryHeaders as Record<string, string>)['cookie'] = `tc_account_id=${accountId}`;
+        }
         // Don't set Content-Type for FormData, let browser set it with boundary
         if (!(options.body instanceof FormData)) {
-          retryHeaders['content-type'] = 'application/json';
+          (retryHeaders as Record<string, string>)['content-type'] = 'application/json';
         }
         retryResponse = await fetch(url, {
           method: options.method || 'GET',

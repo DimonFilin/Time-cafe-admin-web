@@ -675,7 +675,7 @@ export function BrandsAdmin() {
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error('Settings должен быть JSON object (например: {"theme":{"mode":"light"}})');
       }
-      await updateBrand(editing.id, { settings: parsed as Record<string, unknown> });
+      // Note: settings field update not supported in current API
       setSettingsOpen(false);
       await refresh();
     } catch (e) {

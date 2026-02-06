@@ -1,10 +1,10 @@
 import { AppShell } from '@/widgets/layout/AppShell';
-import { RoleDashboard } from '@/widgets/role-dashboard/ui/RoleDashboard';
+import { WorkerDashboard } from '@/features/worker/ui/WorkerDashboard';
 
 export default function WorkerPage() {
   return (
     <AppShell>
-      <RoleDashboard expectedRole="WORKER" />
+      <WorkerDashboard />
     </AppShell>
   );
 }

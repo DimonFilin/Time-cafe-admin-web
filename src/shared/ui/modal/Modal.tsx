@@ -62,12 +62,12 @@ export function Modal({
         className={cn(
           'relative flex w-full flex-col rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-5 shadow-xl',
           sizeClassName[size],
-          'max-h-[calc(100vh-2rem)]',
-          contentClassName,
+          // default max height keeps modal inside viewport; allow override via contentClassName
+          contentClassName ?? 'max-h-[calc(100vh-2rem)]',
         )}
       >
         {title && <div className="text-base font-semibold">{title}</div>}
-        <div className={cn(title ? 'mt-4' : '', 'overflow-auto', bodyClassName)}>{children}</div>
+        <div className={cn(title ? 'mt-4' : '', bodyClassName)}>{children}</div>
         {footer && (
           <div className="mt-4 border-t border-[rgb(var(--tc-border))] pt-4">{footer}</div>
         )}

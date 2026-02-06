@@ -298,7 +298,6 @@ export function CafesAdmin() {
           street: form.street.trim() || undefined,
           latitude,
           longitude,
-          brandId: form.brandId.trim() || undefined,
           regionId: form.regionId.trim() || undefined,
           cafeApiUrl: form.cafeApiUrl.trim() || undefined,
           photos: photos.length > 0 ? photos : undefined,
