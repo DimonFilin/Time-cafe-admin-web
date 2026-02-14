@@ -2,6 +2,13 @@
 
 import { Modal } from '@/shared/ui/modal/Modal';
 import type { Appointment } from '../types/appointments.types';
+import {
+  getAppointmentCustomerEmail,
+  getAppointmentCustomerName,
+  getAppointmentCustomerPhone,
+  getAppointmentDateTime,
+  normalizeAppointmentStatus,
+} from '../lib/appointmentView';
 
 interface AppointmentDetailsModalProps {
   appointment: Appointment | null;
@@ -23,6 +30,12 @@ export function AppointmentDetailsModal({
 }: AppointmentDetailsModalProps) {
   if (!appointment) return null;
 
+  const status = normalizeAppointmentStatus(appointment.status) ?? 'PENDING';
+  const dateTime = getAppointmentDateTime(appointment);
+  const customerName = getAppointmentCustomerName(appointment);
+  const customerEmail = getAppointmentCustomerEmail(appointment);
+  const customerPhone = getAppointmentCustomerPhone(appointment);
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString('ru-RU', {
       day: '2-digit',
@@ -39,26 +52,26 @@ export function AppointmentDetailsModal({
         {/* Status */}
         <div>
           <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Статус</h3>
-          <p className="mt-1 text-lg font-semibold">{STATUS_LABELS[appointment.status]}</p>
+          <p className="mt-1 text-lg font-semibold">{STATUS_LABELS[status]}</p>
         </div>
 
         {/* Customer */}
         <div>
           <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Клиент</h3>
-          <p className="mt-1">
-            {appointment.user.firstName} {appointment.user.lastName}
-          </p>
-          <p className="text-sm text-[rgb(var(--tc-muted))]">{appointment.user.email}</p>
-          {appointment.user.phone && (
-            <p className="text-sm text-[rgb(var(--tc-muted))]">{appointment.user.phone}</p>
-          )}
+          <p className="mt-1">{customerName}</p>
+          {customerEmail ? (
+            <p className="text-sm text-[rgb(var(--tc-muted))]">{customerEmail}</p>
+          ) : null}
+          {customerPhone ? (
+            <p className="text-sm text-[rgb(var(--tc-muted))]">{customerPhone}</p>
+          ) : null}
         </div>
 
         {/* Appointment info */}
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Дата и время</h3>
-            <p className="mt-1">{formatDate(appointment.appointmentDate)}</p>
+            <p className="mt-1">{dateTime ? formatDate(dateTime) : '—'}</p>
           </div>
           <div>
             <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Длительность</h3>
@@ -66,7 +79,7 @@ export function AppointmentDetailsModal({
           </div>
           <div>
             <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Количество гостей</h3>
-            <p className="mt-1">{appointment.guestsCount}</p>
+            <p className="mt-1">{appointment.guestsCount ?? '—'}</p>
           </div>
         </div>
 
@@ -115,7 +128,7 @@ export function AppointmentDetailsModal({
         </div>
 
         {/* Cancellation reason */}
-        {appointment.status === 'CANCELLED' && appointment.cancellationReason && (
+        {status === 'CANCELLED' && appointment.cancellationReason && (
           <div>
             <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Причина отмены</h3>
             <p className="mt-1 rounded-lg bg-red-50 p-3 text-red-700">

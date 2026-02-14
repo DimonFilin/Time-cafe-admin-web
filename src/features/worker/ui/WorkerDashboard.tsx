@@ -103,8 +103,10 @@ export function WorkerDashboard() {
           {!sidebarCollapsed ? (
             <>
               <div className="mb-2">
-                <div className="text-lg font-semibold">Multi Account</div>
-                <div className="text-xs text-[rgb(var(--tc-muted))]">(Worker)</div>
+                <div className="text-lg font-semibold">
+                  {worker.firstName} {worker.lastName}
+                </div>
+                <div className="text-xs text-[rgb(var(--tc-muted))]">{worker.email}</div>
               </div>
               <div className="mb-2 text-sm">
                 <span className="font-medium">{worker.cafe?.name || 'Кафе'}</span>
@@ -128,7 +130,10 @@ export function WorkerDashboard() {
             </>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <div className="text-center text-sm font-semibold">MA</div>
+              <div className="text-center text-sm font-semibold">
+                {worker.firstName?.[0]}
+                {worker.lastName?.[0]}
+              </div>
               <button
                 onClick={handleShiftToggle}
                 className={`flex h-10 w-10 items-center justify-center rounded-lg transition-all ${

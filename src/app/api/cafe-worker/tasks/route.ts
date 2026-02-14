@@ -1,19 +1,32 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { env } from '@/shared/config/env';
-import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const date = searchParams.get('date');
+  try {
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date');
 
-  const url = new URL(`${env.backendUrl}/cafe-worker/tasks`);
-  if (date) {
-    url.searchParams.append('date', date);
+    const url = date
+      ? `${BACKEND_URL}/cafe-worker/tasks?date=${date}`
+      : `${BACKEND_URL}/cafe-worker/tasks`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Cookie: request.headers.get('cookie') || '',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to fetch tasks' }));
+      return NextResponse.json(error, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error fetching worker tasks:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
-
-  return fetchWithAuthRefresh(url.toString(), {
-    method: 'GET',
-    cache: 'no-store',
-  });
 }

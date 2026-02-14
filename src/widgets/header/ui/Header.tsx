@@ -1,12 +1,31 @@
+'use client';
+
 import Link from 'next/link';
-import { cookies } from 'next/headers';
+import { useEffect, useState } from 'react';
 
 import { Logo } from '@/shared/ui/logo/Logo';
 import { ThemeToggle } from '@/shared/ui/theme-toggle/ThemeToggle';
 
-export async function Header() {
-  const cookieStore = await cookies();
-  const isAuthed = Boolean(cookieStore.get('tc_access')?.value);
+export function Header() {
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
+        if (cancelled) return;
+        setIsAuthed(res.ok);
+      } catch {
+        if (cancelled) return;
+        setIsAuthed(false);
+      }
+    };
+    void check();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <header className="border-b border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))]">

@@ -1,11 +1,11 @@
-// Task types matching backend DTOs
-
+// Task enums
 export type TaskCategory = 'OPENING' | 'SHIFT' | 'CLOSING' | 'GENERAL';
 
 export type TaskPriority = 'HIGH' | 'MEDIUM' | 'LOW';
 
 export type TaskAssignmentType = 'ALL_WORKERS' | 'SPECIFIC_WORKERS' | 'ROLE_BASED';
 
+// Task Template interface
 export interface TaskTemplate {
   id: string;
   cafeId: string;
@@ -17,15 +17,16 @@ export interface TaskTemplate {
   requiresComment: boolean;
   estimatedMinutes?: number;
   assignmentType: TaskAssignmentType;
-  assignedWorkerIds: string[];
-  assignedRoles: string[];
+  assignedWorkerIds?: string[];
+  assignedRoles?: string[];
   isActive: boolean;
-  daysOfWeek: number[]; // 1=Monday, 7=Sunday, empty=every day
+  daysOfWeek: number[]; // 1=Mon, 7=Sun, empty=every day
   createdById: string;
   createdAt: string;
   updatedAt: string;
 }
 
+// Task Completion interface
 export interface TaskCompletion {
   id: string;
   templateId: string;
@@ -37,6 +38,7 @@ export interface TaskCompletion {
   durationMinutes?: number;
 }
 
+// Worker Task (template + completion status)
 export interface WorkerTask {
   id: string;
   title: string;
@@ -53,6 +55,7 @@ export interface WorkerTask {
   durationMinutes?: number;
 }
 
+// Worker Tasks Response
 export interface WorkerTasksResponse {
   tasks: WorkerTask[];
   completedCount: number;
@@ -60,7 +63,8 @@ export interface WorkerTasksResponse {
   date: string;
 }
 
-export interface CompleteTaskRequest {
+// Complete Task DTO
+export interface CompleteTaskDto {
   completionDate: string;
   photoUrl?: string;
   comment?: string;

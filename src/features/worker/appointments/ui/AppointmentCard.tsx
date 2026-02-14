@@ -1,6 +1,13 @@
 'use client';
 
 import type { Appointment } from '../types/appointments.types';
+import {
+  getAppointmentCustomerEmail,
+  getAppointmentCustomerName,
+  getAppointmentCustomerPhone,
+  getAppointmentDateTime,
+  normalizeAppointmentStatus,
+} from '../lib/appointmentView';
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -31,17 +38,16 @@ export function AppointmentCard({
   onCancel,
   onViewDetails,
 }: AppointmentCardProps) {
+  const status = normalizeAppointmentStatus(appointment.status) ?? 'PENDING';
+  const dateTime = getAppointmentDateTime(appointment);
+  const customerName = getAppointmentCustomerName(appointment);
+  const customerEmail = getAppointmentCustomerEmail(appointment);
+  const customerPhone = getAppointmentCustomerPhone(appointment);
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('ru-RU', {
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -53,19 +59,19 @@ export function AppointmentCard({
       <div className="mb-3 flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold">
-              {appointment.user.firstName} {appointment.user.lastName}
-            </h3>
+            <h3 className="font-semibold">{customerName}</h3>
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[appointment.status]}`}
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}
             >
-              {STATUS_LABELS[appointment.status]}
+              {STATUS_LABELS[status]}
             </span>
           </div>
-          <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">{appointment.user.email}</p>
-          {appointment.user.phone && (
-            <p className="text-sm text-[rgb(var(--tc-muted))]">{appointment.user.phone}</p>
-          )}
+          {customerEmail ? (
+            <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">{customerEmail}</p>
+          ) : null}
+          {customerPhone ? (
+            <p className="text-sm text-[rgb(var(--tc-muted))]">{customerPhone}</p>
+          ) : null}
         </div>
       </div>
 
@@ -73,7 +79,7 @@ export function AppointmentCard({
       <div className="mb-3 space-y-2 text-sm">
         <div className="flex items-center gap-2">
           <span className="text-[rgb(var(--tc-muted))]">📅 Дата:</span>
-          <span className="font-medium">{formatDate(appointment.appointmentDate)}</span>
+          <span className="font-medium">{dateTime ? formatDate(dateTime) : '—'}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[rgb(var(--tc-muted))]">⏱️ Длительность:</span>
@@ -81,7 +87,7 @@ export function AppointmentCard({
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[rgb(var(--tc-muted))]">👥 Гостей:</span>
-          <span className="font-medium">{appointment.guestsCount}</span>
+          <span className="font-medium">{appointment.guestsCount ?? '—'}</span>
         </div>
         {appointment.notes && (
           <div className="flex items-start gap-2">
@@ -93,7 +99,7 @@ export function AppointmentCard({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        {appointment.status === 'PENDING' && (
+        {status === 'PENDING' && (
           <button
             onClick={() => onConfirm(appointment.id)}
             className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
@@ -101,7 +107,7 @@ export function AppointmentCard({
             ✓ Подтвердить
           </button>
         )}
-        {appointment.status === 'CONFIRMED' && (
+        {status === 'CONFIRMED' && (
           <button
             onClick={() => onCheckIn(appointment.id)}
             className="rounded-lg bg-green-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-600"
@@ -109,7 +115,7 @@ export function AppointmentCard({
             ✓ Отметить приход
           </button>
         )}
-        {(appointment.status === 'PENDING' || appointment.status === 'CONFIRMED') && (
+        {(status === 'PENDING' || status === 'CONFIRMED') && (
           <button
             onClick={() => onCancel(appointment.id)}
             className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
@@ -121,12 +127,12 @@ export function AppointmentCard({
           onClick={() => onViewDetails(appointment)}
           className="rounded-lg border border-[rgb(var(--tc-border))] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
         >
-          👁 Детали
+          ↗ Открыть
         </button>
       </div>
 
       {/* Cancellation reason */}
-      {appointment.status === 'CANCELLED' && appointment.cancellationReason && (
+      {status === 'CANCELLED' && appointment.cancellationReason && (
         <div className="mt-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">
           <strong>Причина отмены:</strong> {appointment.cancellationReason}
         </div>

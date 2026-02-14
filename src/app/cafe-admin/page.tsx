@@ -1,10 +1,12 @@
 import { AppShell } from '@/widgets/layout/AppShell';
-import { RoleDashboard } from '@/widgets/role-dashboard/ui/RoleDashboard';
+import { CafeAdminDashboard } from '@/features/cafe-admin/ui/CafeAdminDashboard';
 
 export default function CafeAdminPage() {
   return (
     <AppShell>
-      <RoleDashboard expectedRole="CAFE_ADMIN" />
+      <div className="mx-auto w-full max-w-7xl">
+        <CafeAdminDashboard />
+      </div>
     </AppShell>
   );
 }

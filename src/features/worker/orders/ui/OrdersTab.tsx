@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ordersApi } from '../api/orders-api';
 import type { Order } from '../types/orders.types';
 import { OrderCard } from './OrderCard';
@@ -21,7 +21,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     if (!cafeId) {
       console.error('[OrdersTab] cafeId is missing, cannot fetch orders');
       setError('Не удалось определить кафе работника');
@@ -44,7 +44,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cafeId, filter]);
 
   useEffect(() => {
     fetchOrders();
@@ -53,7 +53,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
       const interval = setInterval(fetchOrders, 30000);
       return () => clearInterval(interval);
     }
-  }, [cafeId, filter]);
+  }, [cafeId, fetchOrders, filter]);
 
   const handleConfirm = async (orderId: string) => {
     try {
@@ -110,12 +110,14 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
           <h2 className="text-2xl font-semibold">Заказы</h2>
           <p className="text-sm text-[rgb(var(--tc-muted))]">Управление заказами кафе</p>
         </div>
-        <button
-          onClick={fetchOrders}
-          className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
-        >
-          🔄 Обновить
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchOrders}
+            className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
+          >
+            🔄 Обновить
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}

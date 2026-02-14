@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { tasksApi } from '../api/tasks-api';
+import { getWorkerTasks, completeTask, uncompleteTask } from '../api/tasks-api';
 import type { WorkerTask, TaskCategory, TaskPriority } from '../types/tasks.types';
 import { PhotoUploadModal } from './PhotoUploadModal';
 import { CommentInputModal } from './CommentInputModal';
@@ -27,7 +27,7 @@ export function TasksTab() {
     try {
       setError(null);
       const today = new Date().toISOString().split('T')[0];
-      const response = await tasksApi.getWorkerTasks(today);
+      const response = await getWorkerTasks(today);
       setTasks(response.tasks);
       setCompletedCount(response.completedCount);
       setTotalCount(response.totalCount);
@@ -60,7 +60,7 @@ export function TasksTab() {
       // Uncomplete task - no validation needed
       try {
         setProcessingTask(true);
-        await tasksApi.uncompleteTask(task.id, today);
+        await uncompleteTask(task.id, today);
         await fetchTasks();
       } catch (err) {
         console.error('Failed to uncomplete task:', err);
@@ -116,7 +116,7 @@ export function TasksTab() {
   const completeTaskDirectly = async (taskId: string, date: string) => {
     try {
       setProcessingTask(true);
-      await tasksApi.completeTask(taskId, { completionDate: date });
+      await completeTask(taskId, { completionDate: date });
       await fetchTasks();
     } catch (err) {
       console.error('Failed to complete task:', err);
@@ -135,7 +135,7 @@ export function TasksTab() {
   ) => {
     try {
       setProcessingTask(true);
-      await tasksApi.completeTask(taskId, {
+      await completeTask(taskId, {
         completionDate: date,
         photoUrl,
         comment,
@@ -280,9 +280,11 @@ export function TasksTab() {
                 </button>
 
                 {/* Content */}
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="mb-1 flex items-center gap-2 flex-wrap">
-                    <h4 className={`font-medium ${task.completed ? 'line-through' : ''}`}>
+                    <h4
+                      className={`break-words font-medium ${task.completed ? 'line-through' : ''}`}
+                    >
                       {task.title}
                     </h4>
                     <span
@@ -307,7 +309,9 @@ export function TasksTab() {
                     )}
                   </div>
                   {task.description && (
-                    <p className="text-sm text-[rgb(var(--tc-muted))]">{task.description}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm text-[rgb(var(--tc-muted))]">
+                      {task.description}
+                    </p>
                   )}
                   {task.completed && task.completedAt && (
                     <p className="mt-1 text-xs text-green-600">

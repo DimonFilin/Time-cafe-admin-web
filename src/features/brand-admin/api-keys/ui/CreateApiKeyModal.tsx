@@ -31,8 +31,13 @@ export function CreateApiKeyModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || form.permissions.length === 0) return;
-    await onSubmit(form);
-    setForm({ name: '', permissions: [] });
+    try {
+      await onSubmit(form);
+      // Only clear form on success
+      setForm({ name: '', permissions: [] });
+    } catch {
+      // Error handled by parent, keep form data
+    }
   };
 
   const handleClose = () => {

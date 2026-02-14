@@ -24,6 +24,26 @@ export async function fetchWithAuthRefresh(
   const refreshToken = cookieStore.get('tc_refresh')?.value;
   const accountId = cookieStore.get('tc_account_id')?.value;
 
+  const buildHeaders = (token: string): Headers => {
+    const headers = new Headers(options.headers);
+    headers.set('authorization', `Bearer ${token}`);
+
+    if (accountId) {
+      headers.set('cookie', `tc_account_id=${accountId}`);
+    }
+
+    // Don't set Content-Type for FormData, let fetch set it with boundary.
+    // Using Headers#set guarantees we don't send duplicate content-type values
+    // (e.g. "application/json, application/json"), which breaks JSON body parsing on the backend.
+    if (!(options.body instanceof FormData)) {
+      headers.set('content-type', 'application/json');
+    } else {
+      headers.delete('content-type');
+    }
+
+    return headers;
+  };
+
   // If no access token but have refresh token, try to refresh first
   if (!accessToken && refreshToken) {
     console.log('[with-auth-refresh] No access token, but have refresh token - attempting refresh');
@@ -40,18 +60,7 @@ export async function fetchWithAuthRefresh(
       // Use refreshed token for the request
       let response: Response;
       try {
-        const headers: HeadersInit = {
-          authorization: `Bearer ${refreshed.accessToken}`,
-          ...options.headers,
-        };
-        // Add account ID cookie if present
-        if (accountId) {
-          (headers as Record<string, string>)['cookie'] = `tc_account_id=${accountId}`;
-        }
-        // Don't set Content-Type for FormData, let browser set it with boundary
-        if (!(options.body instanceof FormData)) {
-          (headers as Record<string, string>)['content-type'] = 'application/json';
-        }
+        const headers = buildHeaders(refreshed.accessToken);
         response = await fetch(url, {
           method: options.method || 'GET',
           headers,
@@ -101,18 +110,7 @@ export async function fetchWithAuthRefresh(
   // First attempt
   let response: Response;
   try {
-    const headers: HeadersInit = {
-      authorization: `Bearer ${accessToken}`,
-      ...options.headers,
-    };
-    // Add account ID cookie if present
-    if (accountId) {
-      (headers as Record<string, string>)['cookie'] = `tc_account_id=${accountId}`;
-    }
-    // Don't set Content-Type for FormData, let browser set it with boundary
-    if (!(options.body instanceof FormData)) {
-      (headers as Record<string, string>)['content-type'] = 'application/json';
-    }
+    const headers = buildHeaders(accessToken);
     response = await fetch(url, {
       method: options.method || 'GET',
       headers,
@@ -141,18 +139,7 @@ export async function fetchWithAuthRefresh(
       // Retry with new token
       let retryResponse: Response;
       try {
-        const retryHeaders: HeadersInit = {
-          authorization: `Bearer ${refreshed.accessToken}`,
-          ...options.headers,
-        };
-        // Add account ID cookie if present
-        if (accountId) {
-          (retryHeaders as Record<string, string>)['cookie'] = `tc_account_id=${accountId}`;
-        }
-        // Don't set Content-Type for FormData, let browser set it with boundary
-        if (!(options.body instanceof FormData)) {
-          (retryHeaders as Record<string, string>)['content-type'] = 'application/json';
-        }
+        const retryHeaders = buildHeaders(refreshed.accessToken);
         retryResponse = await fetch(url, {
           method: options.method || 'GET',
           headers: retryHeaders,

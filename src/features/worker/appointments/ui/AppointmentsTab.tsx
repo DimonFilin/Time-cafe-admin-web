@@ -1,27 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { appointmentsApi } from '../api/appointments-api';
 import type { Appointment } from '../types/appointments.types';
 import { AppointmentCard } from './AppointmentCard';
-import { AppointmentDetailsModal } from './AppointmentDetailsModal';
 import { CancelAppointmentModal } from './CancelAppointmentModal';
+import { QrScanModal } from '@/shared/ui/qr/QrScanModal';
+import { parseAppointmentQr } from '@/shared/lib/appointment-qr';
+import {
+  getAppointmentCustomerName,
+  getAppointmentDateTime,
+  normalizeAppointmentStatus,
+} from '../lib/appointmentView';
 
 interface AppointmentsTabProps {
   cafeId: string;
 }
 
 export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
+  const router = useRouter();
   const [filter, setFilter] = useState<'active' | 'history'>('active');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
+  const [isQrOpen, setIsQrOpen] = useState(false);
+  const [qrError, setQrError] = useState<string | null>(null);
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     if (!cafeId) {
       console.error('[AppointmentsTab] cafeId is missing');
       setError('Не удалось определить кафе работника');
@@ -51,10 +59,11 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
 
       // Фильтруем на фронте
       const filtered = response.items.filter((appointment) => {
+        const s = normalizeAppointmentStatus(appointment.status);
         if (filter === 'active') {
-          return appointment.status === 'PENDING' || appointment.status === 'CONFIRMED';
+          return s === 'PENDING' || s === 'CONFIRMED';
         } else {
-          return appointment.status === 'COMPLETED' || appointment.status === 'CANCELLED';
+          return s === 'COMPLETED' || s === 'CANCELLED';
         }
       });
 
@@ -66,7 +75,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cafeId, filter]);
 
   useEffect(() => {
     fetchAppointments();
@@ -75,7 +84,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       const interval = setInterval(fetchAppointments, 30000);
       return () => clearInterval(interval);
     }
-  }, [cafeId, filter]);
+  }, [cafeId, fetchAppointments, filter]);
 
   const handleConfirm = async (appointmentId: string) => {
     try {
@@ -124,8 +133,25 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
   };
 
   const handleViewDetails = (appointment: Appointment) => {
-    setSelectedAppointment(appointment);
-    setIsDetailsModalOpen(true);
+    router.push(`/worker/appointments/${encodeURIComponent(appointment.id)}`);
+  };
+
+  const handleQrDetected = (raw: string) => {
+    const parsed = parseAppointmentQr(raw);
+    if (!parsed.ok) {
+      setQrError(parsed.error);
+      return;
+    }
+
+    if (parsed.cafeId && parsed.cafeId !== cafeId) {
+      const other = parsed.cafeName ? `${parsed.cafeName} (${parsed.cafeId})` : parsed.cafeId;
+      setQrError(`Этот QR-код относится к другому кафе: ${other}. Текущее кафе: ${cafeId}.`);
+      return;
+    }
+
+    setQrError(null);
+    setIsQrOpen(false);
+    router.push(`/worker/appointments/${encodeURIComponent(parsed.appointmentId)}`);
   };
 
   return (
@@ -136,12 +162,24 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
           <h2 className="text-2xl font-semibold">Бронирования</h2>
           <p className="text-sm text-[rgb(var(--tc-muted))]">Управление бронированиями столов</p>
         </div>
-        <button
-          onClick={fetchAppointments}
-          className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
-        >
-          🔄 Обновить
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setQrError(null);
+              setIsQrOpen(true);
+            }}
+            className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
+            title="Сканировать QR-код бронирования"
+          >
+            📷 QR
+          </button>
+          <button
+            onClick={fetchAppointments}
+            className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
+          >
+            🔄 Обновить
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -207,11 +245,6 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       )}
 
       {/* Modals */}
-      <AppointmentDetailsModal
-        appointment={selectedAppointment}
-        isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
-      />
       <CancelAppointmentModal
         isOpen={isCancelModalOpen}
         onClose={() => {
@@ -221,9 +254,19 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
         onConfirm={handleCancelConfirm}
         appointmentInfo={
           appointmentToCancel
-            ? `${appointmentToCancel.user.firstName} ${appointmentToCancel.user.lastName}`
+            ? `${getAppointmentCustomerName(appointmentToCancel)}${(() => {
+                const dt = getAppointmentDateTime(appointmentToCancel);
+                return dt ? ` • ${new Date(dt).toLocaleString('ru-RU')}` : '';
+              })()}`
             : ''
         }
+      />
+
+      <QrScanModal
+        open={isQrOpen}
+        onClose={() => setIsQrOpen(false)}
+        errorText={qrError}
+        onDetected={handleQrDetected}
       />
     </div>
   );

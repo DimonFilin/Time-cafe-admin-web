@@ -39,13 +39,14 @@ function roleRoute(role: AccountSummary['role']) {
 export function LoginFlow() {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>('email');
-  // TODO: Remove default values before production
+  // Default values for quick testing
   const [email, setEmail] = useState('multiacc.email@gmail.com');
   const [password, setPassword] = useState('MultiAccount2026!');
   const [accounts, setAccounts] = useState<AccountSummary[]>([]);
   const [lookupToken, setLookupToken] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const canGoNext = useMemo(() => {
     if (step === 'email') return email.trim().length > 3;
@@ -55,6 +56,7 @@ export function LoginFlow() {
   }, [accounts.length, email, password, step]);
 
   async function handleNext() {
+    if (isProcessing) return; // Prevent double execution
     setError(null);
 
     if (step === 'email') {
@@ -63,14 +65,40 @@ export function LoginFlow() {
     }
 
     if (step === 'password') {
+      setIsProcessing(true);
       setPending(true);
       try {
         const result = await lookupAccounts({ email: email.trim(), password });
         setAccounts(result.accounts);
         setLookupToken(result.lookupToken);
-        setStep('chooseAccount');
+
+        // If only one account, auto-select it
+        if (result.accounts.length === 1) {
+          const acc = result.accounts[0];
+          try {
+            const selectResult = await selectAccount({
+              accountId: acc.id,
+              lookupToken: result.lookupToken,
+            });
+            const roleFromSelect = (selectResult.user?.role ?? acc.role) as AccountSummary['role'];
+
+            // Optional safety: verify selected account via /me
+            const me = await fetchMe().catch(() => null);
+            const role = (me?.role ?? roleFromSelect) as AccountSummary['role'];
+
+            router.push(roleRoute(role));
+          } catch (selectError) {
+            setError(selectError instanceof Error ? selectError.message : String(selectError));
+            setIsProcessing(false);
+          }
+        } else {
+          // Multiple accounts - show selection
+          setStep('chooseAccount');
+          setIsProcessing(false);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
+        setIsProcessing(false);
       } finally {
         setPending(false);
       }
@@ -85,6 +113,8 @@ export function LoginFlow() {
   }
 
   async function handleSelect(acc: AccountSummary) {
+    if (isProcessing) return; // Prevent double execution
+
     const token = lookupToken;
     if (!token) {
       setError('lookupToken отсутствует — повторите ввод пароля');
@@ -92,6 +122,7 @@ export function LoginFlow() {
       return;
     }
 
+    setIsProcessing(true);
     setPending(true);
     setError(null);
     try {
@@ -105,6 +136,7 @@ export function LoginFlow() {
       router.push(roleRoute(role));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      setIsProcessing(false);
     } finally {
       setPending(false);
     }

@@ -82,7 +82,7 @@ export async function setTokenCookies(
   const secure = process.env.NODE_ENV === 'production';
   // expiresIn is in seconds, ensure at least 60 seconds (1 minute) for access token
   const accessMaxAge = Math.max(60, Math.floor(tokens.expiresIn));
-  const refreshMaxAge = 60 * 60 * 24 * 30; // 30 days
+  const refreshMaxAge = 60 * 60 * 24; // 24 hours
 
   console.log(
     '[refresh-token] Setting cookies - accessMaxAge:',

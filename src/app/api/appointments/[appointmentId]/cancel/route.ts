@@ -10,7 +10,7 @@ export async function POST(
     const { appointmentId } = await params;
     const body = await req.json();
 
-    const url = `${env.backendUrl}/appointments/${appointmentId}/cancel`;
+    const url = `${env.backendUrl}/appointments/cafe/${appointmentId}/cancel`;
 
     const response = await fetchWithAuthRefresh(url, {
       method: 'POST',

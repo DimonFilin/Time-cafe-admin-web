@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 
 const env = {
-  backendUrl: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000',
+  backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
 };
 
 export async function POST(request: NextRequest, context: { params: Promise<{ bucket: string }> }) {

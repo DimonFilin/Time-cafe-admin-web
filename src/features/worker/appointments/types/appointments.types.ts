@@ -1,12 +1,22 @@
-export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+export type AppointmentStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'pending'
+  | 'confirmed'
+  | 'cancelled'
+  | 'completed';
 
 export interface Appointment {
   id: string;
   userId: string;
   cafeId: string;
-  appointmentDate: string;
+  cafeName?: string;
+  appointmentDate?: string;
+  dateTime?: string;
   duration: number; // в минутах
-  guestsCount: number;
+  guestsCount?: number;
   status: AppointmentStatus;
   notes?: string;
   qrCode?: string;
@@ -15,7 +25,10 @@ export interface Appointment {
   completedAt?: string;
   cancellationReason?: string;
   createdAt: string;
-  user: {
+  updatedAt?: string;
+  paymentMethod?: string;
+  transactionId?: string | null;
+  user?: {
     id: string;
     firstName: string;
     lastName: string;

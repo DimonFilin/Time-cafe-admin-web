@@ -45,12 +45,9 @@ export function InviteWorkerModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await onSubmit(form);
-      setForm({ email: '', password: '', firstName: '', lastName: '', role: 'WORKER' });
-    } catch {
-      // Error handled by parent
-    }
+    await onSubmit(form);
+    // Only clear form if no error was thrown
+    setForm({ email: '', password: '', firstName: '', lastName: '', role: 'WORKER' });
   };
 
   if (!open) return null;
