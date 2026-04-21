@@ -6,6 +6,7 @@ import type { Order } from '../types/orders.types';
 import { OrderCard } from './OrderCard';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import { CancelOrderModal } from './CancelOrderModal';
+import { CafeMenuModal } from './CafeMenuModal';
 
 interface OrdersTabProps {
   cafeId: string;
@@ -20,6 +21,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     if (!cafeId) {
@@ -112,6 +114,12 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setIsMenuModalOpen(true)}
+            className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
+          >
+            📋 Меню
+          </button>
+          <button
             onClick={fetchOrders}
             className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
           >
@@ -196,6 +204,11 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
         }}
         onConfirm={handleCancelConfirm}
         orderNumber={orderToCancel?.orderNumber || ''}
+      />
+      <CafeMenuModal
+        cafeId={cafeId}
+        isOpen={isMenuModalOpen}
+        onClose={() => setIsMenuModalOpen(false)}
       />
     </div>
   );

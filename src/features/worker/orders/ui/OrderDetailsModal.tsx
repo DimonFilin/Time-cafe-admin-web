@@ -1,6 +1,7 @@
 'use client';
 
 import { Modal } from '@/shared/ui/modal/Modal';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import type { Order } from '../types/orders.types';
 
 interface OrderDetailsModalProps {
@@ -95,8 +96,9 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
               >
                 <div className="flex-1">
                   <p className="font-medium">{item.itemName}</p>
-                  <p className="text-sm text-[rgb(var(--tc-muted))]">
-                    {item.quantity} x {item.unitPrice}₽
+                  <p className="flex flex-wrap items-center gap-1 text-sm text-[rgb(var(--tc-muted))]">
+                    <span>{item.quantity} ×</span>
+                    <MoneyAmount value={item.unitPrice} />
                   </p>
                   {item.notes && (
                     <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
@@ -104,7 +106,9 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                     </p>
                   )}
                 </div>
-                <div className="text-right font-semibold">{item.totalPrice}₽</div>
+                <div className="text-right font-semibold">
+                  <MoneyAmount value={item.totalPrice} />
+                </div>
               </div>
             ))}
           </div>
@@ -114,7 +118,9 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
         <div className="border-t border-[rgb(var(--tc-border))] pt-4">
           <div className="flex items-center justify-between text-xl font-bold">
             <span>Итого:</span>
-            <span>{order.totalAmount}₽</span>
+            <span>
+              <MoneyAmount value={order.totalAmount} />
+            </span>
           </div>
         </div>
 

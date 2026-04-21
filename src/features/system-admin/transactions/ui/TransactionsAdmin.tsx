@@ -14,6 +14,7 @@ import { Button } from '@/shared/ui/button/Button';
 import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 
 export function TransactionsAdmin() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -158,7 +159,7 @@ export function TransactionsAdmin() {
         header: 'Amount',
         render: (t) => (
           <span className="font-mono">
-            {Number(t.amount).toFixed(2)} {t.currency}
+            <MoneyAmount value={t.amount} />
           </span>
         ),
       },
@@ -329,7 +330,7 @@ export function TransactionsAdmin() {
               <div>
                 <span className="text-[rgb(var(--tc-muted))]">amount:</span>{' '}
                 <span className="font-mono">
-                  {Number(details.amount).toFixed(2)} {details.currency}
+                  <MoneyAmount value={details.amount} />
                 </span>
               </div>
               {details.orderId && (
@@ -412,7 +413,7 @@ export function TransactionsAdmin() {
               <div>
                 <span className="text-[rgb(var(--tc-muted))]">Original Amount:</span>{' '}
                 <span className="font-mono">
-                  {Number(refundTransaction.amount).toFixed(2)} {refundTransaction.currency}
+                  <MoneyAmount value={refundTransaction.amount} />
                 </span>
               </div>
             </div>

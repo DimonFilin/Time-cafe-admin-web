@@ -10,8 +10,15 @@ import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { InviteWorkerModal } from './InviteWorkerModal';
 import { EditWorkerModal } from './EditWorkerModal';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 
-export function WorkersTab() {
+export function WorkersTab({
+  initialOpenInvite = false,
+  onInviteHandled,
+}: {
+  initialOpenInvite?: boolean;
+  onInviteHandled?: () => void;
+}) {
   const [workers, setWorkers] = useState<WorkerResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +35,13 @@ export function WorkersTab() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [shiftFilter, setShiftFilter] = useState<'ALL' | 'ON_SHIFT' | 'OFF_SHIFT'>('ALL');
+
+  useEffect(() => {
+    if (initialOpenInvite) {
+      setInviteOpen(true);
+      onInviteHandled?.();
+    }
+  }, [initialOpenInvite, onInviteHandled]);
 
   // Callback для переключения на таб Activity Logs
   const onViewLogs = (workerId: string) => {
@@ -105,7 +119,11 @@ export function WorkersTab() {
     {
       key: 'balance',
       header: 'Balance',
-      render: (w) => <span className="text-sm font-medium">${w.balance}</span>,
+      render: (w) => (
+        <span className="text-sm font-medium">
+          <MoneyAmount value={w.balance} />
+        </span>
+      ),
     },
     {
       key: 'createdAt',

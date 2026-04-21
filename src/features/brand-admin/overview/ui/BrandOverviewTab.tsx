@@ -16,6 +16,11 @@ interface Brand {
   description?: string;
   logo?: string;
   primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fontFamily?: string;
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED';
   isVerified: boolean;
 }
@@ -295,6 +300,59 @@ export function BrandOverviewTab() {
           onSave={handleSaveBrand}
         />
       )}
+
+      {/* Quick Actions */}
+      <Card className="p-6">
+        <h3 className="mb-4 text-lg font-semibold">Quick Actions</h3>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <button
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', {
+                  detail: { tab: 'workers', openInvite: true },
+                }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
+            <div className="font-medium">Invite Worker</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Add a new team member</div>
+          </button>
+          <button
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', { detail: { tab: 'cafes' } }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
+            <div className="font-medium">Manage Cafes</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">View and edit cafes</div>
+          </button>
+          <button
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', { detail: { tab: 'activity-logs' } }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
+            <div className="font-medium">View Activity Logs</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Check recent activities</div>
+          </button>
+          <button
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', { detail: { tab: 'workers' } }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
+            <div className="font-medium">Manage Workers</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">View and edit team</div>
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }

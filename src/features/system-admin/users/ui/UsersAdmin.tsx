@@ -10,6 +10,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 
 type UserFormState = {
   firstName: string;
@@ -148,7 +149,11 @@ export function UsersAdmin() {
       {
         key: 'balance',
         header: 'Balance',
-        render: (u) => <span className="font-mono">{Number(u.balance).toFixed(2)} BYN</span>,
+        render: (u) => (
+          <span className="font-mono">
+            <MoneyAmount value={u.balance} />
+          </span>
+        ),
       },
       {
         key: 'deleted',
@@ -302,7 +307,9 @@ export function UsersAdmin() {
               </div>
               <div>
                 <span className="text-[rgb(var(--tc-muted))]">Current Balance:</span>{' '}
-                <span className="font-mono">{Number(editingUser.balance).toFixed(2)} BYN</span>
+                <span className="font-mono">
+                  <MoneyAmount value={editingUser.balance} />
+                </span>
               </div>
             </div>
           )}

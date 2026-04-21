@@ -12,7 +12,13 @@ import { InviteWorkerModal, type InviteFormData } from './InviteWorkerModal';
 import { EditWorkerModal, type EditFormData } from './EditWorkerModal';
 import { getCafes, type CafeListItem } from '../../cafes/api/cafes';
 
-export function WorkersTab() {
+export function WorkersTab({
+  initialOpenInvite = false,
+  onInviteHandled,
+}: {
+  initialOpenInvite?: boolean;
+  onInviteHandled?: () => void;
+}) {
   const [workers, setWorkers] = useState<WorkerProfile[]>([]);
   const [cafes, setCafes] = useState<CafeListItem[]>([]);
   const [currentUser, setCurrentUser] = useState<WorkerProfile | null>(null);
@@ -35,6 +41,13 @@ export function WorkersTab() {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    if (initialOpenInvite) {
+      setInviteOpen(true);
+      onInviteHandled?.();
+    }
+  }, [initialOpenInvite, onInviteHandled]);
 
   // Callback для переключения на таб Activity Logs
   const onViewLogs = (workerId: string) => {

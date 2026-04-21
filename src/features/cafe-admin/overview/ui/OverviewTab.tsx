@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import { getMyCafe } from '../../cafe/api/cafe-api';
 import type { Cafe } from '../../cafe/types/cafe.types';
+
+function switchTab(tab: string, extra?: Record<string, unknown>) {
+  window.dispatchEvent(new CustomEvent('cafeAdminSwitchTab', { detail: { tab, ...extra } }));
+}
 
 interface OverviewStats {
   activeWorkers: number;
@@ -59,17 +64,10 @@ export function OverviewTab() {
                 <span>
                   📍 {cafe.address}, {cafe.city}
                 </span>
-                <span>📞 {cafe.phone}</span>
-                <span>✉️ {cafe.email}</span>
-              </div>
-              <div className="mt-2">
-                <span
-                  className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                    cafe.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {cafe.isActive ? '✓ Active' : '✗ Inactive'}
-                </span>
+                <span>⭐ {cafe.rating.toFixed(1)}</span>
+                <span>🧾 {cafe.reviewsCount} reviews</span>
+                {cafe.regionName ? <span>🗺️ {cafe.regionName}</span> : null}
+                {cafe.cafeApiUrl ? <span>🔗 API connected</span> : null}
               </div>
             </div>
           </div>
@@ -107,7 +105,9 @@ export function OverviewTab() {
 
         <Card className="p-6">
           <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">Revenue Today</div>
-          <div className="mt-2 text-2xl font-bold">$0</div>
+          <div className="mt-2 text-2xl font-bold">
+            <MoneyAmount value={0} iconClassName="h-[1.15em] w-[0.95em]" />
+          </div>
           <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">Coming soon</div>
         </Card>
       </div>
@@ -116,19 +116,31 @@ export function OverviewTab() {
       <Card className="p-6">
         <h3 className="mb-4 text-lg font-semibold">Quick Actions</h3>
         <div className="grid gap-3 md:grid-cols-2">
-          <button className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]">
+          <button
+            onClick={() => switchTab('workers', { openInvite: true })}
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
             <div className="font-medium">Invite Worker</div>
             <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Add a new team member</div>
           </button>
-          <button className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]">
+          <button
+            onClick={() => switchTab('tasks', { openCreate: true })}
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
             <div className="font-medium">Create Task</div>
             <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Add a new task template</div>
           </button>
-          <button className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]">
+          <button
+            onClick={() => switchTab('activity-logs')}
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
             <div className="font-medium">View Activity Logs</div>
             <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Check recent activities</div>
           </button>
-          <button className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]">
+          <button
+            onClick={() => switchTab('workers')}
+            className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
+          >
             <div className="font-medium">Manage Workers</div>
             <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">View and edit team</div>
           </button>

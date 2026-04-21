@@ -10,6 +10,7 @@ import { Button } from '@/shared/ui/button/Button';
 import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import { getCafeOrder, listCafeOrders, updateOrderStatus } from '../api/orders';
 
 const statuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
@@ -168,7 +169,11 @@ export function OrdersAdmin() {
       {
         key: 'sum',
         header: 'Total',
-        render: (o) => <span className="font-mono text-xs">{o.totalAmount}</span>,
+        render: (o) => (
+          <span className="font-mono text-xs">
+            <MoneyAmount value={o.totalAmount} iconClassName="h-[0.95em] w-[0.78em]" />
+          </span>
+        ),
       },
       {
         key: 'pm',
@@ -352,6 +357,15 @@ export function OrdersAdmin() {
                     <span className="font-mono">{details.status}</span>
                   </div>
                   <div>
+                    <span className="text-[rgb(var(--tc-muted))]">totalAmount:</span>{' '}
+                    <span className="font-mono">
+                      <MoneyAmount
+                        value={details.totalAmount}
+                        iconClassName="h-[0.95em] w-[0.78em]"
+                      />
+                    </span>
+                  </div>
+                  <div>
                     <span className="text-[rgb(var(--tc-muted))]">userId:</span>{' '}
                     <span className="font-mono">{details.userId}</span>
                   </div>
@@ -397,8 +411,18 @@ export function OrdersAdmin() {
                         >
                           <td className="px-4 py-3">{it.itemName}</td>
                           <td className="px-4 py-3 font-mono text-xs">{it.quantity}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{it.unitPrice}</td>
-                          <td className="px-4 py-3 font-mono text-xs">{it.totalPrice}</td>
+                          <td className="px-4 py-3 font-mono text-xs">
+                            <MoneyAmount
+                              value={it.unitPrice}
+                              iconClassName="h-[0.9em] w-[0.75em]"
+                            />
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs">
+                            <MoneyAmount
+                              value={it.totalPrice}
+                              iconClassName="h-[0.9em] w-[0.75em]"
+                            />
+                          </td>
                           <td className="px-4 py-3 text-xs text-[rgb(var(--tc-muted))]">
                             {it.notes ?? '-'}
                           </td>

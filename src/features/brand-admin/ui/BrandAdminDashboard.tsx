@@ -9,10 +9,15 @@ import { ApiKeysTab } from '../api-keys/ui/ApiKeysTab';
 import { SettingsTab } from '../settings/ui/SettingsTab';
 import { AnalyticsTab } from '../analytics/ui/AnalyticsTab';
 import { ActivityLogsTab } from '../activity-logs/ui/ActivityLogsTab';
+import { BrandMenuTab } from '../menu/ui/BrandMenuTab';
+import { ChatsTab } from '@/features/chats/ui/ChatsTab';
+import { chatsApi } from '@/features/chats/api/chats-api';
 
 type TabId =
   | 'overview'
   | 'cafes'
+  | 'menu'
+  | 'chats'
   | 'documents'
   | 'workers'
   | 'api-keys'
@@ -23,6 +28,8 @@ type TabId =
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'cafes', label: 'Cafes' },
+  { id: 'menu', label: 'Menu' },
+  { id: 'chats', label: 'Chats' },
   { id: 'documents', label: 'Documents' },
   { id: 'workers', label: 'Workers' },
   { id: 'api-keys', label: 'API Keys' },
@@ -34,9 +41,10 @@ const TABS: { id: TabId; label: string }[] = [
 export function BrandAdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [brandId, setBrandId] = useState<string | null>(null);
+  const [workersOpenInvite, setWorkersOpenInvite] = useState(false);
+  const [unreadChatsCount, setUnreadChatsCount] = useState(0);
 
   useEffect(() => {
-    // Get current user to extract brandId
     const fetchBrandId = async () => {
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' });
@@ -51,19 +59,40 @@ export function BrandAdminDashboard() {
 
     fetchBrandId();
 
-    // Listen for tab switch events from Workers tab
     const handleSwitchToActivityLogs = () => {
       setActiveTab('activity-logs');
     };
 
+    const handleSwitchTab = (e: CustomEvent<{ tab: string; openInvite?: boolean }>) => {
+      const { tab, openInvite } = e.detail;
+      setActiveTab(tab as TabId);
+      if (openInvite) setWorkersOpenInvite(true);
+    };
+
     window.addEventListener('switchToActivityLogs', handleSwitchToActivityLogs as EventListener);
+    window.addEventListener('brandAdminSwitchTab', handleSwitchTab as EventListener);
 
     return () => {
       window.removeEventListener(
         'switchToActivityLogs',
         handleSwitchToActivityLogs as EventListener,
       );
+      window.removeEventListener('brandAdminSwitchTab', handleSwitchTab as EventListener);
     };
+  }, []);
+
+  useEffect(() => {
+    const refreshUnread = async () => {
+      try {
+        const data = await chatsApi.list({ unreadOnly: true, limit: 1 });
+        setUnreadChatsCount(data.total || 0);
+      } catch {
+        // noop
+      }
+    };
+    void refreshUnread();
+    const timer = setInterval(() => void refreshUnread(), 15000);
+    return () => clearInterval(timer);
   }, []);
 
   const renderTab = () => {
@@ -72,10 +101,19 @@ export function BrandAdminDashboard() {
         return <BrandOverviewTab />;
       case 'cafes':
         return <CafesTab />;
+      case 'menu':
+        return <BrandMenuTab />;
+      case 'chats':
+        return <ChatsTab />;
       case 'documents':
         return <DocumentsTab />;
       case 'workers':
-        return <WorkersTab />;
+        return (
+          <WorkersTab
+            initialOpenInvite={workersOpenInvite}
+            onInviteHandled={() => setWorkersOpenInvite(false)}
+          />
+        );
       case 'api-keys':
         return brandId ? (
           <ApiKeysTab brandId={brandId} />
@@ -108,7 +146,9 @@ export function BrandAdminDashboard() {
                   : 'text-[rgb(var(--tc-muted))] hover:text-[rgb(var(--tc-fg))]'
               }`}
             >
-              {tab.label}
+              {tab.id === 'chats' && unreadChatsCount > 0
+                ? `${tab.label} (${unreadChatsCount})`
+                : tab.label}
             </button>
           ))}
         </div>

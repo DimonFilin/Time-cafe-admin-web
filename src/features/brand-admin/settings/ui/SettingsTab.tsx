@@ -73,14 +73,14 @@ export function SettingsTab() {
       }
 
       // Load banner signed URL if exists
-      if (brand?.bannerImage || brand?.banner) {
+      if (brand?.bannerImage) {
         try {
           const bannerRes = await getBannerSignedUrl(brandId);
           setBannerSignedUrl(bannerRes.url);
         } catch (e) {
           console.warn('Failed to get signed banner URL:', e);
           // Fallback to original URL
-          setBannerSignedUrl(brand?.bannerImage || brand?.banner || null);
+          setBannerSignedUrl(brand?.bannerImage || null);
         }
       } else {
         setBannerSignedUrl(null);

@@ -9,8 +9,7 @@ export interface BrandSettings {
   website?: string;
   description?: string;
   logo?: string;
-  banner?: string;
-  bannerImage?: string; // Backend returns 'bannerImage' on banner upload
+  bannerImage?: string;
   primaryColor?: string;
   secondaryColor?: string;
   accentColor?: string;
@@ -48,7 +47,11 @@ export async function getBrandSettings(): Promise<BrandSettings> {
     throw new Error(text || `${res.status} ${res.statusText}`);
   }
 
-  return res.json();
+  const data = (await res.json()) as BrandSettings & { banner?: string };
+  return {
+    ...data,
+    bannerImage: data.bannerImage || data.banner,
+  };
 }
 
 export async function updateBrandSettings(
@@ -72,7 +75,11 @@ export async function updateBrandSettings(
     throw new Error(errorMessage);
   }
 
-  return res.json();
+  const data = (await res.json()) as BrandSettings & { banner?: string };
+  return {
+    ...data,
+    bannerImage: data.bannerImage || data.banner,
+  };
 }
 
 export async function uploadBrandLogo(file: File): Promise<{ logo: string }> {

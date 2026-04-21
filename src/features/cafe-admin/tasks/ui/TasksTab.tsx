@@ -8,7 +8,13 @@ import type { TaskTemplate } from '../types/tasks.types';
 import { CreateTaskModal } from './CreateTaskModal';
 import { EditTaskModal } from './EditTaskModal';
 
-export function TasksTab() {
+export function TasksTab({
+  initialOpenCreate = false,
+  onCreateHandled,
+}: {
+  initialOpenCreate?: boolean;
+  onCreateHandled?: () => void;
+}) {
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +23,13 @@ export function TasksTab() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editTemplate, setEditTemplate] = useState<TaskTemplate | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (initialOpenCreate) {
+      setCreateModalOpen(true);
+      onCreateHandled?.();
+    }
+  }, [initialOpenCreate, onCreateHandled]);
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true);

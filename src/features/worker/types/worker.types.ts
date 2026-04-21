@@ -1,5 +1,6 @@
 export interface WorkerWithRelations {
   id: string;
+  email?: string;
   firstName: string;
   lastName: string;
   cafeId: string | null;

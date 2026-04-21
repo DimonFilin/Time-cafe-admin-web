@@ -7,14 +7,17 @@ import { OrdersTab } from '../orders/ui/OrdersTab';
 import { AppointmentsTab } from '../appointments/ui/AppointmentsTab';
 import { TasksTab } from '../tasks/ui/TasksTab';
 import { ProfileTab } from '../profile/ui/ProfileTab';
+import { ChatsTab } from '@/features/chats/ui/ChatsTab';
+import { chatsApi } from '@/features/chats/api/chats-api';
 
-type Tab = 'orders' | 'appointments' | 'tasks' | 'profile';
+type Tab = 'orders' | 'appointments' | 'tasks' | 'chats' | 'profile';
 
 export function WorkerDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
   const [worker, setWorker] = useState<WorkerWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [unreadChatsCount, setUnreadChatsCount] = useState(0);
 
   useEffect(() => {
     const fetchWorker = async () => {
@@ -29,6 +32,20 @@ export function WorkerDashboard() {
     };
 
     fetchWorker();
+  }, []);
+
+  useEffect(() => {
+    const refreshUnread = async () => {
+      try {
+        const data = await chatsApi.list({ unreadOnly: true, limit: 1 });
+        setUnreadChatsCount(data.total || 0);
+      } catch {
+        // noop
+      }
+    };
+    void refreshUnread();
+    const timer = setInterval(() => void refreshUnread(), 15000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleShiftToggle = async () => {
@@ -52,6 +69,11 @@ export function WorkerDashboard() {
     { id: 'orders' as Tab, label: 'Заказы', icon: '📦' },
     { id: 'appointments' as Tab, label: 'Бронирования', icon: '📅' },
     { id: 'tasks' as Tab, label: 'Задачи', icon: '✓' },
+    {
+      id: 'chats' as Tab,
+      label: unreadChatsCount > 0 ? `Чаты (${unreadChatsCount})` : 'Чаты',
+      icon: '💬',
+    },
     { id: 'profile' as Tab, label: 'Профиль', icon: '👤' },
   ];
 
@@ -191,6 +213,7 @@ export function WorkerDashboard() {
           {activeTab === 'orders' && <OrdersTab cafeId={worker.cafeId} />}
           {activeTab === 'appointments' && <AppointmentsTab cafeId={worker.cafeId} />}
           {activeTab === 'tasks' && <TasksTab />}
+          {activeTab === 'chats' && <ChatsTab />}
           {activeTab === 'profile' && <ProfileTab worker={worker} />}
         </div>
       </main>

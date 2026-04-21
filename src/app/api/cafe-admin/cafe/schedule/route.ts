@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';

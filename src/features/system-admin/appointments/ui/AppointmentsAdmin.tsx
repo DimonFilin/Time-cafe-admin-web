@@ -11,6 +11,7 @@ import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { DataTable } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import { confirmAppointment, getCafeAppointment, listCafeAppointments } from '../api/appointments';
 
 const statuses: AppointmentStatus[] = ['pending', 'confirmed', 'cancelled', 'completed'];
@@ -166,7 +167,14 @@ export function AppointmentsAdmin() {
       {
         key: 'sum',
         header: 'Total',
-        render: (a) => <span className="font-mono text-xs">{a.totalAmount ?? '-'}</span>,
+        render: (a) =>
+          a.totalAmount != null && a.totalAmount !== '' ? (
+            <span className="font-mono text-xs">
+              <MoneyAmount value={a.totalAmount} iconClassName="h-[0.95em] w-[0.78em]" />
+            </span>
+          ) : (
+            <span className="font-mono text-xs">-</span>
+          ),
       },
       {
         key: 'pm',
@@ -365,9 +373,14 @@ export function AppointmentsAdmin() {
                   </div>
                 )}
                 {details.totalAmount && (
-                  <div>
+                  <div className="flex flex-wrap items-center gap-1">
                     <span className="text-[rgb(var(--tc-muted))]">totalAmount:</span>{' '}
-                    <span className="font-mono">{details.totalAmount}</span>
+                    <span className="font-mono">
+                      <MoneyAmount
+                        value={details.totalAmount}
+                        iconClassName="h-[0.95em] w-[0.78em]"
+                      />
+                    </span>
                   </div>
                 )}
                 {details.paymentMethod && (

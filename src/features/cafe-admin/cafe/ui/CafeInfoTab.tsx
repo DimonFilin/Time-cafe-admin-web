@@ -1,10 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getMyCafe } from '../api/cafe-api';
+import { getMyCafe, updateMyCafe } from '../api/cafe-api';
 import { Cafe } from '../types/cafe.types';
 import { EditCafeModal } from './EditCafeModal';
 import { EditScheduleModal } from './EditScheduleModal';
+import { Card } from '@/shared/ui/card/Card';
+import { Button } from '@/shared/ui/button/Button';
+import { SCHEDULE_DAYS, SCHEDULE_DAY_LABELS } from '../lib/schedule-map';
+
+function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs font-medium text-[rgb(var(--tc-muted))]">{label}</div>
+      <div className="mt-1 text-sm text-[rgb(var(--tc-fg))]">{children}</div>
+    </div>
+  );
+}
 
 export function CafeInfoTab() {
   const [cafe, setCafe] = useState<Cafe | null>(null);
@@ -12,6 +24,7 @@ export function CafeInfoTab() {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [savingChatSettings, setSavingChatSettings] = useState(false);
 
   const loadCafe = async () => {
     try {
@@ -32,282 +45,226 @@ export function CafeInfoTab() {
 
   if (loading) {
     return (
-      <div className="cafe-info-loading">
-        <div className="spinner"></div>
-        <p>Loading cafe information...</p>
+      <div className="flex items-center justify-center p-12">
+        <div className="text-sm text-[rgb(var(--tc-muted))]">Loading cafe information…</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="cafe-info-error">
-        <p className="error-message">{error}</p>
-        <button onClick={loadCafe} className="btn-retry">
+      <Card className="p-8 text-center">
+        <p className="text-sm text-red-600">{error}</p>
+        <Button type="button" variant="secondary" className="mt-4" onClick={loadCafe}>
           Retry
-        </button>
-      </div>
+        </Button>
+      </Card>
     );
   }
 
   if (!cafe) {
     return (
-      <div className="cafe-info-empty">
-        <p>No cafe information found</p>
-      </div>
+      <Card className="p-8 text-center">
+        <p className="text-sm text-[rgb(var(--tc-muted))]">No cafe information found</p>
+      </Card>
     );
   }
 
+  const brandLabel = cafe.brandName?.trim() || cafe.brandId;
+  const regionLabel = cafe.regionName?.trim() || cafe.regionId;
+  const savedSchedule = cafe.schedule;
+  const chatSettings = cafe.chatSettings;
+
+  const saveChatSettings = async (payload: {
+    chatEnabled?: boolean;
+    chatNotificationMode?: 'ALL_WORKERS' | 'ROLE_BASED' | 'SPECIFIC_WORKERS';
+    chatThemePrimaryColor?: string;
+  }) => {
+    try {
+      setSavingChatSettings(true);
+      await updateMyCafe(payload);
+      await loadCafe();
+    } finally {
+      setSavingChatSettings(false);
+    }
+  };
+
   return (
-    <div className="cafe-info-tab">
-      <div className="cafe-info-header">
-        <h2>Cafe Information</h2>
-        <div className="header-actions">
-          <button onClick={() => setIsScheduleModalOpen(true)} className="btn-secondary">
-            Edit Schedule
-          </button>
-          <button onClick={() => setIsEditModalOpen(true)} className="btn-primary">
-            Edit Information
-          </button>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">Cafe information</h2>
+        <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+          Update your venue details and hours. Visual theme (colors, banner, typography) is managed
+          under <span className="font-medium text-[rgb(var(--tc-fg))]">Brand admin</span> for your
+          brand — this screen is for operational and location data only.
+        </p>
       </div>
 
-      <div className="cafe-info-content">
-        <div className="info-section">
-          <h3>Basic Information</h3>
-          <div className="info-grid">
-            <div className="info-item">
-              <label>Name</label>
-              <p>{cafe.name}</p>
-            </div>
-            <div className="info-item">
-              <label>Status</label>
-              <p>
-                <span className={`status-badge ${cafe.isActive ? 'active' : 'inactive'}`}>
-                  {cafe.isActive ? 'Active' : 'Inactive'}
-                </span>
-              </p>
-            </div>
+      <Card className="p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">{cafe.name}</h3>
+            <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {cafe.address}, {cafe.city}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" onClick={() => setIsScheduleModalOpen(true)}>
+              Edit schedule
+            </Button>
+            <Button type="button" variant="primary" onClick={() => setIsEditModalOpen(true)}>
+              Edit information
+            </Button>
           </div>
         </div>
+      </Card>
 
-        <div className="info-section">
-          <h3>Contact Information</h3>
-          <div className="info-grid">
-            <div className="info-item">
-              <label>Phone</label>
-              <p>{cafe.phone}</p>
+      <Card className="p-6">
+        <h3 className="mb-4 text-base font-semibold">Basic information</h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <InfoField label="Name">{cafe.name}</InfoField>
+          <InfoField label="Brand">{brandLabel}</InfoField>
+          <InfoField label="Region">{regionLabel}</InfoField>
+          <InfoField label="Rating">
+            {cafe.rating.toFixed(1)} ({cafe.reviewsCount})
+          </InfoField>
+          {cafe.description ? (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <InfoField label="Description">{cafe.description}</InfoField>
             </div>
-            <div className="info-item">
-              <label>Email</label>
-              <p>{cafe.email}</p>
-            </div>
-          </div>
+          ) : null}
         </div>
+      </Card>
 
-        <div className="info-section">
-          <h3>Address</h3>
-          <div className="info-grid">
-            <div className="info-item">
-              <label>Street Address</label>
-              <p>{cafe.address}</p>
-            </div>
-            <div className="info-item">
-              <label>City</label>
-              <p>{cafe.city}</p>
-            </div>
-            <div className="info-item">
-              <label>Postal Code</label>
-              <p>{cafe.postalCode}</p>
-            </div>
-            {cafe.latitude && cafe.longitude && (
-              <div className="info-item">
-                <label>Coordinates</label>
-                <p>
-                  {cafe.latitude.toFixed(6)}, {cafe.longitude.toFixed(6)}
-                </p>
-              </div>
-            )}
-          </div>
+      <Card className="p-6">
+        <h3 className="mb-4 text-base font-semibold">Opening hours</h3>
+        {savedSchedule ? (
+          <ul className="divide-y divide-[rgb(var(--tc-border))] rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] text-sm">
+            {SCHEDULE_DAYS.map((day) => {
+              const d = savedSchedule[day];
+              return (
+                <li
+                  key={day}
+                  className="flex items-center justify-between gap-4 px-4 py-2.5 first:rounded-t-xl last:rounded-b-xl"
+                >
+                  <span className="font-medium text-[rgb(var(--tc-fg))]">
+                    {SCHEDULE_DAY_LABELS[day]}
+                  </span>
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {d.isClosed ? 'Closed' : `${d.open} – ${d.close}`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-[rgb(var(--tc-muted))]">
+            No saved hours yet. Use &quot;Edit schedule&quot; to set weekly hours.
+          </p>
+        )}
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="mb-4 text-base font-semibold">Chat settings</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InfoField label="Chat status">
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                chatSettings?.enabled === false
+                  ? 'bg-red-100 text-red-700'
+                  : 'bg-green-100 text-green-700'
+              }`}
+            >
+              {chatSettings?.enabled === false ? 'Disabled' : 'Enabled'}
+            </span>
+          </InfoField>
+          <InfoField label="Notification mode">
+            {chatSettings?.notificationMode || 'ALL_WORKERS'}
+          </InfoField>
+          <InfoField label="Theme primary color">
+            {chatSettings?.theme?.primaryColor || 'Brand/Cafe default'}
+          </InfoField>
         </div>
-      </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={savingChatSettings}
+            onClick={() =>
+              void saveChatSettings({
+                chatEnabled: !(chatSettings?.enabled ?? true),
+              })
+            }
+          >
+            {chatSettings?.enabled === false ? 'Enable chat' : 'Disable chat'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={savingChatSettings}
+            onClick={() =>
+              void saveChatSettings({
+                chatNotificationMode:
+                  chatSettings?.notificationMode === 'ROLE_BASED' ? 'ALL_WORKERS' : 'ROLE_BASED',
+              })
+            }
+          >
+            Toggle role-based notifications
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={savingChatSettings}
+            onClick={() =>
+              void saveChatSettings({
+                chatThemePrimaryColor:
+                  chatSettings?.theme?.primaryColor === '#22c55e' ? '' : '#22c55e',
+              })
+            }
+          >
+            Toggle green chat accent
+          </Button>
+        </div>
+      </Card>
 
-      {isEditModalOpen && (
-        <EditCafeModal
-          cafe={cafe}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={() => {
-            setIsEditModalOpen(false);
-            loadCafe();
-          }}
-        />
-      )}
+      <Card className="p-6">
+        <h3 className="mb-4 text-base font-semibold">Address &amp; integration</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InfoField label="Street address">{cafe.address}</InfoField>
+          <InfoField label="City">{cafe.city}</InfoField>
+          {cafe.street ? <InfoField label="Street (line 2)">{cafe.street}</InfoField> : null}
+          {typeof cafe.latitude === 'number' && typeof cafe.longitude === 'number' ? (
+            <InfoField label="Coordinates">
+              {cafe.latitude.toFixed(6)}, {cafe.longitude.toFixed(6)}
+            </InfoField>
+          ) : null}
+          {cafe.cafeApiUrl ? (
+            <div className="sm:col-span-2">
+              <InfoField label="Cafe API URL">{cafe.cafeApiUrl}</InfoField>
+            </div>
+          ) : null}
+        </div>
+      </Card>
 
-      {isScheduleModalOpen && (
-        <EditScheduleModal
-          cafeId={cafe.id}
-          onClose={() => setIsScheduleModalOpen(false)}
-          onSuccess={() => {
-            setIsScheduleModalOpen(false);
-            loadCafe();
-          }}
-        />
-      )}
+      <EditCafeModal
+        open={isEditModalOpen}
+        cafe={cafe}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={() => {
+          setIsEditModalOpen(false);
+          loadCafe();
+        }}
+      />
 
-      <style jsx>{`
-        .cafe-info-tab {
-          padding: var(--tc-spacing-6);
-        }
-
-        .cafe-info-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: var(--tc-spacing-6);
-        }
-
-        .cafe-info-header h2 {
-          font-size: var(--tc-font-size-2xl);
-          font-weight: var(--tc-font-weight-semibold);
-          color: var(--tc-text-primary);
-          margin: 0;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: var(--tc-spacing-3);
-        }
-
-        .cafe-info-content {
-          display: flex;
-          flex-direction: column;
-          gap: var(--tc-spacing-6);
-        }
-
-        .info-section {
-          background: var(--tc-bg-secondary);
-          border: 1px solid var(--tc-border-primary);
-          border-radius: var(--tc-radius-lg);
-          padding: var(--tc-spacing-5);
-        }
-
-        .info-section h3 {
-          font-size: var(--tc-font-size-lg);
-          font-weight: var(--tc-font-weight-semibold);
-          color: var(--tc-text-primary);
-          margin: 0 0 var(--tc-spacing-4) 0;
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: var(--tc-spacing-4);
-        }
-
-        .info-item label {
-          display: block;
-          font-size: var(--tc-font-size-sm);
-          font-weight: var(--tc-font-weight-medium);
-          color: var(--tc-text-secondary);
-          margin-bottom: var(--tc-spacing-1);
-        }
-
-        .info-item p {
-          font-size: var(--tc-font-size-base);
-          color: var(--tc-text-primary);
-          margin: 0;
-        }
-
-        .status-badge {
-          display: inline-block;
-          padding: var(--tc-spacing-1) var(--tc-spacing-3);
-          border-radius: var(--tc-radius-full);
-          font-size: var(--tc-font-size-sm);
-          font-weight: var(--tc-font-weight-medium);
-        }
-
-        .status-badge.active {
-          background: var(--tc-success-bg);
-          color: var(--tc-success-text);
-        }
-
-        .status-badge.inactive {
-          background: var(--tc-error-bg);
-          color: var(--tc-error-text);
-        }
-
-        .cafe-info-loading,
-        .cafe-info-error,
-        .cafe-info-empty {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: var(--tc-spacing-12);
-          text-align: center;
-        }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid var(--tc-border-primary);
-          border-top-color: var(--tc-primary);
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-          margin-bottom: var(--tc-spacing-4);
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .error-message {
-          color: var(--tc-error-text);
-          margin-bottom: var(--tc-spacing-4);
-        }
-
-        .btn-primary,
-        .btn-secondary,
-        .btn-retry {
-          padding: var(--tc-spacing-2) var(--tc-spacing-4);
-          border-radius: var(--tc-radius-md);
-          font-size: var(--tc-font-size-sm);
-          font-weight: var(--tc-font-weight-medium);
-          cursor: pointer;
-          transition: all 0.2s;
-          border: none;
-        }
-
-        .btn-primary {
-          background: var(--tc-primary);
-          color: white;
-        }
-
-        .btn-primary:hover {
-          background: var(--tc-primary-hover);
-        }
-
-        .btn-secondary {
-          background: var(--tc-bg-tertiary);
-          color: var(--tc-text-primary);
-          border: 1px solid var(--tc-border-primary);
-        }
-
-        .btn-secondary:hover {
-          background: var(--tc-bg-hover);
-        }
-
-        .btn-retry {
-          background: var(--tc-primary);
-          color: white;
-        }
-
-        .btn-retry:hover {
-          background: var(--tc-primary-hover);
-        }
-      `}</style>
+      <EditScheduleModal
+        open={isScheduleModalOpen}
+        cafe={cafe}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onSuccess={() => {
+          setIsScheduleModalOpen(false);
+          loadCafe();
+        }}
+      />
     </div>
   );
 }

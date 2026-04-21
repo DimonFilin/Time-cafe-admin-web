@@ -23,9 +23,21 @@ export async function GET(req: Request) {
   const incomingCookieHeader = req.headers.get('cookie') ?? '';
 
   const accessToken = cookieStore.get('tc_access')?.value;
+  const refreshToken = cookieStore.get('tc_refresh')?.value;
 
-  if (!accessToken) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  let currentAccessToken = accessToken;
+  if (!currentAccessToken && refreshToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      currentAccessToken = refreshed.accessToken;
+    }
+  }
+
+  if (!currentAccessToken) {
+    return NextResponse.json(
+      { message: 'Unauthorized', code: 'AUTH_RELOGIN_REQUIRED' },
+      { status: 401 },
+    );
   }
 
   let response: Response;
@@ -33,7 +45,7 @@ export async function GET(req: Request) {
     response = await fetch(`${env.backendUrl}/auth/me`, {
       method: 'GET',
       headers: {
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Bearer ${currentAccessToken}`,
         cookie: incomingCookieHeader,
       },
       cache: 'no-store',
@@ -104,10 +116,9 @@ export async function GET(req: Request) {
       },
     });
 
-    // Clear auth cookies
+    // Clear auth cookies but keep selected account id, so UX can relogin without reselecting account.
     errorResponse.cookies.delete('tc_access');
     errorResponse.cookies.delete('tc_refresh');
-    errorResponse.cookies.delete('tc_account_id');
 
     return errorResponse;
   }

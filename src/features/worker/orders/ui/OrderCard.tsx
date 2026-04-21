@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Order } from '../types/orders.types';
 import { Button } from '@/shared/ui/button/Button';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 
 interface OrderCardProps {
   order: Order;
@@ -72,7 +73,9 @@ export function OrderCard({
           </p>
         </div>
         <div className="text-right">
-          <div className="text-xl font-bold">{order.totalAmount}₽</div>
+          <div className="text-xl font-bold">
+            <MoneyAmount value={order.totalAmount} iconClassName="h-[1.1em] w-[0.9em]" />
+          </div>
           <div className="text-xs text-[rgb(var(--tc-muted))]">
             {order.items.length} {order.items.length === 1 ? 'позиция' : 'позиций'}
           </div>
@@ -86,7 +89,9 @@ export function OrderCard({
             <span className="text-[rgb(var(--tc-muted))]">
               {item.quantity}x {item.itemName}
             </span>
-            <span>{item.totalPrice}₽</span>
+            <span>
+              <MoneyAmount value={item.totalPrice} />
+            </span>
           </div>
         ))}
         {order.items.length > 2 && !isExpanded && (

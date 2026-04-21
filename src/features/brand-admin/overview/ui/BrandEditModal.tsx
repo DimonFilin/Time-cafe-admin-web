@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
+import type { UpdateBrandSettingsRequest } from '../../settings/api/settings';
 
 interface Brand {
   id: string;
@@ -14,6 +15,11 @@ interface Brand {
   description?: string;
   logo?: string;
   primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fontFamily?: string;
   status: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED';
   isVerified: boolean;
 }
@@ -22,11 +28,25 @@ interface BrandEditModalProps {
   brand: Brand;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedBrand: Partial<Brand>) => Promise<void>;
+  onSave: (updatedBrand: UpdateBrandSettingsRequest) => Promise<void>;
 }
 
+const COLOR_FIELDS: Array<{
+  name: keyof Pick<
+    UpdateBrandSettingsRequest,
+    'primaryColor' | 'secondaryColor' | 'accentColor' | 'backgroundColor' | 'textColor'
+  >;
+  label: string;
+}> = [
+  { name: 'primaryColor', label: 'Primary Color' },
+  { name: 'secondaryColor', label: 'Secondary Color' },
+  { name: 'accentColor', label: 'Accent Color' },
+  { name: 'backgroundColor', label: 'Background Color' },
+  { name: 'textColor', label: 'Text Color' },
+];
+
 export function BrandEditModal({ brand, isOpen, onClose, onSave }: BrandEditModalProps) {
-  const [formData, setFormData] = useState<Partial<Brand>>({
+  const [formData, setFormData] = useState<UpdateBrandSettingsRequest>({
     name: brand.name,
     email: brand.email,
     phone: brand.phone,
@@ -34,13 +54,20 @@ export function BrandEditModal({ brand, isOpen, onClose, onSave }: BrandEditModa
     address: brand.address,
     description: brand.description,
     primaryColor: brand.primaryColor,
+    secondaryColor: brand.secondaryColor,
+    accentColor: brand.accentColor,
+    backgroundColor: brand.backgroundColor,
+    textColor: brand.textColor,
+    fontFamily: brand.fontFamily,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -146,19 +173,44 @@ export function BrandEditModal({ brand, isOpen, onClose, onSave }: BrandEditModa
             />
           </div>
 
-          {/* Primary Color */}
-          <div>
-            <label className="block text-sm font-medium">Primary Color</label>
-            <div className="mt-1 flex items-center gap-2">
-              <input
-                type="color"
-                name="primaryColor"
-                value={formData.primaryColor || '#000000'}
-                onChange={handleChange}
-                className="h-10 w-20 rounded-lg border border-[rgb(var(--tc-border))]"
-              />
-              <code className="text-xs text-[rgb(var(--tc-muted))]">{formData.primaryColor}</code>
+          <div className="space-y-3">
+            <label className="block text-sm font-medium">Brand Colors</label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {COLOR_FIELDS.map(({ name, label }) => (
+                <div key={name}>
+                  <label className="block text-xs font-medium text-[rgb(var(--tc-muted))]">
+                    {label}
+                  </label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input
+                      type="color"
+                      name={name}
+                      value={formData[name] || '#000000'}
+                      onChange={handleChange}
+                      className="h-10 w-20 rounded-lg border border-[rgb(var(--tc-border))]"
+                    />
+                    <code className="text-xs text-[rgb(var(--tc-muted))]">
+                      {formData[name] || '#000000'}
+                    </code>
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium">Font Family</label>
+            <select
+              name="fontFamily"
+              value={formData.fontFamily || 'sans-serif'}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-lg border border-[rgb(var(--tc-border))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
+            >
+              <option value="sans-serif">Sans Serif</option>
+              <option value="serif">Serif</option>
+              <option value="monospace">Monospace</option>
+              <option value="cursive">Cursive</option>
+            </select>
           </div>
 
           {/* Actions */}

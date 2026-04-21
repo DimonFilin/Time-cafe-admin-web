@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
+import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import {
   getBrandStats,
   getBrandOrdersAnalytics,
@@ -104,7 +105,9 @@ export function AnalyticsTab() {
           <p className="text-sm text-[rgb(var(--tc-muted))]">Total Orders</p>
         </Card>
         <Card className="p-4 text-center">
-          <h3 className="text-2xl font-bold">${stats?.totalRevenue?.toFixed(2) || '0.00'}</h3>
+          <h3 className="text-2xl font-bold">
+            <MoneyAmount value={stats?.totalRevenue ?? 0} iconClassName="h-[1.1em] w-[0.9em]" />
+          </h3>
           <p className="text-sm text-[rgb(var(--tc-muted))]">Total Revenue</p>
         </Card>
         <Card className="p-4 text-center">
@@ -128,7 +131,10 @@ export function AnalyticsTab() {
           <div>
             <p className="text-sm text-[rgb(var(--tc-muted))]">Period Revenue</p>
             <p className="text-xl font-semibold">
-              ${ordersAnalytics?.periodRevenue?.toFixed(2) || '0.00'}
+              <MoneyAmount
+                value={ordersAnalytics?.periodRevenue ?? 0}
+                iconClassName="h-[1em] w-[0.85em]"
+              />
             </p>
           </div>
         </div>
