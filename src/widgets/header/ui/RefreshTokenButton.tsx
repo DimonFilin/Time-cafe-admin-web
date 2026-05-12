@@ -26,13 +26,13 @@ export function RefreshTokenButton() {
       if (!res.ok) {
         const text = await res.text();
         console.error('[RefreshTokenButton] Refresh failed:', text);
-        setError(`Failed: ${res.status} - ${text}`);
+        setError(`Ошибка: ${res.status} - ${text}`);
         return;
       }
 
       const data = await res.json();
       console.log('[RefreshTokenButton] Refresh successful:', data);
-      setMessage(`Success! Expires in ${data.expiresIn}s`);
+      setMessage(`Успешно! Истекает через ${data.expiresIn}с`);
 
       // Check cookies after refresh
       setTimeout(() => {
@@ -60,7 +60,7 @@ export function RefreshTokenButton() {
         className="rounded-lg px-3 py-2 text-xs hover:bg-[rgb(var(--tc-surface-2))] hover:text-[rgb(var(--tc-fg))] disabled:opacity-50"
         type="button"
       >
-        {loading ? 'Refreshing...' : '🔄 Refresh Token'}
+        {loading ? 'Обновление...' : '🔄 Обновить токен'}
       </button>
       {message && <span className="text-xs text-green-600 dark:text-green-400">{message}</span>}
       {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}

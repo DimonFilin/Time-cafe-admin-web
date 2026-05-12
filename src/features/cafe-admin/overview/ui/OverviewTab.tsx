@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 import { getMyCafe } from '../../cafe/api/cafe-api';
 import type { Cafe } from '../../cafe/types/cafe.types';
 
@@ -47,7 +48,7 @@ export function OverviewTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-[rgb(var(--tc-muted))]">Loading...</div>
+        <div className="text-[rgb(var(--tc-muted))]">{t('common.loading')}</div>
       </div>
     );
   }
@@ -65,9 +66,11 @@ export function OverviewTab() {
                   📍 {cafe.address}, {cafe.city}
                 </span>
                 <span>⭐ {cafe.rating.toFixed(1)}</span>
-                <span>🧾 {cafe.reviewsCount} reviews</span>
+                <span>
+                  🧾 {cafe.reviewsCount} {t('cafeAdmin.overview.reviews')}
+                </span>
                 {cafe.regionName ? <span>🗺️ {cafe.regionName}</span> : null}
-                {cafe.cafeApiUrl ? <span>🔗 API connected</span> : null}
+                {cafe.cafeApiUrl ? <span>🔗 {t('cafeAdmin.overview.apiConnected')}</span> : null}
               </div>
             </div>
           </div>
@@ -75,74 +78,96 @@ export function OverviewTab() {
       )}
 
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Overview</h2>
-        <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Quick overview of your cafe</p>
+        <h2 className="text-xl font-semibold tracking-tight">{t('cafeAdmin.overview.title')}</h2>
+        <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+          {t('cafeAdmin.overview.subtitle')}
+        </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="p-6">
-          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">Active Workers</div>
+          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.overview.activeWorkers')}
+          </div>
           <div className="mt-2 text-2xl font-bold">{stats?.activeWorkers || 0}</div>
           <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            of {stats?.totalWorkers || 0} total
+            {t('cafeAdmin.overview.totalWorkers')}: {stats?.totalWorkers || 0}
           </div>
         </Card>
 
         <Card className="p-6">
-          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">Tasks Today</div>
+          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.overview.tasksToday')}
+          </div>
           <div className="mt-2 text-2xl font-bold">{stats?.tasksToday || 0}</div>
           <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            {stats?.completedTasks || 0} completed
+            {stats?.completedTasks || 0} {t('cafeAdmin.overview.completedTasks')}
           </div>
         </Card>
 
         <Card className="p-6">
-          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">Orders Today</div>
+          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.overview.ordersToday')}
+          </div>
           <div className="mt-2 text-2xl font-bold">0</div>
-          <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">Coming soon</div>
+          <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.overview.comingSoon')}
+          </div>
         </Card>
 
         <Card className="p-6">
-          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">Revenue Today</div>
+          <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.overview.revenueToday')}
+          </div>
           <div className="mt-2 text-2xl font-bold">
             <MoneyAmount value={0} iconClassName="h-[1.15em] w-[0.95em]" />
           </div>
-          <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">Coming soon</div>
+          <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.overview.comingSoon')}
+          </div>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <Card className="p-6">
-        <h3 className="mb-4 text-lg font-semibold">Quick Actions</h3>
+        <h3 className="mb-4 text-lg font-semibold">{t('cafeAdmin.overview.quickActions')}</h3>
         <div className="grid gap-3 md:grid-cols-2">
           <button
             onClick={() => switchTab('workers', { openInvite: true })}
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">Invite Worker</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Add a new team member</div>
+            <div className="font-medium">{t('cafeAdmin.overview.inviteWorker')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.overview.inviteWorkerDesc')}
+            </div>
           </button>
           <button
             onClick={() => switchTab('tasks', { openCreate: true })}
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">Create Task</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Add a new task template</div>
+            <div className="font-medium">{t('cafeAdmin.overview.createTask')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.overview.createTaskDesc')}
+            </div>
           </button>
           <button
             onClick={() => switchTab('activity-logs')}
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">View Activity Logs</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Check recent activities</div>
+            <div className="font-medium">{t('cafeAdmin.overview.viewActivityLogs')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.overview.viewActivityLogsDesc')}
+            </div>
           </button>
           <button
             onClick={() => switchTab('workers')}
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">Manage Workers</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">View and edit team</div>
+            <div className="font-medium">{t('cafeAdmin.overview.manageWorkers')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.overview.manageWorkersDesc')}
+            </div>
           </button>
         </div>
       </Card>

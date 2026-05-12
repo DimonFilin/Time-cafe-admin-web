@@ -12,6 +12,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 import { confirmAppointment, getCafeAppointment, listCafeAppointments } from '../api/appointments';
 
 const statuses: AppointmentStatus[] = ['pending', 'confirmed', 'cancelled', 'completed'];
@@ -142,31 +143,33 @@ export function AppointmentsAdmin() {
       },
       {
         key: 'dt',
-        header: 'DateTime',
+        header: t('systemAdmin.appointmentsManagement.dateTime'),
         render: (a) => (
           <div>
             <div className="font-medium">{new Date(a.dateTime).toLocaleString()}</div>
             <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-              duration: <span className="font-mono">{a.duration}</span> min
+              {t('systemAdmin.appointmentsManagement.duration')}:{' '}
+              <span className="font-mono">{a.duration}</span>{' '}
+              {t('systemAdmin.appointmentsManagement.min')}
             </div>
           </div>
         ),
       },
       {
         key: 'status',
-        header: 'Status',
+        header: t('common.status'),
         render: (a) => <span className="font-mono text-xs">{a.status}</span>,
       },
       {
         key: 'user',
-        header: 'UserId',
+        header: t('systemAdmin.appointmentsManagement.userId'),
         render: (a) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{a.userId}</span>
         ),
       },
       {
         key: 'sum',
-        header: 'Total',
+        header: t('orders.total'),
         render: (a) =>
           a.totalAmount != null && a.totalAmount !== '' ? (
             <span className="font-mono text-xs">
@@ -178,7 +181,7 @@ export function AppointmentsAdmin() {
       },
       {
         key: 'pm',
-        header: 'Pay',
+        header: t('orders.paymentMethod'),
         render: (a) => <span className="font-mono text-xs">{a.paymentMethod ?? '-'}</span>,
       },
       {
@@ -188,16 +191,20 @@ export function AppointmentsAdmin() {
         render: (a) => (
           <div className="flex justify-end gap-2">
             <Button variant="secondary" className="px-3 py-2" onClick={() => openDetails(a.id)}>
-              View
+              {t('common.view')}
             </Button>
             <Button
               variant="secondary"
               className="px-3 py-2"
               disabled={a.status !== 'pending'}
-              title={a.status !== 'pending' ? 'Confirm доступен только для pending' : undefined}
+              title={
+                a.status !== 'pending'
+                  ? t('systemAdmin.appointmentsManagement.confirmAvailable')
+                  : undefined
+              }
               onClick={() => openConfirm(a)}
             >
-              Confirm
+              {t('appointments.confirm')}
             </Button>
           </div>
         ),
@@ -210,22 +217,23 @@ export function AppointmentsAdmin() {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Appointments (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.appointmentsManagement.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Список берётся из `GET /appointments/cafe/:cafeId`. Confirm: `POST
-            /appointments/cafe/:appointmentId/confirm`.
+            {t('systemAdmin.appointmentsManagement.subtitle')}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" onClick={refreshCafes} disabled={cafesLoading}>
-            Refresh cafes
+            {t('systemAdmin.appointmentsManagement.refreshCafes')}
           </Button>
           <Button
             variant="secondary"
             onClick={refresh}
             disabled={isLoading || !filters.cafeId.trim()}
           >
-            Refresh appointments
+            {t('systemAdmin.appointmentsManagement.refreshAppointments')}
           </Button>
         </div>
       </div>
@@ -236,13 +244,15 @@ export function AppointmentsAdmin() {
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Cafe *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.appointmentsManagement.cafe')} *
+            </div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.cafeId}
               onChange={(e) => setFilters((s) => ({ ...s, cafeId: e.target.value }))}
             >
-              <option value="">Select cafe</option>
+              <option value="">{t('systemAdmin.appointmentsManagement.selectCafe')}</option>
               {cafes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.city})
@@ -251,7 +261,7 @@ export function AppointmentsAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Status</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.status')}</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.status}
@@ -259,7 +269,7 @@ export function AppointmentsAdmin() {
                 setFilters((s) => ({ ...s, status: e.target.value as '' | AppointmentStatus }))
               }
             >
-              <option value="">All</option>
+              <option value="">{t('common.all')}</option>
               {statuses.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -268,21 +278,25 @@ export function AppointmentsAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">From (ISO)</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.appointmentsManagement.fromIso')}
+            </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.from}
               onChange={(e) => setFilters((s) => ({ ...s, from: e.target.value }))}
-              placeholder="2025-01-01T00:00:00.000Z"
+              placeholder={t('systemAdmin.appointmentsManagement.fromPlaceholder')}
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">To (ISO)</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.appointmentsManagement.toIso')}
+            </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.to}
               onChange={(e) => setFilters((s) => ({ ...s, to: e.target.value }))}
-              placeholder="2025-01-31T23:59:59.999Z"
+              placeholder={t('systemAdmin.appointmentsManagement.toPlaceholder')}
             />
           </div>
         </div>
@@ -295,7 +309,7 @@ export function AppointmentsAdmin() {
             }}
             disabled={!filters.cafeId.trim()}
           >
-            Apply
+            {t('systemAdmin.cafes.apply')}
           </Button>
           <Button
             variant="secondary"
@@ -306,7 +320,7 @@ export function AppointmentsAdmin() {
               setTotal(0);
             }}
           >
-            Reset
+            {t('systemAdmin.cafes.reset')}
           </Button>
         </div>
       </Card>
@@ -329,7 +343,7 @@ export function AppointmentsAdmin() {
 
       <Modal
         open={detailsOpen}
-        title="Appointment details"
+        title={t('systemAdmin.appointmentsManagement.appointmentDetails')}
         onClose={() => setDetailsOpen(false)}
         size="2xl"
       >
@@ -338,7 +352,7 @@ export function AppointmentsAdmin() {
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{detailsError}</Card>
           )}
           {detailsLoading ? (
-            <div className="text-sm text-[rgb(var(--tc-muted))]">Загрузка...</div>
+            <div className="text-sm text-[rgb(var(--tc-muted))]">{t('common.loading')}</div>
           ) : details ? (
             <Card className="p-4">
               <div className="grid gap-2 text-sm">
@@ -347,34 +361,47 @@ export function AppointmentsAdmin() {
                   <span className="font-mono">{details.id}</span>
                 </div>
                 <div>
-                  <span className="text-[rgb(var(--tc-muted))]">status:</span>{' '}
+                  <span className="text-[rgb(var(--tc-muted))]">{t('common.status')}:</span>{' '}
                   <span className="font-mono">{details.status}</span>
                 </div>
                 <div>
-                  <span className="text-[rgb(var(--tc-muted))]">dateTime:</span>{' '}
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.appointmentsManagement.dateTime')}:
+                  </span>{' '}
                   <span className="font-mono">{details.dateTime}</span>
                 </div>
                 <div>
-                  <span className="text-[rgb(var(--tc-muted))]">duration:</span>{' '}
-                  <span className="font-mono">{details.duration}</span> min
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.appointmentsManagement.duration')}:
+                  </span>{' '}
+                  <span className="font-mono">{details.duration}</span>{' '}
+                  {t('systemAdmin.appointmentsManagement.min')}
                 </div>
                 <div>
-                  <span className="text-[rgb(var(--tc-muted))]">userId:</span>{' '}
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.appointmentsManagement.userId')}:
+                  </span>{' '}
                   <span className="font-mono">{details.userId}</span>
                 </div>
                 <div>
-                  <span className="text-[rgb(var(--tc-muted))]">cafeId:</span>{' '}
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.appointmentsManagement.cafeId')}:
+                  </span>{' '}
                   <span className="font-mono">{details.cafeId}</span>
                 </div>
                 {details.qrCode && (
                   <div>
-                    <span className="text-[rgb(var(--tc-muted))]">qrCode:</span>{' '}
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.appointmentsManagement.qrCode')}:
+                    </span>{' '}
                     <span className="font-mono">{details.qrCode}</span>
                   </div>
                 )}
                 {details.totalAmount && (
                   <div className="flex flex-wrap items-center gap-1">
-                    <span className="text-[rgb(var(--tc-muted))]">totalAmount:</span>{' '}
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.appointmentsManagement.totalAmount')}:
+                    </span>{' '}
                     <span className="font-mono">
                       <MoneyAmount
                         value={details.totalAmount}
@@ -385,40 +412,51 @@ export function AppointmentsAdmin() {
                 )}
                 {details.paymentMethod && (
                   <div>
-                    <span className="text-[rgb(var(--tc-muted))]">paymentMethod:</span>{' '}
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.appointmentsManagement.paymentMethod')}:
+                    </span>{' '}
                     <span className="font-mono">{details.paymentMethod}</span>
                   </div>
                 )}
                 {details.orderId && (
                   <div>
-                    <span className="text-[rgb(var(--tc-muted))]">orderId:</span>{' '}
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.appointmentsManagement.orderId')}:
+                    </span>{' '}
                     <span className="font-mono">{details.orderId}</span>
                   </div>
                 )}
                 {details.transactionId && (
                   <div>
-                    <span className="text-[rgb(var(--tc-muted))]">transactionId:</span>{' '}
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.appointmentsManagement.transactionId')}:
+                    </span>{' '}
                     <span className="font-mono">{details.transactionId}</span>
                   </div>
                 )}
                 {details.notes && (
                   <div>
-                    <span className="text-[rgb(var(--tc-muted))]">notes:</span> {details.notes}
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.appointmentsManagement.notes')}:
+                    </span>{' '}
+                    {details.notes}
                   </div>
                 )}
               </div>
             </Card>
           ) : (
-            <div className="text-sm text-[rgb(var(--tc-muted))]">Нет данных</div>
+            <div className="text-sm text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.orders.noData')}
+            </div>
           )}
         </div>
       </Modal>
 
       <ConfirmModal
         open={confirmOpen}
-        title="Подтвердить бронирование?"
-        description="Подтверждение доступно только для pending бронирований."
-        confirmText="Confirm"
+        title={t('systemAdmin.appointmentsManagement.confirmAppointment')}
+        description={t('systemAdmin.appointmentsManagement.confirmDescription')}
+        confirmText={t('appointments.confirm')}
         isLoading={confirmLoading}
         onClose={() => setConfirmOpen(false)}
         onConfirm={onConfirm}

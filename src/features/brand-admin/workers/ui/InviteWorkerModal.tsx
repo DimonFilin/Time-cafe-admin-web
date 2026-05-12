@@ -23,8 +23,8 @@ export interface InviteFormData {
 }
 
 const ROLES = [
-  { value: 'CAFE_ADMIN', label: 'Cafe Admin' },
-  { value: 'WORKER', label: 'Worker' },
+  { value: 'CAFE_ADMIN', label: 'Администратор кафе' },
+  { value: 'WORKER', label: 'Работник' },
 ];
 
 export function InviteWorkerModal({
@@ -53,7 +53,7 @@ export function InviteWorkerModal({
   if (!open) return null;
 
   return (
-    <Modal open={open} title="Invite Worker" onClose={onClose}>
+    <Modal open={open} title="Пригласить работника" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
@@ -70,7 +70,7 @@ export function InviteWorkerModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Password</label>
+          <label className="block text-sm font-medium">Пароль</label>
           <input
             type="password"
             required
@@ -83,7 +83,7 @@ export function InviteWorkerModal({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">First Name</label>
+            <label className="block text-sm font-medium">Имя</label>
             <input
               type="text"
               required
@@ -94,7 +94,7 @@ export function InviteWorkerModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Last Name</label>
+            <label className="block text-sm font-medium">Фамилия</label>
             <input
               type="text"
               required
@@ -107,7 +107,7 @@ export function InviteWorkerModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Role</label>
+          <label className="block text-sm font-medium">Роль</label>
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -124,14 +124,14 @@ export function InviteWorkerModal({
 
         {cafes.length > 0 && (
           <div>
-            <label className="block text-sm font-medium">Cafe (optional)</label>
+            <label className="block text-sm font-medium">Кафе (необязательно)</label>
             <select
               value={form.cafeId || ''}
               onChange={(e) => setForm({ ...form, cafeId: e.target.value || undefined })}
               className="mt-1 w-full rounded border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
               disabled={loading}
             >
-              <option value="">Select a cafe...</option>
+              <option value="">Выберите кафе...</option>
               {cafes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -143,10 +143,10 @@ export function InviteWorkerModal({
 
         <div className="flex justify-end gap-2 border-t border-[rgb(var(--tc-border))] pt-4">
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            Cancel
+            Отмена
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? 'Inviting...' : 'Invite Worker'}
+            {loading ? 'Приглашение...' : 'Пригласить работника'}
           </Button>
         </div>
       </form>

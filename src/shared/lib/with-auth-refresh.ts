@@ -35,10 +35,10 @@ export async function fetchWithAuthRefresh(
     // Don't set Content-Type for FormData, let fetch set it with boundary.
     // Using Headers#set guarantees we don't send duplicate content-type values
     // (e.g. "application/json, application/json"), which breaks JSON body parsing on the backend.
-    if (!(options.body instanceof FormData)) {
-      headers.set('content-type', 'application/json');
-    } else {
+    if (options.body instanceof FormData) {
       headers.delete('content-type');
+    } else if (!headers.has('content-type')) {
+      headers.set('content-type', 'application/json');
     }
 
     return headers;

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-import { env } from '@/shared/config/env';
 import { refreshAccessToken, setTokenCookies } from '@/shared/lib/refresh-token';
 
 export async function POST() {

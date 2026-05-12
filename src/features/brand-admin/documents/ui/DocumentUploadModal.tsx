@@ -65,7 +65,7 @@ export function DocumentUploadModal({ open, onClose, onUploaded }: Props) {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g., Company Registration"
+            placeholder="например, Регистрация компании"
             className="mt-1 block w-full border rounded px-2 py-1"
           />
         </div>

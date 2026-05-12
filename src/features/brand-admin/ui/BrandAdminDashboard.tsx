@@ -5,13 +5,17 @@ import { BrandOverviewTab } from '../overview/ui/BrandOverviewTab';
 import { CafesTab } from '../cafes/ui/CafesTab';
 import { DocumentsTab } from '../documents/ui/DocumentsTab';
 import { WorkersTab } from '../workers/ui/WorkersTab';
-import { ApiKeysTab } from '../api-keys/ui/ApiKeysTab';
 import { SettingsTab } from '../settings/ui/SettingsTab';
 import { AnalyticsTab } from '../analytics/ui/AnalyticsTab';
 import { ActivityLogsTab } from '../activity-logs/ui/ActivityLogsTab';
 import { BrandMenuTab } from '../menu/ui/BrandMenuTab';
 import { ChatsTab } from '@/features/chats/ui/ChatsTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
+import { logWorkerActivity } from '@/shared/lib/log-worker-activity';
+import {
+  ActivityAction,
+  ActivityCategory,
+} from '@/features/brand-admin/activity-logs/api/activity-logs-api';
 
 type TabId =
   | 'overview'
@@ -20,45 +24,28 @@ type TabId =
   | 'chats'
   | 'documents'
   | 'workers'
-  | 'api-keys'
   | 'settings'
   | 'analytics'
   | 'activity-logs';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'cafes', label: 'Cafes' },
-  { id: 'menu', label: 'Menu' },
-  { id: 'chats', label: 'Chats' },
-  { id: 'documents', label: 'Documents' },
-  { id: 'workers', label: 'Workers' },
-  { id: 'api-keys', label: 'API Keys' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'analytics', label: 'Analytics' },
-  { id: 'activity-logs', label: 'Activity Logs' },
+  { id: 'overview', label: 'Обзор' },
+  { id: 'cafes', label: 'Кафе' },
+  { id: 'menu', label: 'Меню' },
+  { id: 'chats', label: 'Чаты' },
+  { id: 'documents', label: 'Документы' },
+  { id: 'workers', label: 'Работники' },
+  { id: 'settings', label: 'Настройки' },
+  { id: 'analytics', label: 'Аналитика' },
+  { id: 'activity-logs', label: 'Логи активности' },
 ];
 
 export function BrandAdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [brandId, setBrandId] = useState<string | null>(null);
   const [workersOpenInvite, setWorkersOpenInvite] = useState(false);
   const [unreadChatsCount, setUnreadChatsCount] = useState(0);
 
   useEffect(() => {
-    const fetchBrandId = async () => {
-      try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setBrandId(data.brandId);
-        }
-      } catch (e) {
-        console.error('Failed to fetch brandId:', e);
-      }
-    };
-
-    fetchBrandId();
-
     const handleSwitchToActivityLogs = () => {
       setActiveTab('activity-logs');
     };
@@ -80,6 +67,25 @@ export function BrandAdminDashboard() {
       window.removeEventListener('brandAdminSwitchTab', handleSwitchTab as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    logWorkerActivity({
+      action: ActivityAction.TAB_SWITCH,
+      category: ActivityCategory.VIEW,
+      resourceType: 'BRAND_ADMIN_DASHBOARD',
+      details: { tab: activeTab },
+    });
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!workersOpenInvite) return;
+    logWorkerActivity({
+      action: ActivityAction.MODAL_OPEN,
+      category: ActivityCategory.VIEW,
+      resourceType: 'MODAL',
+      details: { modalId: 'brand-invite-worker' },
+    });
+  }, [workersOpenInvite]);
 
   useEffect(() => {
     const refreshUnread = async () => {
@@ -113,12 +119,6 @@ export function BrandAdminDashboard() {
             initialOpenInvite={workersOpenInvite}
             onInviteHandled={() => setWorkersOpenInvite(false)}
           />
-        );
-      case 'api-keys':
-        return brandId ? (
-          <ApiKeysTab brandId={brandId} />
-        ) : (
-          <div className="text-center text-[rgb(var(--tc-muted))]">Loading...</div>
         );
       case 'settings':
         return <SettingsTab />;

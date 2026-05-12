@@ -12,8 +12,8 @@ export function ThemeToggle() {
   if (!mounted) {
     // Avoid SSR/CSR mismatch: theme is unknown on the server.
     return (
-      <Button variant="secondary" className="h-10 px-3" aria-label="Toggle theme" disabled>
-        <span className="text-xs">Theme</span>
+      <Button variant="secondary" className="h-10 px-3" aria-label="Переключить тему" disabled>
+        <span className="text-xs">Тема</span>
       </Button>
     );
   }
@@ -25,10 +25,10 @@ export function ThemeToggle() {
     <Button
       variant="secondary"
       className="h-10 px-3"
-      aria-label="Toggle theme"
+      aria-label="Переключить тему"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
     >
-      <span className="text-xs">{isDark ? 'Light' : 'Dark'}</span>
+      <span className="text-xs">{isDark ? 'Светлая' : 'Тёмная'}</span>
     </Button>
   );
 }

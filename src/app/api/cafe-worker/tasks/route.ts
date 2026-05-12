@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+import { env } from '@/shared/config/env';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get('date');
 
     const url = date
-      ? `${BACKEND_URL}/cafe-worker/tasks?date=${date}`
-      : `${BACKEND_URL}/cafe-worker/tasks`;
+      ? `${env.backendUrl}/cafe-worker/tasks?date=${date}`
+      : `${env.backendUrl}/cafe-worker/tasks`;
 
     const response = await fetch(url, {
       method: 'GET',

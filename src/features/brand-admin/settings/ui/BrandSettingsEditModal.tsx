@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
-import { Button } from '@/shared/ui/button/Button';
 import type { BrandSettings, UpdateBrandSettingsRequest } from '../api/settings';
 
 interface BrandSettingsEditModalProps {
@@ -209,9 +208,9 @@ export function BrandSettingsEditModal({
                   onChange={handleChange}
                   className="w-full rounded-lg border border-[rgb(var(--tc-border))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
                 >
-                  <option value="sans-serif">Sans Serif</option>
-                  <option value="serif">Serif</option>
-                  <option value="monospace">Monospace</option>
+                  <option value="sans-serif">Без засечек</option>
+                  <option value="serif">С засечками</option>
+                  <option value="monospace">Моноширинный</option>
                   <option value="cursive">Cursive</option>
                 </select>
               </div>

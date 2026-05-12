@@ -23,8 +23,8 @@ export interface EditFormData {
 }
 
 const ROLES = [
-  { value: 'CAFE_ADMIN', label: 'Cafe Admin' },
-  { value: 'WORKER', label: 'Worker' },
+  { value: 'CAFE_ADMIN', label: 'Администратор кафе' },
+  { value: 'WORKER', label: 'Работник' },
 ];
 
 export function EditWorkerModal({
@@ -60,7 +60,7 @@ export function EditWorkerModal({
   return (
     <Modal
       open={open}
-      title={`Edit Worker: ${worker.firstName} ${worker.lastName}`}
+      title={`Редактировать работника: ${worker.firstName} ${worker.lastName}`}
       onClose={() => {
         setForm({});
         onClose();
@@ -75,7 +75,7 @@ export function EditWorkerModal({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">First Name</label>
+            <label className="block text-sm font-medium">Имя</label>
             <input
               type="text"
               value={currentForm.firstName || ''}
@@ -85,7 +85,7 @@ export function EditWorkerModal({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Last Name</label>
+            <label className="block text-sm font-medium">Фамилия</label>
             <input
               type="text"
               value={currentForm.lastName || ''}
@@ -97,7 +97,7 @@ export function EditWorkerModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Role</label>
+          <label className="block text-sm font-medium">Роль</label>
           <select
             value={currentForm.role || ''}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -114,14 +114,14 @@ export function EditWorkerModal({
 
         {cafes.length > 0 && (
           <div>
-            <label className="block text-sm font-medium">Cafe (optional)</label>
+            <label className="block text-sm font-medium">Кафе (необязательно)</label>
             <select
               value={currentForm.cafeId || ''}
               onChange={(e) => setForm({ ...form, cafeId: e.target.value || undefined })}
               className="mt-1 w-full rounded border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
               disabled={loading}
             >
-              <option value="">Select a cafe...</option>
+              <option value="">Выберите кафе...</option>
               {cafes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -140,10 +140,10 @@ export function EditWorkerModal({
             }}
             disabled={loading}
           >
-            Cancel
+            Отмена
           </Button>
           <Button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? 'Сохранение...' : 'Сохранить изменения'}
           </Button>
         </div>
       </form>

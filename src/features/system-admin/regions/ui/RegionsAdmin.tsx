@@ -10,6 +10,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 
 type RegionFormState = {
   name: string;
@@ -135,17 +136,17 @@ export function RegionsAdmin() {
       },
       {
         key: 'name',
-        header: 'Name',
+        header: t('common.name'),
         render: (r) => <span className="font-medium">{r.name}</span>,
       },
       {
         key: 'country',
-        header: 'Country',
+        header: t('systemAdmin.regions.country'),
         render: (r) => <span>{r.country}</span>,
       },
       {
         key: 'createdAt',
-        header: 'Created',
+        header: t('workers.created'),
         render: (r) => (
           <span className="text-xs text-[rgb(var(--tc-muted))]">
             {new Date(r.createdAt).toLocaleDateString()}
@@ -154,7 +155,7 @@ export function RegionsAdmin() {
       },
       {
         key: 'actions',
-        header: 'Actions',
+        header: t('common.actions'),
         render: (r) => (
           <div className="flex gap-2">
             <Button
@@ -166,7 +167,7 @@ export function RegionsAdmin() {
                 setEditOpen(true);
               }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant="ghost"
@@ -175,7 +176,7 @@ export function RegionsAdmin() {
                 setDeleteOpen(true);
               }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         ),
@@ -188,9 +189,11 @@ export function RegionsAdmin() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Regions (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.regions.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Manage regions. Regions can be deleted only if they have no active cafes.
+            {t('systemAdmin.regions.subtitle')}
           </div>
         </div>
         <Button
@@ -200,7 +203,7 @@ export function RegionsAdmin() {
             setCreateOpen(true);
           }}
         >
-          Add Region
+          {t('systemAdmin.regions.addRegion')}
         </Button>
       </div>
 
@@ -226,18 +229,18 @@ export function RegionsAdmin() {
       {/* Create Modal */}
       <Modal
         open={createOpen}
-        title="Create Region"
+        title={t('systemAdmin.regions.createRegion')}
         onClose={() => setCreateOpen(false)}
         footer={
           <div className="flex gap-2 justify-end">
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleCreate}
               disabled={createLoading || !createForm.name.trim() || !createForm.country.trim()}
             >
-              {createLoading ? 'Creating...' : 'Create'}
+              {createLoading ? t('common.creating') : t('common.create')}
             </Button>
           </div>
         }
@@ -247,23 +250,25 @@ export function RegionsAdmin() {
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{createError}</Card>
           )}
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">{t('common.name')}</label>
             <input
               type="text"
               value={createForm.name}
               onChange={(e) => setCreateForm((s) => ({ ...s, name: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Region name"
+              placeholder={t('systemAdmin.regions.regionName')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Country</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('systemAdmin.regions.country')}
+            </label>
             <input
               type="text"
               value={createForm.country}
               onChange={(e) => setCreateForm((s) => ({ ...s, country: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Country"
+              placeholder={t('systemAdmin.regions.countryPlaceholder')}
             />
           </div>
         </div>
@@ -272,18 +277,18 @@ export function RegionsAdmin() {
       {/* Edit Modal */}
       <Modal
         open={editOpen}
-        title="Edit Region"
+        title={t('systemAdmin.regions.editRegion')}
         onClose={() => setEditOpen(false)}
         footer={
           <div className="flex gap-2 justify-end">
             <Button variant="secondary" onClick={() => setEditOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={editLoading || !editForm.name.trim() || !editForm.country.trim()}
             >
-              {editLoading ? 'Saving...' : 'Save'}
+              {editLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         }
@@ -293,23 +298,25 @@ export function RegionsAdmin() {
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{editError}</Card>
           )}
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">{t('common.name')}</label>
             <input
               type="text"
               value={editForm.name}
               onChange={(e) => setEditForm((s) => ({ ...s, name: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Region name"
+              placeholder={t('systemAdmin.regions.regionName')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Country</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('systemAdmin.regions.country')}
+            </label>
             <input
               type="text"
               value={editForm.country}
               onChange={(e) => setEditForm((s) => ({ ...s, country: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Country"
+              placeholder={t('systemAdmin.regions.countryPlaceholder')}
             />
           </div>
         </div>
@@ -318,8 +325,11 @@ export function RegionsAdmin() {
       {/* Delete Modal */}
       <ConfirmModal
         open={deleteOpen}
-        title="Delete Region"
-        message={`Are you sure you want to delete "${deletingRegion?.name}"? This action cannot be undone.`}
+        title={t('systemAdmin.regions.deleteRegion')}
+        message={t('systemAdmin.regions.deleteConfirm').replace(
+          '{name}',
+          deletingRegion?.name ?? '',
+        )}
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
         loading={deleteLoading}

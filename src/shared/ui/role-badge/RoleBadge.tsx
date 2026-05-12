@@ -2,11 +2,11 @@ import type { AccountRole } from '@/shared/types/worker-role';
 import { cn } from '@/shared/lib/cn';
 
 function label(role: AccountRole) {
-  if (role === 'USER') return 'User';
-  if (role === 'SYSTEM_ADMIN') return 'System Admin';
-  if (role === 'BRAND_ADMIN') return 'Brand Admin';
-  if (role === 'CAFE_ADMIN') return 'Cafe Admin';
-  return 'Worker';
+  if (role === 'USER') return 'Пользователь';
+  if (role === 'SYSTEM_ADMIN') return 'Системный админ';
+  if (role === 'BRAND_ADMIN') return 'Админ бренда';
+  if (role === 'CAFE_ADMIN') return 'Админ кафе';
+  return 'Работник';
 }
 
 export function RoleBadge({ role, className }: { role: AccountRole; className?: string }) {

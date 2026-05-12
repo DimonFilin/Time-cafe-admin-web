@@ -11,6 +11,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 import { getCafeOrder, listCafeOrders, updateOrderStatus } from '../api/orders';
 
 const statuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
@@ -151,7 +152,7 @@ export function OrdersAdmin() {
       },
       {
         key: 'orderNumber',
-        header: 'Order',
+        header: t('orders.orderNumber'),
         render: (o) => (
           <div>
             <div className="font-medium">{o.orderNumber}</div>
@@ -163,12 +164,12 @@ export function OrdersAdmin() {
       },
       {
         key: 'status',
-        header: 'Status',
+        header: t('common.status'),
         render: (o) => <span className="font-mono text-xs">{o.status}</span>,
       },
       {
         key: 'sum',
-        header: 'Total',
+        header: t('orders.total'),
         render: (o) => (
           <span className="font-mono text-xs">
             <MoneyAmount value={o.totalAmount} iconClassName="h-[0.95em] w-[0.78em]" />
@@ -177,17 +178,17 @@ export function OrdersAdmin() {
       },
       {
         key: 'pm',
-        header: 'Pay',
+        header: t('orders.paymentMethod'),
         render: (o) => <span className="font-mono text-xs">{o.paymentMethod}</span>,
       },
       {
         key: 'dt',
-        header: 'Delivery',
+        header: t('orders.deliveryType'),
         render: (o) => <span className="font-mono text-xs">{o.deliveryType}</span>,
       },
       {
         key: 'created',
-        header: 'Created',
+        header: t('workers.created'),
         render: (o) => (
           <span className="text-xs text-[rgb(var(--tc-muted))]">
             {new Date(o.createdAt).toLocaleString()}
@@ -201,10 +202,10 @@ export function OrdersAdmin() {
         render: (o) => (
           <div className="flex justify-end gap-2">
             <Button variant="secondary" className="px-3 py-2" onClick={() => openDetails(o.id)}>
-              View
+              {t('common.view')}
             </Button>
             <Button variant="secondary" className="px-3 py-2" onClick={() => openStatus(o)}>
-              Status
+              {t('common.status')}
             </Button>
           </div>
         ),
@@ -217,21 +218,23 @@ export function OrdersAdmin() {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Orders (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.orders.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Список берётся из `GET /orders/cafe/:cafeId` (нужен cafeId).
+            {t('systemAdmin.orders.subtitle')}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" onClick={refreshCafes} disabled={cafesLoading}>
-            Refresh cafes
+            {t('systemAdmin.orders.refreshCafes')}
           </Button>
           <Button
             variant="secondary"
             onClick={refresh}
             disabled={isLoading || !filters.cafeId.trim()}
           >
-            Refresh orders
+            {t('systemAdmin.orders.refreshOrders')}
           </Button>
         </div>
       </div>
@@ -241,13 +244,15 @@ export function OrdersAdmin() {
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Cafe *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.appointmentsManagement.cafe')} *
+            </div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.cafeId}
               onChange={(e) => setFilters((s) => ({ ...s, cafeId: e.target.value }))}
             >
-              <option value="">Select cafe</option>
+              <option value="">{t('systemAdmin.orders.selectCafe')}</option>
               {cafes.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.city})
@@ -256,7 +261,7 @@ export function OrdersAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Status</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.status')}</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.status}
@@ -264,7 +269,7 @@ export function OrdersAdmin() {
                 setFilters((s) => ({ ...s, status: e.target.value as '' | OrderStatus }))
               }
             >
-              <option value="">All</option>
+              <option value="">{t('common.all')}</option>
               {statuses.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -273,7 +278,9 @@ export function OrdersAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">From (YYYY-MM-DD)</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.orders.from')}
+            </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.from}
@@ -282,7 +289,7 @@ export function OrdersAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">To (YYYY-MM-DD)</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('systemAdmin.orders.to')}</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.to}
@@ -300,7 +307,7 @@ export function OrdersAdmin() {
             }}
             disabled={!filters.cafeId.trim()}
           >
-            Apply
+            {t('systemAdmin.cafes.apply')}
           </Button>
           <Button
             variant="secondary"
@@ -311,7 +318,7 @@ export function OrdersAdmin() {
               setTotal(0);
             }}
           >
-            Reset
+            {t('systemAdmin.cafes.reset')}
           </Button>
         </div>
       </Card>

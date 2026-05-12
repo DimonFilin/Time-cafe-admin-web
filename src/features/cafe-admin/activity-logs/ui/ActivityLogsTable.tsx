@@ -3,6 +3,7 @@
 import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import type { ActivityLog } from '../api/activity-logs-api';
 
 interface ActivityLogsTableProps {
@@ -44,7 +45,7 @@ export function ActivityLogsTable({
   const columns: DataTableColumn<ActivityLog>[] = [
     {
       key: 'createdAt',
-      header: 'Time',
+      header: t('cafeAdmin.activityLogs.time'),
       render: (log) => (
         <div className="text-sm">
           <div className="font-medium">{new Date(log.createdAt).toLocaleDateString()}</div>
@@ -56,7 +57,7 @@ export function ActivityLogsTable({
     },
     {
       key: 'worker',
-      header: 'Worker',
+      header: t('cafeAdmin.activityLogs.worker'),
       render: (log) => (
         <div className="text-sm">
           <div className="font-medium">
@@ -70,7 +71,7 @@ export function ActivityLogsTable({
     },
     {
       key: 'action',
-      header: 'Action',
+      header: t('cafeAdmin.activityLogs.action'),
       render: (log) => {
         const event = getEventPresentation(log);
         const showBaseAction = event.baseAction !== event.label;
@@ -86,7 +87,7 @@ export function ActivityLogsTable({
             {showBaseAction && (
               <span
                 className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium ${getActionBadgeColor(event.baseAction)}`}
-                title="Base action"
+                title={t('cafeAdmin.activityLogs.baseAction')}
               >
                 {event.baseAction}
               </span>
@@ -107,12 +108,12 @@ export function ActivityLogsTable({
     },
     {
       key: 'category',
-      header: 'Category',
+      header: t('cafeAdmin.activityLogs.category'),
       render: (log) => <span className="text-sm text-[rgb(var(--tc-muted))]">{log.category}</span>,
     },
     {
       key: 'resource',
-      header: 'Resource',
+      header: t('cafeAdmin.activityLogs.resource'),
       render: (log) => {
         if (!log.resourceType) {
           return <span className="text-sm text-[rgb(var(--tc-muted))]">—</span>;
@@ -131,14 +132,14 @@ export function ActivityLogsTable({
     },
     {
       key: 'details',
-      header: 'Details',
+      header: t('cafeAdmin.activityLogs.details'),
       render: (log) => {
         const summary = getLogSummary(log);
         return (
           <div className="flex items-center gap-3">
             {onViewDetails && (
               <Button variant="ghost" onClick={() => onViewDetails(log)} className="text-xs">
-                View
+                {t('cafeAdmin.activityLogs.view')}
               </Button>
             )}
             {summary && (
@@ -161,7 +162,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('createdAt')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Time
+        {t('cafeAdmin.activityLogs.time')}
         {renderSortIcon('createdAt')}
       </button>
     ) as unknown as string;
@@ -171,7 +172,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('workerEmail')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Worker
+        {t('cafeAdmin.activityLogs.worker')}
         {renderSortIcon('workerEmail')}
       </button>
     ) as unknown as string;
@@ -181,7 +182,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('action')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Action
+        {t('cafeAdmin.activityLogs.action')}
         {renderSortIcon('action')}
       </button>
     ) as unknown as string;
@@ -191,7 +192,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('category')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Category
+        {t('cafeAdmin.activityLogs.category')}
         {renderSortIcon('category')}
       </button>
     ) as unknown as string;
@@ -359,7 +360,7 @@ function getLogSummary(log: ActivityLog): string | null {
     const next = getString(details, 'shiftStatus');
     if (message && prev && next) return `${message} (${prev} → ${next})`;
     if (message) return message;
-    if (prev && next) return `Shift status: ${prev} → ${next}`;
+    if (prev && next) return `${t('cafeAdmin.activityLogs.shiftStatus')}: ${prev} → ${next}`;
     return null;
   }
 
@@ -375,8 +376,8 @@ function getLogSummary(log: ActivityLog): string | null {
   // Order update summary (infer order id)
   if (log.resourceType === 'ORDER' && String(log.action) === 'UPDATE') {
     const id = log.resourceId || extractOrderIdFromEndpoint(log.endpoint);
-    if (id) return `Order: ${id}`;
-    return log.endpoint ? `Order update: ${log.endpoint}` : null;
+    if (id) return `${t('cafeAdmin.activityLogs.order')}: ${id}`;
+    return log.endpoint ? `${t('cafeAdmin.activityLogs.orderUpdate')}: ${log.endpoint}` : null;
   }
 
   // Generic details summary: show message if present

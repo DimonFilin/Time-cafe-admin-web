@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+import { env } from '@/shared/config/env';
 
 type RouteParams = {
   params: Promise<{
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, props: RouteParams) {
     const { templateId } = params;
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/cafe-worker/tasks/${templateId}/complete`, {
+    const response = await fetch(`${env.backendUrl}/cafe-worker/tasks/${templateId}/complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ export async function DELETE(request: NextRequest, props: RouteParams) {
     }
 
     const response = await fetch(
-      `${BACKEND_URL}/cafe-worker/tasks/${templateId}/complete?date=${date}`,
+      `${env.backendUrl}/cafe-worker/tasks/${templateId}/complete?date=${date}`,
       {
         method: 'DELETE',
         headers: {

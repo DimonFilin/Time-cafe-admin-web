@@ -206,9 +206,9 @@ export function BrandEditModal({ brand, isOpen, onClose, onSave }: BrandEditModa
               onChange={handleChange}
               className="mt-1 w-full rounded-lg border border-[rgb(var(--tc-border))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
             >
-              <option value="sans-serif">Sans Serif</option>
-              <option value="serif">Serif</option>
-              <option value="monospace">Monospace</option>
+              <option value="sans-serif">Без засечек</option>
+              <option value="serif">С засечками</option>
+              <option value="monospace">Моноширинный</option>
               <option value="cursive">Cursive</option>
             </select>
           </div>

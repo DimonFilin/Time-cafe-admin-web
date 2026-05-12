@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { t } from '@/i18n';
 import { getMyCafe, updateMyCafe } from '../api/cafe-api';
 import { Cafe } from '../types/cafe.types';
 import { EditCafeModal } from './EditCafeModal';
@@ -33,7 +34,7 @@ export function CafeInfoTab() {
       const data = await getMyCafe();
       setCafe(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load cafe information');
+      setError(err instanceof Error ? err.message : t('cafeAdmin.cafeInfo.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,9 @@ export function CafeInfoTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="text-sm text-[rgb(var(--tc-muted))]">Loading cafe information…</div>
+        <div className="text-sm text-[rgb(var(--tc-muted))]">
+          {t('cafeAdmin.cafeInfo.loadingCafeInfo')}
+        </div>
       </div>
     );
   }
@@ -56,7 +59,7 @@ export function CafeInfoTab() {
       <Card className="p-8 text-center">
         <p className="text-sm text-red-600">{error}</p>
         <Button type="button" variant="secondary" className="mt-4" onClick={loadCafe}>
-          Retry
+          {t('cafeAdmin.cafeInfo.retry')}
         </Button>
       </Card>
     );
@@ -65,7 +68,7 @@ export function CafeInfoTab() {
   if (!cafe) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-sm text-[rgb(var(--tc-muted))]">No cafe information found</p>
+        <p className="text-sm text-[rgb(var(--tc-muted))]">{t('cafeAdmin.cafeInfo.noCafeInfo')}</p>
       </Card>
     );
   }
@@ -92,11 +95,9 @@ export function CafeInfoTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Cafe information</h2>
+        <h2 className="text-xl font-semibold tracking-tight">{t('cafeAdmin.cafeInfo.title')}</h2>
         <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-          Update your venue details and hours. Visual theme (colors, banner, typography) is managed
-          under <span className="font-medium text-[rgb(var(--tc-fg))]">Brand admin</span> for your
-          brand — this screen is for operational and location data only.
+          {t('cafeAdmin.cafeInfo.subtitle')}
         </p>
       </div>
 
@@ -110,34 +111,34 @@ export function CafeInfoTab() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" onClick={() => setIsScheduleModalOpen(true)}>
-              Edit schedule
+              {t('cafeAdmin.cafeInfo.editSchedule')}
             </Button>
             <Button type="button" variant="primary" onClick={() => setIsEditModalOpen(true)}>
-              Edit information
+              {t('cafeAdmin.cafeInfo.editInformation')}
             </Button>
           </div>
         </div>
       </Card>
 
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold">Basic information</h3>
+        <h3 className="mb-4 text-base font-semibold">{t('cafeAdmin.cafeInfo.basicInformation')}</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <InfoField label="Name">{cafe.name}</InfoField>
-          <InfoField label="Brand">{brandLabel}</InfoField>
-          <InfoField label="Region">{regionLabel}</InfoField>
-          <InfoField label="Rating">
+          <InfoField label={t('cafeAdmin.cafeInfo.name')}>{cafe.name}</InfoField>
+          <InfoField label={t('cafeAdmin.cafeInfo.brand')}>{brandLabel}</InfoField>
+          <InfoField label={t('cafeAdmin.cafeInfo.region')}>{regionLabel}</InfoField>
+          <InfoField label={t('cafeAdmin.cafeInfo.rating')}>
             {cafe.rating.toFixed(1)} ({cafe.reviewsCount})
           </InfoField>
           {cafe.description ? (
             <div className="sm:col-span-2 lg:col-span-3">
-              <InfoField label="Description">{cafe.description}</InfoField>
+              <InfoField label={t('cafeAdmin.cafeInfo.description')}>{cafe.description}</InfoField>
             </div>
           ) : null}
         </div>
       </Card>
 
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold">Opening hours</h3>
+        <h3 className="mb-4 text-base font-semibold">{t('cafeAdmin.cafeInfo.openingHours')}</h3>
         {savedSchedule ? (
           <ul className="divide-y divide-[rgb(var(--tc-border))] rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] text-sm">
             {SCHEDULE_DAYS.map((day) => {
@@ -151,7 +152,7 @@ export function CafeInfoTab() {
                     {SCHEDULE_DAY_LABELS[day]}
                   </span>
                   <span className="text-[rgb(var(--tc-muted))]">
-                    {d.isClosed ? 'Closed' : `${d.open} – ${d.close}`}
+                    {d.isClosed ? t('cafeAdmin.cafeInfo.closed') : `${d.open} – ${d.close}`}
                   </span>
                 </li>
               );
@@ -159,15 +160,15 @@ export function CafeInfoTab() {
           </ul>
         ) : (
           <p className="text-sm text-[rgb(var(--tc-muted))]">
-            No saved hours yet. Use &quot;Edit schedule&quot; to set weekly hours.
+            {t('cafeAdmin.cafeInfo.noSchedule')}
           </p>
         )}
       </Card>
 
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold">Chat settings</h3>
+        <h3 className="mb-4 text-base font-semibold">{t('cafeAdmin.cafeInfo.chatSettings')}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <InfoField label="Chat status">
+          <InfoField label={t('cafeAdmin.cafeInfo.chatStatus')}>
             <span
               className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                 chatSettings?.enabled === false
@@ -175,14 +176,16 @@ export function CafeInfoTab() {
                   : 'bg-green-100 text-green-700'
               }`}
             >
-              {chatSettings?.enabled === false ? 'Disabled' : 'Enabled'}
+              {chatSettings?.enabled === false
+                ? t('cafeAdmin.cafeInfo.disabled')
+                : t('cafeAdmin.cafeInfo.enabled')}
             </span>
           </InfoField>
-          <InfoField label="Notification mode">
+          <InfoField label={t('cafeAdmin.cafeInfo.notificationMode')}>
             {chatSettings?.notificationMode || 'ALL_WORKERS'}
           </InfoField>
-          <InfoField label="Theme primary color">
-            {chatSettings?.theme?.primaryColor || 'Brand/Cafe default'}
+          <InfoField label={t('cafeAdmin.cafeInfo.themePrimaryColor')}>
+            {chatSettings?.theme?.primaryColor || t('cafeAdmin.cafeInfo.brandCafeDefault')}
           </InfoField>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -196,7 +199,9 @@ export function CafeInfoTab() {
               })
             }
           >
-            {chatSettings?.enabled === false ? 'Enable chat' : 'Disable chat'}
+            {chatSettings?.enabled === false
+              ? t('cafeAdmin.cafeInfo.enableChat')
+              : t('cafeAdmin.cafeInfo.disableChat')}
           </Button>
           <Button
             type="button"
@@ -209,7 +214,7 @@ export function CafeInfoTab() {
               })
             }
           >
-            Toggle role-based notifications
+            {t('cafeAdmin.cafeInfo.toggleRoleBasedNotifications')}
           </Button>
           <Button
             type="button"
@@ -222,25 +227,29 @@ export function CafeInfoTab() {
               })
             }
           >
-            Toggle green chat accent
+            {t('cafeAdmin.cafeInfo.toggleGreenChatAccent')}
           </Button>
         </div>
       </Card>
 
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold">Address &amp; integration</h3>
+        <h3 className="mb-4 text-base font-semibold">
+          {t('cafeAdmin.cafeInfo.addressIntegration')}
+        </h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          <InfoField label="Street address">{cafe.address}</InfoField>
-          <InfoField label="City">{cafe.city}</InfoField>
-          {cafe.street ? <InfoField label="Street (line 2)">{cafe.street}</InfoField> : null}
+          <InfoField label={t('cafeAdmin.cafeInfo.streetAddress')}>{cafe.address}</InfoField>
+          <InfoField label={t('cafeAdmin.cafeInfo.city')}>{cafe.city}</InfoField>
+          {cafe.street ? (
+            <InfoField label={t('cafeAdmin.cafeInfo.street')}>{cafe.street}</InfoField>
+          ) : null}
           {typeof cafe.latitude === 'number' && typeof cafe.longitude === 'number' ? (
-            <InfoField label="Coordinates">
+            <InfoField label={t('cafeAdmin.cafeInfo.coordinates')}>
               {cafe.latitude.toFixed(6)}, {cafe.longitude.toFixed(6)}
             </InfoField>
           ) : null}
           {cafe.cafeApiUrl ? (
             <div className="sm:col-span-2">
-              <InfoField label="Cafe API URL">{cafe.cafeApiUrl}</InfoField>
+              <InfoField label={t('cafeAdmin.cafeInfo.cafeApiUrl')}>{cafe.cafeApiUrl}</InfoField>
             </div>
           ) : null}
         </div>

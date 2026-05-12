@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
 
@@ -136,7 +137,14 @@ export function PhotoUploadModal({ isOpen, onClose, onUpload, taskTitle }: Photo
             <div className="space-y-3">
               {/* Preview */}
               <div className="relative overflow-hidden rounded-lg">
-                <img src={preview} alt="Preview" className="h-64 w-full object-cover" />
+                <Image
+                  src={preview}
+                  alt="Preview"
+                  width={800}
+                  height={256}
+                  unoptimized
+                  className="h-64 w-full object-cover"
+                />
               </div>
 
               {/* File info */}

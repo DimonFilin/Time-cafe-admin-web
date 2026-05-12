@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import { updateTaskTemplate } from '../api/tasks-api';
 import {
   TaskCategory,
@@ -34,8 +35,8 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
   const roleOptions = useMemo(
     () =>
       [
-        { value: 'CAFE_ADMIN', label: 'Cafe Admin' },
-        { value: 'WORKER', label: 'Worker' },
+        { value: 'CAFE_ADMIN', label: 'Администратор кафе' },
+        { value: 'WORKER', label: 'Работник' },
       ] as const satisfies ReadonlyArray<{ value: WorkerRole; label: string }>,
     [],
   );
@@ -97,14 +98,14 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
       currentAssignmentType === TaskAssignmentType.SPECIFIC_WORKERS &&
       (!formData.assignedWorkerIds || formData.assignedWorkerIds.length === 0)
     ) {
-      setError('Выберите хотя бы одного сотрудника (Specific Workers).');
+      setError(t('tasks.errors.selectWorker'));
       return;
     }
     if (
       currentAssignmentType === TaskAssignmentType.ROLE_BASED &&
       (!formData.assignedRoles || formData.assignedRoles.length === 0)
     ) {
-      setError('Выберите хотя бы одну роль (Role Based).');
+      setError(t('tasks.errors.selectRole'));
       return;
     }
 
@@ -116,7 +117,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
       handleClose();
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update task');
+      setError(err instanceof Error ? err.message : t('tasks.errors.updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -131,10 +132,10 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
   if (!template) return null;
 
   return (
-    <Modal open={open} onClose={handleClose} title="Edit Task Template">
+    <Modal open={open} onClose={handleClose} title={t('tasks.edit')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Title</label>
+          <label className="mb-1 block text-sm font-medium">{t('common.name')}</label>
           <input
             type="text"
             value={formData.title || ''}
@@ -145,7 +146,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Description</label>
+          <label className="mb-1 block text-sm font-medium">{t('common.description')}</label>
           <textarea
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -156,7 +157,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Category</label>
+            <label className="mb-1 block text-sm font-medium">{t('tasks.category')}</label>
             <select
               value={formData.category || ''}
               onChange={(e) =>
@@ -176,7 +177,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Priority</label>
+            <label className="mb-1 block text-sm font-medium">{t('tasks.priority')}</label>
             <select
               value={formData.priority || ''}
               onChange={(e) =>
@@ -197,7 +198,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Estimated Minutes</label>
+          <label className="mb-1 block text-sm font-medium">{t('tasks.estimatedTime')}</label>
           <input
             type="number"
             value={formData.estimatedMinutes || ''}
@@ -213,7 +214,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Assignment Type</label>
+          <label className="mb-1 block text-sm font-medium">{t('tasks.assignmentType')}</label>
           <select
             value={formData.assignmentType || template.assignmentType}
             onChange={(e) =>
@@ -235,22 +236,30 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
             }
             className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
           >
-            <option value={TaskAssignmentType.ALL_WORKERS}>All Workers</option>
-            <option value={TaskAssignmentType.SPECIFIC_WORKERS}>Specific Workers</option>
-            <option value={TaskAssignmentType.ROLE_BASED}>Role Based</option>
+            <option value={TaskAssignmentType.ALL_WORKERS}>
+              {t('tasks.assignmentTypes.allWorkers')}
+            </option>
+            <option value={TaskAssignmentType.SPECIFIC_WORKERS}>
+              {t('tasks.assignmentTypes.specificWorkers')}
+            </option>
+            <option value={TaskAssignmentType.ROLE_BASED}>
+              {t('tasks.assignmentTypes.roleBased')}
+            </option>
           </select>
         </div>
 
         {currentAssignmentType === TaskAssignmentType.SPECIFIC_WORKERS && (
           <div className="space-y-2">
-            <div className="text-sm font-medium">Specific workers</div>
+            <div className="text-sm font-medium">{t('tasks.assignedWorkers')}</div>
             {workersError && (
               <div className="rounded-lg bg-red-50 p-2 text-sm text-red-700">{workersError}</div>
             )}
             {workersLoading ? (
-              <div className="text-sm text-[rgb(var(--tc-muted))]">Loading workers…</div>
+              <div className="text-sm text-[rgb(var(--tc-muted))]">{t('common.loading')}</div>
             ) : workers.length === 0 ? (
-              <div className="text-sm text-[rgb(var(--tc-muted))]">No workers found</div>
+              <div className="text-sm text-[rgb(var(--tc-muted))]">
+                {t('workers.errors.fetchFailed')}
+              </div>
             ) : (
               <div className="max-h-48 space-y-2 overflow-auto rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-3">
                 {workers.map((w) => {
@@ -285,7 +294,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
 
         {currentAssignmentType === TaskAssignmentType.ROLE_BASED && (
           <div className="space-y-2">
-            <div className="text-sm font-medium">Roles</div>
+            <div className="text-sm font-medium">{t('tasks.assignedRoles')}</div>
             <div className="space-y-2 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-3">
               {roleOptions.map((r) => {
                 const checked = (formData.assignedRoles ?? []).includes(r.value);
@@ -321,7 +330,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
               checked={formData.requiresPhoto || false}
               onChange={(e) => setFormData({ ...formData, requiresPhoto: e.target.checked })}
             />
-            <span className="text-sm">Requires Photo</span>
+            <span className="text-sm">{t('tasks.requiresPhoto')}</span>
           </label>
 
           <label className="flex items-center gap-2">
@@ -330,7 +339,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
               checked={formData.requiresComment || false}
               onChange={(e) => setFormData({ ...formData, requiresComment: e.target.checked })}
             />
-            <span className="text-sm">Requires Comment</span>
+            <span className="text-sm">{t('tasks.requiresComment')}</span>
           </label>
         </div>
 
@@ -344,10 +353,10 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
             disabled={loading}
             className="flex-1"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={loading} className="flex-1">
-            {loading ? 'Updating...' : 'Update Task'}
+            {loading ? t('common.updating') : t('tasks.edit')}
           </Button>
         </div>
       </form>

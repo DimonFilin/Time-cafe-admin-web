@@ -9,17 +9,23 @@ import { CafeInfoTab } from '../cafe/ui/CafeInfoTab';
 import { MenuTab } from '../menu/ui/MenuTab';
 import { ChatsTab } from '@/features/chats/ui/ChatsTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
+import { t } from '@/i18n';
+import { logWorkerActivity } from '@/shared/lib/log-worker-activity';
+import {
+  ActivityAction,
+  ActivityCategory,
+} from '@/features/brand-admin/activity-logs/api/activity-logs-api';
 
 type TabId = 'overview' | 'workers' | 'tasks' | 'menu' | 'chats' | 'cafe-info' | 'activity-logs';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'workers', label: 'Workers' },
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'menu', label: 'Menu' },
-  { id: 'chats', label: 'Chats' },
-  { id: 'cafe-info', label: 'Cafe Info' },
-  { id: 'activity-logs', label: 'Activity Logs' },
+  { id: 'overview', label: t('dashboard.overview') },
+  { id: 'workers', label: t('dashboard.workers') },
+  { id: 'tasks', label: t('dashboard.tasks') },
+  { id: 'menu', label: t('dashboard.menu') },
+  { id: 'chats', label: t('dashboard.chats') },
+  { id: 'cafe-info', label: t('dashboard.cafeInfo') },
+  { id: 'activity-logs', label: t('dashboard.activityLogs') },
 ];
 
 export function CafeAdminDashboard() {
@@ -53,6 +59,35 @@ export function CafeAdminDashboard() {
       window.removeEventListener('cafeAdminSwitchTab', handleSwitchTab as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    logWorkerActivity({
+      action: ActivityAction.TAB_SWITCH,
+      category: ActivityCategory.VIEW,
+      resourceType: 'CAFE_ADMIN_DASHBOARD',
+      details: { tab: activeTab },
+    });
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!workersOpenInvite) return;
+    logWorkerActivity({
+      action: ActivityAction.MODAL_OPEN,
+      category: ActivityCategory.VIEW,
+      resourceType: 'MODAL',
+      details: { modalId: 'cafe-invite-worker' },
+    });
+  }, [workersOpenInvite]);
+
+  useEffect(() => {
+    if (!tasksOpenCreate) return;
+    logWorkerActivity({
+      action: ActivityAction.MODAL_OPEN,
+      category: ActivityCategory.VIEW,
+      resourceType: 'MODAL',
+      details: { modalId: 'cafe-create-task-template' },
+    });
+  }, [tasksOpenCreate]);
 
   useEffect(() => {
     const refreshUnread = async () => {

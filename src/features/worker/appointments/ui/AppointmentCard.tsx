@@ -1,5 +1,6 @@
 'use client';
 
+import { t } from '@/i18n';
 import type { Appointment } from '../types/appointments.types';
 import {
   getAppointmentCustomerEmail,
@@ -17,11 +18,14 @@ interface AppointmentCardProps {
   onViewDetails: (appointment: Appointment) => void;
 }
 
-const STATUS_LABELS = {
-  PENDING: 'Ожидает подтверждения',
-  CONFIRMED: 'Подтверждено',
-  COMPLETED: 'Завершено',
-  CANCELLED: 'Отменено',
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    PENDING: t('appointments.statuses.pending'),
+    CONFIRMED: t('appointments.statuses.confirmed'),
+    COMPLETED: t('appointments.statuses.completed'),
+    CANCELLED: t('appointments.statuses.cancelled'),
+  };
+  return labels[status] ?? status;
 };
 
 const STATUS_COLORS = {
@@ -63,7 +67,7 @@ export function AppointmentCard({
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}
             >
-              {STATUS_LABELS[status]}
+              {getStatusLabel(status)}
             </span>
           </div>
           {customerEmail ? (
@@ -78,20 +82,24 @@ export function AppointmentCard({
       {/* Details */}
       <div className="mb-3 space-y-2 text-sm">
         <div className="flex items-center gap-2">
-          <span className="text-[rgb(var(--tc-muted))]">📅 Дата:</span>
+          <span className="text-[rgb(var(--tc-muted))]">📅 {t('appointments.dateTime')}:</span>
           <span className="font-medium">{dateTime ? formatDate(dateTime) : '—'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[rgb(var(--tc-muted))]">⏱️ Длительность:</span>
-          <span className="font-medium">{appointment.duration} мин</span>
+          <span className="text-[rgb(var(--tc-muted))]">⏱️ {t('appointments.duration')}:</span>
+          <span className="font-medium">
+            {appointment.duration} {t('systemAdmin.appointmentsManagement.min')}
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[rgb(var(--tc-muted))]">👥 Гостей:</span>
+          <span className="text-[rgb(var(--tc-muted))]">👥 {t('worker.appointments.guests')}:</span>
           <span className="font-medium">{appointment.guestsCount ?? '—'}</span>
         </div>
         {appointment.notes && (
           <div className="flex items-start gap-2">
-            <span className="text-[rgb(var(--tc-muted))]">📝 Примечание:</span>
+            <span className="text-[rgb(var(--tc-muted))]">
+              📝 {t('worker.appointments.notes')}:
+            </span>
             <span className="font-medium">{appointment.notes}</span>
           </div>
         )}
@@ -104,7 +112,7 @@ export function AppointmentCard({
             onClick={() => onConfirm(appointment.id)}
             className="rounded-lg bg-blue-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600"
           >
-            ✓ Подтвердить
+            ✓ {t('appointments.confirm')}
           </button>
         )}
         {status === 'CONFIRMED' && (
@@ -112,7 +120,7 @@ export function AppointmentCard({
             onClick={() => onCheckIn(appointment.id)}
             className="rounded-lg bg-green-500 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-600"
           >
-            ✓ Отметить приход
+            ✓ {t('appointments.checkIn')}
           </button>
         )}
         {(status === 'PENDING' || status === 'CONFIRMED') && (
@@ -120,21 +128,22 @@ export function AppointmentCard({
             onClick={() => onCancel(appointment.id)}
             className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
           >
-            ✕ Отменить
+            ✕ {t('appointments.cancel')}
           </button>
         )}
         <button
           onClick={() => onViewDetails(appointment)}
           className="rounded-lg border border-[rgb(var(--tc-border))] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
         >
-          ↗ Открыть
+          ↗ {t('common.view')}
         </button>
       </div>
 
       {/* Cancellation reason */}
       {status === 'CANCELLED' && appointment.cancellationReason && (
         <div className="mt-3 rounded-lg bg-red-50 p-2 text-xs text-red-700">
-          <strong>Причина отмены:</strong> {appointment.cancellationReason}
+          <strong>{t('worker.appointments.cancellationReason')}:</strong>{' '}
+          {appointment.cancellationReason}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 import type { Appointment } from '../types/appointments.types';
 import {
   getAppointmentCustomerEmail,
@@ -16,11 +17,14 @@ interface AppointmentDetailsModalProps {
   onClose: () => void;
 }
 
-const STATUS_LABELS = {
-  PENDING: 'Ожидает подтверждения',
-  CONFIRMED: 'Подтверждено',
-  COMPLETED: 'Завершено',
-  CANCELLED: 'Отменено',
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    PENDING: t('appointments.statuses.pending'),
+    CONFIRMED: t('appointments.statuses.confirmed'),
+    COMPLETED: t('appointments.statuses.completed'),
+    CANCELLED: t('appointments.statuses.cancelled'),
+  };
+  return labels[status] ?? status;
 };
 
 export function AppointmentDetailsModal({
@@ -47,17 +51,21 @@ export function AppointmentDetailsModal({
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="Детали бронирования">
+    <Modal open={isOpen} onClose={onClose} title={t('worker.appointments.detailsTitle')}>
       <div className="space-y-6">
         {/* Status */}
         <div>
-          <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Статус</h3>
-          <p className="mt-1 text-lg font-semibold">{STATUS_LABELS[status]}</p>
+          <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+            {t('worker.appointments.status')}
+          </h3>
+          <p className="mt-1 text-lg font-semibold">{getStatusLabel(status)}</p>
         </div>
 
         {/* Customer */}
         <div>
-          <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Клиент</h3>
+          <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+            {t('worker.appointments.customer')}
+          </h3>
           <p className="mt-1">{customerName}</p>
           {customerEmail ? (
             <p className="text-sm text-[rgb(var(--tc-muted))]">{customerEmail}</p>
@@ -70,15 +78,23 @@ export function AppointmentDetailsModal({
         {/* Appointment info */}
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Дата и время</h3>
+            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.dateTime')}
+            </h3>
             <p className="mt-1">{dateTime ? formatDate(dateTime) : '—'}</p>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Длительность</h3>
-            <p className="mt-1">{appointment.duration} минут</p>
+            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.duration')}
+            </h3>
+            <p className="mt-1">
+              {appointment.duration} {t('worker.appointments.minutes')}
+            </p>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Количество гостей</h3>
+            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.guestsCount')}
+            </h3>
             <p className="mt-1">{appointment.guestsCount ?? '—'}</p>
           </div>
         </div>
@@ -86,7 +102,9 @@ export function AppointmentDetailsModal({
         {/* Notes */}
         {appointment.notes && (
           <div>
-            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Примечания</h3>
+            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.notes')}
+            </h3>
             <p className="mt-1 rounded-lg bg-[rgb(var(--tc-muted))]/10 p-3">{appointment.notes}</p>
           </div>
         )}
@@ -94,7 +112,9 @@ export function AppointmentDetailsModal({
         {/* QR Code */}
         {appointment.qrCode && (
           <div>
-            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">QR-код</h3>
+            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.qrCode')}
+            </h3>
             <div className="mt-2 rounded-lg bg-white p-4 text-center">
               <p className="text-xs text-gray-500">QR: {appointment.qrCode}</p>
             </div>
@@ -104,24 +124,32 @@ export function AppointmentDetailsModal({
         {/* Timestamps */}
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-[rgb(var(--tc-muted))]">Создано:</span>
+            <span className="text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.createdAt')}:
+            </span>
             <span>{formatDate(appointment.createdAt)}</span>
           </div>
           {appointment.confirmedAt && (
             <div className="flex justify-between">
-              <span className="text-[rgb(var(--tc-muted))]">Подтверждено:</span>
+              <span className="text-[rgb(var(--tc-muted))]">
+                {t('worker.appointments.confirmedAt')}:
+              </span>
               <span>{formatDate(appointment.confirmedAt)}</span>
             </div>
           )}
           {appointment.completedAt && (
             <div className="flex justify-between">
-              <span className="text-[rgb(var(--tc-muted))]">Завершено:</span>
+              <span className="text-[rgb(var(--tc-muted))]">
+                {t('worker.appointments.completedAt')}:
+              </span>
               <span>{formatDate(appointment.completedAt)}</span>
             </div>
           )}
           {appointment.cancelledAt && (
             <div className="flex justify-between">
-              <span className="text-[rgb(var(--tc-muted))]">Отменено:</span>
+              <span className="text-[rgb(var(--tc-muted))]">
+                {t('worker.appointments.cancelledAt')}:
+              </span>
               <span>{formatDate(appointment.cancelledAt)}</span>
             </div>
           )}
@@ -130,7 +158,9 @@ export function AppointmentDetailsModal({
         {/* Cancellation reason */}
         {status === 'CANCELLED' && appointment.cancellationReason && (
           <div>
-            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Причина отмены</h3>
+            <h3 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('worker.appointments.cancellationReason')}
+            </h3>
             <p className="mt-1 rounded-lg bg-red-50 p-3 text-red-700">
               {appointment.cancellationReason}
             </p>

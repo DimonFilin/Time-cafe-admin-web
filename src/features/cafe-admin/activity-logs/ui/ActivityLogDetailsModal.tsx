@@ -2,6 +2,8 @@
 
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { getActivityLogTechnicalDisplay } from '@/shared/lib/activity-log-technical-display';
+import { t } from '@/i18n';
 import type { ActivityLog } from '../api/activity-logs-api';
 
 interface ActivityLogDetailsModalProps {
@@ -14,15 +16,18 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
   if (!open || !log) return null;
 
   const event = getEventPresentation(log);
+  const technical = getActivityLogTechnicalDisplay(log);
 
   return (
-    <Modal open={open} title="Activity Log Details" onClose={onClose}>
+    <Modal open={open} title={t('cafeAdmin.activityLogs.detailsModal.title')} onClose={onClose}>
       <div className="space-y-6">
         {/* Timestamp */}
         <div>
-          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Timestamp</h3>
+          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.activityLogs.detailsModal.timestamp')}
+          </h3>
           <p className="mt-1 text-sm">
-            {new Date(log.createdAt).toLocaleString('en-US', {
+            {new Date(log.createdAt).toLocaleString('ru-RU', {
               dateStyle: 'full',
               timeStyle: 'long',
             })}
@@ -31,7 +36,9 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
 
         {/* Worker */}
         <div>
-          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Worker</h3>
+          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.activityLogs.worker')}
+          </h3>
           <div className="mt-1 text-sm">
             <div className="font-medium">
               {log.worker?.firstName} {log.worker?.lastName}
@@ -39,24 +46,38 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
             <div className="text-[rgb(var(--tc-muted))]">
               {log.worker?.email || log.workerEmail}
             </div>
-            <div className="text-[rgb(var(--tc-muted))]">Role: {log.workerRole}</div>
+            <div className="text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.detailsModal.role')}: {log.workerRole}
+            </div>
           </div>
         </div>
 
         {/* Context */}
         {(log.brand || log.cafe) && (
           <div>
-            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Context</h3>
+            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.detailsModal.context')}
+            </h3>
             <div className="mt-1 space-y-1 text-sm">
-              {log.brand && <div>Brand: {log.brand.name}</div>}
-              {log.cafe && <div>Cafe: {log.cafe.name}</div>}
+              {log.brand && (
+                <div>
+                  {t('cafeAdmin.activityLogs.detailsModal.brand')}: {log.brand.name}
+                </div>
+              )}
+              {log.cafe && (
+                <div>
+                  {t('cafeAdmin.activityLogs.detailsModal.cafe')}: {log.cafe.name}
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Action */}
         <div>
-          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Action</h3>
+          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+            {t('cafeAdmin.activityLogs.action')}
+          </h3>
           <div className="mt-1 flex items-center gap-2">
             <span
               className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium ${event.colorClassName}`}
@@ -68,7 +89,7 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
             {event.baseAction !== event.label && (
               <span
                 className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium ${getActionBadgeColor(event.baseAction)}`}
-                title="Base action"
+                title={t('cafeAdmin.activityLogs.baseAction')}
               >
                 {event.baseAction}
               </span>
@@ -85,11 +106,17 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
         {/* Resource */}
         {log.resourceType && (
           <div>
-            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Resource</h3>
+            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.resource')}
+            </h3>
             <div className="mt-1 text-sm">
-              <div>Type: {log.resourceType}</div>
+              <div>
+                {t('cafeAdmin.activityLogs.detailsModal.resourceType')}: {log.resourceType}
+              </div>
               {log.resourceId && (
-                <div className="text-[rgb(var(--tc-muted))]">ID: {log.resourceId}</div>
+                <div className="text-[rgb(var(--tc-muted))]">
+                  {t('cafeAdmin.activityLogs.detailsModal.resourceId')}: {log.resourceId}
+                </div>
               )}
             </div>
           </div>
@@ -98,7 +125,9 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
         {/* Details */}
         {log.details && (
           <div>
-            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Details</h3>
+            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.details')}
+            </h3>
             <pre className="mt-1 overflow-auto rounded-xl bg-[rgb(var(--tc-surface-2))] p-3 text-xs">
               {JSON.stringify(log.details, null, 2)}
             </pre>
@@ -108,65 +137,86 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
         {/* Metadata */}
         {log.metadata && (
           <div>
-            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Metadata</h3>
+            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.detailsModal.metadata')}
+            </h3>
             <pre className="mt-1 overflow-auto rounded-xl bg-[rgb(var(--tc-surface-2))] p-3 text-xs">
               {JSON.stringify(log.metadata, null, 2)}
             </pre>
           </div>
         )}
 
-        {/* Technical Info */}
-        <div>
-          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Technical Info</h3>
-          <div className="mt-1 space-y-1 text-sm">
-            {log.ipAddress && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">IP Address:</span>
-                <span className="font-mono">{log.ipAddress}</span>
-              </div>
-            )}
-            {log.userAgent && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">User Agent:</span>
-                <span className="max-w-[300px] truncate font-mono text-xs" title={log.userAgent}>
-                  {log.userAgent}
-                </span>
-              </div>
-            )}
-            {log.endpoint && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Endpoint:</span>
-                <span className="font-mono">{log.endpoint}</span>
-              </div>
-            )}
-            {log.method && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Method:</span>
-                <span className="font-mono">{log.method}</span>
-              </div>
-            )}
-            {log.statusCode !== undefined && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Status Code:</span>
-                <span
-                  className={`font-mono ${log.statusCode >= 400 ? 'text-red-600' : 'text-green-600'}`}
-                >
-                  {log.statusCode}
-                </span>
-              </div>
-            )}
-            {log.duration !== undefined && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Duration:</span>
-                <span className="font-mono">{log.duration}ms</span>
-              </div>
-            )}
+        {/* Технические полезные только для реальных HTTP-вызовов; beacon из админки — без шума */}
+        {technical && (
+          <div>
+            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.detailsModal.technicalInfo')}
+            </h3>
+            <div className="mt-1 space-y-1 text-sm">
+              {technical.ipAddress && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.activityLogs.detailsModal.ipAddress')}:
+                  </span>
+                  <span className="font-mono">{technical.ipAddress}</span>
+                </div>
+              )}
+              {technical.userAgent && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.activityLogs.detailsModal.userAgent')}:
+                  </span>
+                  <span
+                    className="max-w-[300px] truncate font-mono text-xs"
+                    title={technical.userAgent}
+                  >
+                    {technical.userAgent}
+                  </span>
+                </div>
+              )}
+              {technical.endpoint && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.activityLogs.detailsModal.endpoint')}:
+                  </span>
+                  <span className="font-mono">{technical.endpoint}</span>
+                </div>
+              )}
+              {technical.method && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.activityLogs.detailsModal.method')}:
+                  </span>
+                  <span className="font-mono">{technical.method}</span>
+                </div>
+              )}
+              {technical.statusCode !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.activityLogs.detailsModal.statusCode')}:
+                  </span>
+                  <span
+                    className={`font-mono ${technical.statusCode >= 400 ? 'text-red-600' : 'text-green-600'}`}
+                  >
+                    {technical.statusCode}
+                  </span>
+                </div>
+              )}
+              {technical.duration !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.activityLogs.detailsModal.duration')}:
+                  </span>
+                  <span className="font-mono">{technical.duration}ms</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-end border-t border-[rgb(var(--tc-border))] pt-4">
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose}>{t('common.close')}</Button>
         </div>
       </div>
     </Modal>

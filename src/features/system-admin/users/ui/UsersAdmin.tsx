@@ -11,6 +11,7 @@ import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 
 type UserFormState = {
   firstName: string;
@@ -139,7 +140,7 @@ export function UsersAdmin() {
       },
       {
         key: 'name',
-        header: 'Name',
+        header: t('common.name'),
         render: (u) => (
           <span>
             {u.firstName} {u.lastName}
@@ -148,7 +149,7 @@ export function UsersAdmin() {
       },
       {
         key: 'balance',
-        header: 'Balance',
+        header: t('workers.balance'),
         render: (u) => (
           <span className="font-mono">
             <MoneyAmount value={u.balance} />
@@ -157,7 +158,7 @@ export function UsersAdmin() {
       },
       {
         key: 'deleted',
-        header: 'Deleted',
+        header: t('systemAdmin.users.deleted'),
         render: (u) => (
           <input
             type="checkbox"
@@ -169,7 +170,7 @@ export function UsersAdmin() {
       },
       {
         key: 'createdAt',
-        header: 'Created',
+        header: t('workers.created'),
         render: (u) => (
           <span className="text-xs text-[rgb(var(--tc-muted))]">
             {new Date(u.createdAt).toLocaleDateString()}
@@ -178,7 +179,7 @@ export function UsersAdmin() {
       },
       {
         key: 'actions',
-        header: 'Actions',
+        header: t('common.actions'),
         render: (u) => (
           <div className="flex gap-2">
             <Button
@@ -190,7 +191,7 @@ export function UsersAdmin() {
                 setEditOpen(true);
               }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant="ghost"
@@ -199,7 +200,7 @@ export function UsersAdmin() {
                 setDeleteOpen(true);
               }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         ),
@@ -212,41 +213,44 @@ export function UsersAdmin() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Users (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.users.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Manage users. Users are created through registration, but can be edited and deleted
-            here.
+            {t('systemAdmin.users.subtitle')}
           </div>
         </div>
         <Button variant="secondary" onClick={refresh} disabled={loading}>
-          Refresh
+          {t('common.refresh')}
         </Button>
       </div>
 
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Email</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.email')}</div>
             <input
               type="text"
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.email}
               onChange={(e) => setFilters((s) => ({ ...s, email: e.target.value }))}
-              placeholder="Filter by email"
+              placeholder={t('systemAdmin.users.filterByEmail')}
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">First Name</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('workers.firstName')}</div>
             <input
               type="text"
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.firstName}
               onChange={(e) => setFilters((s) => ({ ...s, firstName: e.target.value }))}
-              placeholder="Filter by first name"
+              placeholder={t('systemAdmin.users.filterByFirstName')}
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Include Deleted</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.users.includeDeleted')}
+            </div>
             <input
               type="checkbox"
               checked={filters.includeDeleted}
@@ -279,18 +283,18 @@ export function UsersAdmin() {
       {/* Edit Modal */}
       <Modal
         open={editOpen}
-        title="Edit User"
+        title={t('systemAdmin.users.editUser')}
         onClose={() => setEditOpen(false)}
         footer={
           <div className="flex gap-2 justify-end">
             <Button variant="secondary" onClick={() => setEditOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={editLoading || !editForm.firstName.trim() || !editForm.lastName.trim()}
             >
-              {editLoading ? 'Saving...' : 'Save'}
+              {editLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         }
@@ -302,11 +306,13 @@ export function UsersAdmin() {
           {editingUser && (
             <div className="grid gap-2 text-sm">
               <div>
-                <span className="text-[rgb(var(--tc-muted))]">Email:</span>{' '}
+                <span className="text-[rgb(var(--tc-muted))]">{t('common.email')}:</span>{' '}
                 <span className="font-mono">{editingUser.email}</span>
               </div>
               <div>
-                <span className="text-[rgb(var(--tc-muted))]">Current Balance:</span>{' '}
+                <span className="text-[rgb(var(--tc-muted))]">
+                  {t('systemAdmin.users.currentBalance')}:
+                </span>{' '}
                 <span className="font-mono">
                   <MoneyAmount value={editingUser.balance} />
                 </span>
@@ -314,48 +320,50 @@ export function UsersAdmin() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium mb-1">First Name *</label>
+            <label className="block text-sm font-medium mb-1">{t('workers.firstName')} *</label>
             <input
               type="text"
               value={editForm.firstName}
               onChange={(e) => setEditForm((s) => ({ ...s, firstName: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="First name"
+              placeholder={t('workers.firstName')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Last Name *</label>
+            <label className="block text-sm font-medium mb-1">{t('workers.lastName')} *</label>
             <input
               type="text"
               value={editForm.lastName}
               onChange={(e) => setEditForm((s) => ({ ...s, lastName: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Last name"
+              placeholder={t('workers.lastName')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Phone</label>
+            <label className="block text-sm font-medium mb-1">{t('common.phone')}</label>
             <input
               type="text"
               value={editForm.phone}
               onChange={(e) => setEditForm((s) => ({ ...s, phone: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Phone"
+              placeholder={t('common.phone')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Avatar URL</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('systemAdmin.users.avatarUrl')}
+            </label>
             <input
               type="text"
               value={editForm.avatar}
               onChange={(e) => setEditForm((s) => ({ ...s, avatar: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Avatar URL"
+              placeholder={t('systemAdmin.users.avatarUrl')}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">
-              Balance Delta (positive = add, negative = subtract)
+              {t('systemAdmin.users.balanceDelta')} ({t('systemAdmin.users.balanceDeltaDesc')})
             </label>
             <input
               type="number"
@@ -372,8 +380,8 @@ export function UsersAdmin() {
       {/* Delete Modal */}
       <ConfirmModal
         open={deleteOpen}
-        title="Delete User"
-        message={`Are you sure you want to delete "${deletingUser?.email}"? This is a soft delete.`}
+        title={t('workers.delete')}
+        message={t('systemAdmin.users.deleteConfirm')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
         loading={deleteLoading}

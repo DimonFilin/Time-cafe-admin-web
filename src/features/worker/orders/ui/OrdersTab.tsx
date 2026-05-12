@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { t } from '@/i18n';
 import { ordersApi } from '../api/orders-api';
 import type { Order } from '../types/orders.types';
 import { OrderCard } from './OrderCard';
@@ -26,7 +27,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
   const fetchOrders = useCallback(async () => {
     if (!cafeId) {
       console.error('[OrdersTab] cafeId is missing, cannot fetch orders');
-      setError('Не удалось определить кафе работника');
+      setError(t('orders.errors.fetchFailed'));
       setLoading(false);
       return;
     }
@@ -41,7 +42,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
       setOrders(response.orders);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
-      setError('Не удалось загрузить заказы');
+      setError(t('orders.errors.fetchFailed'));
       setOrders([]); // Очищаем список при ошибке
     } finally {
       setLoading(false);
@@ -63,7 +64,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
       await fetchOrders();
     } catch (err) {
       console.error('Failed to confirm order:', err);
-      alert('Не удалось подтвердить заказ');
+      alert(t('orders.errors.confirmFailed'));
     }
   };
 
@@ -73,7 +74,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
       await fetchOrders();
     } catch (err) {
       console.error('Failed to complete order:', err);
-      alert('Не удалось завершить заказ');
+      alert(t('orders.errors.completeFailed'));
     }
   };
 
@@ -95,7 +96,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
       await fetchOrders();
     } catch (err) {
       console.error('Failed to cancel order:', err);
-      alert('Не удалось отменить заказ');
+      alert(t('orders.errors.cancelFailed'));
     }
   };
 
@@ -109,21 +110,21 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Заказы</h2>
-          <p className="text-sm text-[rgb(var(--tc-muted))]">Управление заказами кафе</p>
+          <h2 className="text-2xl font-semibold">{t('orders.title')}</h2>
+          <p className="text-sm text-[rgb(var(--tc-muted))]">{t('orders.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsMenuModalOpen(true)}
             className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
           >
-            📋 Меню
+            📋 {t('dashboard.menu')}
           </button>
           <button
             onClick={fetchOrders}
             className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
           >
-            🔄 Обновить
+            🔄 {t('common.refresh')}
           </button>
         </div>
       </div>
@@ -138,7 +139,7 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
               : 'text-[rgb(var(--tc-muted))] hover:text-[rgb(var(--tc-fg))]'
           }`}
         >
-          Активные {filter === 'active' && orders.length > 0 && `(${orders.length})`}
+          {t('orders.active')} {filter === 'active' && orders.length > 0 && `(${orders.length})`}
         </button>
         <button
           onClick={() => setFilter('history')}
@@ -148,14 +149,14 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
               : 'text-[rgb(var(--tc-muted))] hover:text-[rgb(var(--tc-fg))]'
           }`}
         >
-          История
+          {t('orders.history')}
         </button>
       </div>
 
       {/* Content */}
       {loading ? (
         <div className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-8 text-center">
-          <div className="text-lg">Загрузка заказов...</div>
+          <div className="text-lg">{t('common.loading')}</div>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
@@ -164,15 +165,15 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
             onClick={fetchOrders}
             className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 hover:bg-red-200"
           >
-            Попробовать снова
+            {t('common.retry')}
           </button>
         </div>
       ) : orders.length === 0 ? (
         <div className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-8 text-center">
           <div className="text-4xl mb-4">🛒</div>
-          <h3 className="text-lg font-medium mb-2">Нет заказов</h3>
+          <h3 className="text-lg font-medium mb-2">{t('orders.noOrders')}</h3>
           <p className="text-sm text-[rgb(var(--tc-muted))]">
-            {filter === 'active' ? 'Активных заказов пока нет' : 'История заказов пуста'}
+            {filter === 'active' ? t('orders.noActiveOrders') : t('orders.noHistoryOrders')}
           </p>
         </div>
       ) : (

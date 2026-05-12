@@ -2,6 +2,21 @@ import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.text();
+    const url = `${env.backendUrl}/activity-logs`;
+    return fetchWithAuthRefresh(url, {
+      method: 'POST',
+      body,
+      cache: 'no-store',
+    });
+  } catch (error) {
+    console.error('[api/activity-logs] POST Error:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('[api/activity-logs] GET - Starting request');

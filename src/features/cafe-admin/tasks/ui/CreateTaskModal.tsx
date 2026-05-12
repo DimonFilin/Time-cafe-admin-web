@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import { createTaskTemplate } from '../api/tasks-api';
 import {
   TaskCategory,
@@ -43,8 +44,8 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
   const roleOptions = useMemo(
     () =>
       [
-        { value: 'CAFE_ADMIN', label: 'Cafe Admin' },
-        { value: 'WORKER', label: 'Worker' },
+        { value: 'CAFE_ADMIN', label: t('workers.roles.cafeAdmin') },
+        { value: 'WORKER', label: t('workers.roles.worker') },
       ] as const satisfies ReadonlyArray<{ value: WorkerRole; label: string }>,
     [],
   );
@@ -82,14 +83,14 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
       formData.assignmentType === TaskAssignmentType.SPECIFIC_WORKERS &&
       (!formData.assignedWorkerIds || formData.assignedWorkerIds.length === 0)
     ) {
-      setError('Выберите хотя бы одного сотрудника (Specific Workers).');
+      setError(t('tasks.errors.selectWorker'));
       return;
     }
     if (
       formData.assignmentType === TaskAssignmentType.ROLE_BASED &&
       (!formData.assignedRoles || formData.assignedRoles.length === 0)
     ) {
-      setError('Выберите хотя бы одну роль (Role Based).');
+      setError(t('tasks.errors.selectRole'));
       return;
     }
 
@@ -101,7 +102,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
       handleClose();
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      setError(err instanceof Error ? err.message : t('tasks.errors.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -125,10 +126,10 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Create Task Template">
+    <Modal open={open} onClose={handleClose} title={t('tasks.template')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Title</label>
+          <label className="mb-1 block text-sm font-medium">{t('common.name')}</label>
           <input
             type="text"
             value={formData.title}
@@ -139,7 +140,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Description</label>
+          <label className="mb-1 block text-sm font-medium">{t('common.description')}</label>
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -150,7 +151,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium">Category</label>
+            <label className="mb-1 block text-sm font-medium">{t('tasks.category')}</label>
             <select
               value={formData.category}
               onChange={(e) =>
@@ -170,7 +171,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium">Priority</label>
+            <label className="mb-1 block text-sm font-medium">{t('tasks.priority')}</label>
             <select
               value={formData.priority}
               onChange={(e) =>
@@ -191,7 +192,9 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Estimated Minutes (optional)</label>
+          <label className="mb-1 block text-sm font-medium">
+            {t('tasks.estimatedTime')} ({t('common.optional')})
+          </label>
           <input
             type="number"
             value={formData.estimatedMinutes || ''}
@@ -207,7 +210,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Assignment Type</label>
+          <label className="mb-1 block text-sm font-medium">{t('tasks.assignmentType')}</label>
           <select
             value={formData.assignmentType}
             onChange={(e) =>
@@ -227,22 +230,30 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
             }
             className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
           >
-            <option value={TaskAssignmentType.ALL_WORKERS}>All Workers</option>
-            <option value={TaskAssignmentType.SPECIFIC_WORKERS}>Specific Workers</option>
-            <option value={TaskAssignmentType.ROLE_BASED}>Role Based</option>
+            <option value={TaskAssignmentType.ALL_WORKERS}>
+              {t('tasks.assignmentTypes.allWorkers')}
+            </option>
+            <option value={TaskAssignmentType.SPECIFIC_WORKERS}>
+              {t('tasks.assignmentTypes.specificWorkers')}
+            </option>
+            <option value={TaskAssignmentType.ROLE_BASED}>
+              {t('tasks.assignmentTypes.roleBased')}
+            </option>
           </select>
         </div>
 
         {formData.assignmentType === TaskAssignmentType.SPECIFIC_WORKERS && (
           <div className="space-y-2">
-            <div className="text-sm font-medium">Specific workers</div>
+            <div className="text-sm font-medium">{t('tasks.assignedWorkers')}</div>
             {workersError && (
               <div className="rounded-lg bg-red-50 p-2 text-sm text-red-700">{workersError}</div>
             )}
             {workersLoading ? (
-              <div className="text-sm text-[rgb(var(--tc-muted))]">Loading workers…</div>
+              <div className="text-sm text-[rgb(var(--tc-muted))]">{t('common.loading')}</div>
             ) : workers.length === 0 ? (
-              <div className="text-sm text-[rgb(var(--tc-muted))]">No workers found</div>
+              <div className="text-sm text-[rgb(var(--tc-muted))]">
+                {t('workers.errors.fetchFailed')}
+              </div>
             ) : (
               <div className="max-h-48 space-y-2 overflow-auto rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-3">
                 {workers.map((w) => {
@@ -277,7 +288,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
 
         {formData.assignmentType === TaskAssignmentType.ROLE_BASED && (
           <div className="space-y-2">
-            <div className="text-sm font-medium">Roles</div>
+            <div className="text-sm font-medium">{t('tasks.assignedRoles')}</div>
             <div className="space-y-2 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-3">
               {roleOptions.map((r) => {
                 const checked = (formData.assignedRoles ?? []).includes(r.value);
@@ -313,7 +324,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
               checked={formData.requiresPhoto}
               onChange={(e) => setFormData({ ...formData, requiresPhoto: e.target.checked })}
             />
-            <span className="text-sm">Requires Photo</span>
+            <span className="text-sm">{t('tasks.requiresPhoto')}</span>
           </label>
 
           <label className="flex items-center gap-2">
@@ -322,7 +333,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
               checked={formData.requiresComment}
               onChange={(e) => setFormData({ ...formData, requiresComment: e.target.checked })}
             />
-            <span className="text-sm">Requires Comment</span>
+            <span className="text-sm">{t('tasks.requiresComment')}</span>
           </label>
         </div>
 
@@ -336,10 +347,10 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
             disabled={loading}
             className="flex-1"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={loading} className="flex-1">
-            {loading ? 'Creating...' : 'Create Task'}
+            {loading ? t('common.creating') : t('tasks.create')}
           </Button>
         </div>
       </form>

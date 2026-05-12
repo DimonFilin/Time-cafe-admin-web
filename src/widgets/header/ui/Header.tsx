@@ -5,6 +5,11 @@ import { useEffect, useState } from 'react';
 
 import { Logo } from '@/shared/ui/logo/Logo';
 import { ThemeToggle } from '@/shared/ui/theme-toggle/ThemeToggle';
+import { logWorkerActivity } from '@/shared/lib/log-worker-activity';
+import {
+  ActivityAction,
+  ActivityCategory,
+} from '@/features/brand-admin/activity-logs/api/activity-logs-api';
 
 export function Header() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -34,12 +39,22 @@ export function Header() {
           <Logo />
           <nav className="hidden items-center gap-1 text-sm text-[rgb(var(--tc-muted))] sm:flex">
             {isAuthed ? (
-              <form action="/api/auth/logout" method="post">
+              <form
+                action="/api/auth/logout"
+                method="post"
+                onSubmit={() => {
+                  logWorkerActivity({
+                    action: ActivityAction.LOGOUT,
+                    category: ActivityCategory.AUTH,
+                    resourceType: 'SESSION',
+                  });
+                }}
+              >
                 <button
                   className="rounded-lg px-3 py-2 hover:bg-[rgb(var(--tc-surface-2))] hover:text-[rgb(var(--tc-fg))]"
                   type="submit"
                 >
-                  Logout
+                  Выйти из аккаунта
                 </button>
               </form>
             ) : (

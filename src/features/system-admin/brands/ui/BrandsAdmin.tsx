@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Brand } from '@/entities/brand/types/brand';
 import type { BrandDocument } from '@/entities/brand/types/document';
 import type { CafeListItem } from '@/entities/cafe/types/cafe';
-import type { ApiKey, CreatedApiKey } from '@/entities/brand/types/api-key';
 import type { WorkerProfile } from '@/entities/worker/types/worker';
 import {
   createBrand,
@@ -23,7 +22,6 @@ import {
   verifyBrandDocument,
 } from '../api/documents';
 import { createCafe, deleteCafe, listBrandCafes, updateCafe } from '../api/cafes';
-import { createApiKey, deleteApiKey, listApiKeys, updateApiKey } from '../api/api-keys';
 import { listBrandWorkers } from '../api/workers';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
@@ -127,29 +125,6 @@ export function BrandsAdmin() {
   const [cafeDeleteOpen, setCafeDeleteOpen] = useState(false);
   const [cafeDeleteId, setCafeDeleteId] = useState<string | null>(null);
   const [cafeDeleteLoading, setCafeDeleteLoading] = useState(false);
-
-  const [apiKeysOpen, setApiKeysOpen] = useState(false);
-  const [apiKeysBrandId, setApiKeysBrandId] = useState<string | null>(null);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [apiKeysLoading, setApiKeysLoading] = useState(false);
-  const [apiKeysError, setApiKeysError] = useState<string | null>(null);
-
-  const [apiKeyEditOpen, setApiKeyEditOpen] = useState(false);
-  const [apiKeyEditId, setApiKeyEditId] = useState<string | null>(null);
-  const [apiKeySaveLoading, setApiKeySaveLoading] = useState(false);
-  const [apiKeySaveError, setApiKeySaveError] = useState<string | null>(null);
-  const [apiKeyCreated, setApiKeyCreated] = useState<CreatedApiKey | null>(null);
-  const [apiKeyForm, setApiKeyForm] = useState({
-    name: '',
-    permissionsText: '',
-    expiresAt: '',
-    isActive: true,
-    clearExpires: false,
-  });
-
-  const [apiKeyDeleteOpen, setApiKeyDeleteOpen] = useState(false);
-  const [apiKeyDeleteId, setApiKeyDeleteId] = useState<string | null>(null);
-  const [apiKeyDeleteLoading, setApiKeyDeleteLoading] = useState(false);
 
   const [workersOpen, setWorkersOpen] = useState(false);
   const [workersBrandId, setWorkersBrandId] = useState<string | null>(null);
@@ -381,27 +356,6 @@ export function BrandsAdmin() {
     }
   };
 
-  const refreshApiKeys = async (brandId: string) => {
-    setApiKeysError(null);
-    setApiKeysLoading(true);
-    try {
-      const data = await listApiKeys(brandId);
-      setApiKeys(data);
-    } catch (e) {
-      setApiKeys([]);
-      setApiKeysError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setApiKeysLoading(false);
-    }
-  };
-
-  const openApiKeys = async (b: Brand) => {
-    setApiKeysBrandId(b.id);
-    setApiKeyCreated(null);
-    setApiKeysOpen(true);
-    await refreshApiKeys(b.id);
-  };
-
   const refreshWorkers = async (brandId: string, page: number, limit: number) => {
     setWorkersError(null);
     setWorkersLoading(true);
@@ -424,98 +378,6 @@ export function BrandsAdmin() {
     setWorkersBrandId(b.id);
     setWorkersOpen(true);
     await refreshWorkers(b.id, 1, workersLimit);
-  };
-
-  const parsePermissions = (text: string) =>
-    text
-      .split(/[\n,]/g)
-      .map((x) => x.trim())
-      .filter(Boolean);
-
-  const openApiKeyCreate = () => {
-    if (!apiKeysBrandId) return;
-    setApiKeyEditId(null);
-    setApiKeyCreated(null);
-    setApiKeySaveError(null);
-    setApiKeyForm({
-      name: '',
-      permissionsText: '',
-      expiresAt: '',
-      isActive: true,
-      clearExpires: false,
-    });
-    setApiKeyEditOpen(true);
-  };
-
-  const openApiKeyEdit = (k: ApiKey) => {
-    if (!apiKeysBrandId) return;
-    setApiKeyEditId(k.id);
-    setApiKeyCreated(null);
-    setApiKeySaveError(null);
-    setApiKeyForm({
-      name: k.name,
-      permissionsText: (k.permissions ?? []).join('\n'),
-      expiresAt: k.expiresAt ?? '',
-      isActive: k.isActive,
-      clearExpires: false,
-    });
-    setApiKeyEditOpen(true);
-  };
-
-  const openApiKeyDelete = (k: ApiKey) => {
-    setApiKeyDeleteId(k.id);
-    setApiKeyDeleteOpen(true);
-  };
-
-  const onSaveApiKey = async () => {
-    if (!apiKeysBrandId) return;
-    setApiKeySaveLoading(true);
-    setApiKeySaveError(null);
-    try {
-      const permissions = parsePermissions(apiKeyForm.permissionsText);
-      if (permissions.length === 0) throw new Error('permissions обязателен (минимум 1)');
-
-      if (apiKeyEditId) {
-        await updateApiKey({
-          brandId: apiKeysBrandId,
-          keyId: apiKeyEditId,
-          name: apiKeyForm.name.trim() || undefined,
-          permissions,
-          isActive: apiKeyForm.isActive,
-          expiresAt: apiKeyForm.clearExpires ? null : apiKeyForm.expiresAt.trim() || undefined,
-        });
-      } else {
-        const created = await createApiKey({
-          brandId: apiKeysBrandId,
-          name: apiKeyForm.name.trim(),
-          permissions,
-          expiresAt: apiKeyForm.expiresAt.trim() || undefined,
-        });
-        setApiKeyCreated(created);
-      }
-
-      setApiKeyEditOpen(false);
-      await refreshApiKeys(apiKeysBrandId);
-    } catch (e) {
-      setApiKeySaveError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setApiKeySaveLoading(false);
-    }
-  };
-
-  const onConfirmDeleteApiKey = async () => {
-    if (!apiKeysBrandId || !apiKeyDeleteId) return;
-    setApiKeyDeleteLoading(true);
-    setApiKeysError(null);
-    try {
-      await deleteApiKey({ brandId: apiKeysBrandId, keyId: apiKeyDeleteId });
-      setApiKeyDeleteOpen(false);
-      await refreshApiKeys(apiKeysBrandId);
-    } catch (e) {
-      setApiKeysError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setApiKeyDeleteLoading(false);
-    }
   };
 
   const openUploadDoc = () => {
@@ -580,14 +442,11 @@ export function BrandsAdmin() {
     {
       key: 'actions',
       header: '',
-      className: 'w-[420px] text-right',
+      className: 'w-[360px] text-right',
       render: (b) => (
         <div className="flex justify-end gap-2">
           <Button variant="secondary" className="px-3 py-2" onClick={() => openCafes(b)}>
             Cafes
-          </Button>
-          <Button variant="secondary" className="px-3 py-2" onClick={() => openApiKeys(b)}>
-            ApiKeys
           </Button>
           <Button variant="secondary" className="px-3 py-2" onClick={() => openWorkers(b)}>
             Workers
@@ -1263,206 +1122,6 @@ export function BrandsAdmin() {
         isLoading={cafeDeleteLoading}
         onClose={() => setCafeDeleteOpen(false)}
         onConfirm={onConfirmDeleteCafe}
-      />
-
-      <Modal open={apiKeysOpen} title="API Keys бренда" onClose={() => setApiKeysOpen(false)}>
-        <div className="grid gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">
-              brandId: <span className="font-mono">{apiKeysBrandId ?? '-'}</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => apiKeysBrandId && refreshApiKeys(apiKeysBrandId)}
-                disabled={apiKeysLoading}
-              >
-                Refresh
-              </Button>
-              <Button onClick={openApiKeyCreate} disabled={!apiKeysBrandId}>
-                Add key
-              </Button>
-            </div>
-          </div>
-
-          {apiKeysError && (
-            <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{apiKeysError}</Card>
-          )}
-
-          {apiKeyCreated && (
-            <Card className="p-4">
-              <div className="text-sm font-semibold">API key (показывается один раз)</div>
-              <div className="mt-2 rounded-xl bg-[rgb(var(--tc-surface-2))] p-3 font-mono text-xs">
-                {apiKeyCreated.key}
-              </div>
-            </Card>
-          )}
-
-          <div className="overflow-auto rounded-2xl border border-[rgb(var(--tc-border))]">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] text-left">
-                  <th className="px-4 py-3 font-semibold">Name</th>
-                  <th className="px-4 py-3 font-semibold">Prefix</th>
-                  <th className="px-4 py-3 font-semibold">Active</th>
-                  <th className="px-4 py-3 font-semibold">Expires</th>
-                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {apiKeysLoading ? (
-                  <tr>
-                    <td className="px-4 py-6 text-[rgb(var(--tc-muted))]" colSpan={5}>
-                      Загрузка...
-                    </td>
-                  </tr>
-                ) : apiKeys.length === 0 ? (
-                  <tr>
-                    <td className="px-4 py-6 text-[rgb(var(--tc-muted))]" colSpan={5}>
-                      Нет ключей
-                    </td>
-                  </tr>
-                ) : (
-                  apiKeys.map((k) => (
-                    <tr
-                      key={k.id}
-                      className="border-b border-[rgb(var(--tc-border))] last:border-b-0"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{k.name}</div>
-                        <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-                          <span className="font-mono">{k.id}</span>
-                        </div>
-                        <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-                          permissions: <span className="font-mono">{k.permissions.length}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs">{k.prefix}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={
-                            k.isActive
-                              ? 'text-[rgb(var(--tc-success))]'
-                              : 'text-[rgb(var(--tc-muted))]'
-                          }
-                        >
-                          {k.isActive ? 'yes' : 'no'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-[rgb(var(--tc-muted))]">
-                        {k.expiresAt ? new Date(k.expiresAt).toLocaleString() : '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="secondary"
-                            className="px-3 py-2"
-                            onClick={() => openApiKeyEdit(k)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            className="px-3 py-2"
-                            onClick={() => openApiKeyDelete(k)}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        open={apiKeyEditOpen}
-        title={apiKeyEditId ? 'Редактировать API key' : 'Создать API key'}
-        onClose={() => setApiKeyEditOpen(false)}
-      >
-        <div className="grid gap-3">
-          {apiKeySaveError && (
-            <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{apiKeySaveError}</Card>
-          )}
-          <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Name *</div>
-            <input
-              className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
-              value={apiKeyForm.name}
-              onChange={(e) => setApiKeyForm((s) => ({ ...s, name: e.target.value }))}
-            />
-          </div>
-          <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">
-              Permissions * (one per line or comma-separated)
-            </div>
-            <textarea
-              className="min-h-[120px] w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
-              value={apiKeyForm.permissionsText}
-              onChange={(e) => setApiKeyForm((s) => ({ ...s, permissionsText: e.target.value }))}
-            />
-          </div>
-          <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">
-              ExpiresAt (ISO) / empty = no change
-            </div>
-            <input
-              className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
-              value={apiKeyForm.expiresAt}
-              onChange={(e) => setApiKeyForm((s) => ({ ...s, expiresAt: e.target.value }))}
-              placeholder="2026-12-31T23:59:59.000Z"
-              disabled={apiKeyForm.clearExpires}
-            />
-          </div>
-          {apiKeyEditId && (
-            <label className="flex items-center gap-2 text-sm text-[rgb(var(--tc-muted))]">
-              <input
-                type="checkbox"
-                checked={apiKeyForm.isActive}
-                onChange={(e) => setApiKeyForm((s) => ({ ...s, isActive: e.target.checked }))}
-              />
-              Active
-            </label>
-          )}
-          {apiKeyEditId && (
-            <label className="flex items-center gap-2 text-sm text-[rgb(var(--tc-muted))]">
-              <input
-                type="checkbox"
-                checked={apiKeyForm.clearExpires}
-                onChange={(e) => setApiKeyForm((s) => ({ ...s, clearExpires: e.target.checked }))}
-              />
-              Clear expiresAt (set null)
-            </label>
-          )}
-
-          <div className="mt-2 flex flex-wrap justify-end gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setApiKeyEditOpen(false)}
-              disabled={apiKeySaveLoading}
-            >
-              Cancel
-            </Button>
-            <Button onClick={onSaveApiKey} disabled={apiKeySaveLoading}>
-              {apiKeySaveLoading ? 'Saving...' : 'Save'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      <ConfirmModal
-        open={apiKeyDeleteOpen}
-        title="Удалить API key?"
-        description="Точно хотите отозвать ключ?"
-        confirmText="Удалить"
-        isDanger
-        isLoading={apiKeyDeleteLoading}
-        onClose={() => setApiKeyDeleteOpen(false)}
-        onConfirm={onConfirmDeleteApiKey}
       />
 
       <Modal

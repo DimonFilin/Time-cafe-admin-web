@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { t } from '@/i18n';
 import { appointmentsApi } from '../api/appointments-api';
 import type { Appointment } from '../types/appointments.types';
 import { AppointmentCard } from './AppointmentCard';
@@ -32,7 +33,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
   const fetchAppointments = useCallback(async () => {
     if (!cafeId) {
       console.error('[AppointmentsTab] cafeId is missing');
-      setError('Не удалось определить кафе работника');
+      setError(t('appointments.errors.fetchFailed'));
       setLoading(false);
       return;
     }
@@ -70,7 +71,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       setAppointments(filtered);
     } catch (err) {
       console.error('[AppointmentsTab] Failed to fetch appointments:', err);
-      setError('Не удалось загрузить бронирования');
+      setError(t('appointments.errors.fetchFailed'));
       setAppointments([]); // Очищаем список при ошибке
     } finally {
       setLoading(false);
@@ -92,7 +93,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       await fetchAppointments();
     } catch (err) {
       console.error('Failed to confirm appointment:', err);
-      alert('Не удалось подтвердить бронирование');
+      alert(t('appointments.errors.confirmFailed'));
     }
   };
 
@@ -102,7 +103,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       await fetchAppointments();
     } catch (err) {
       console.error('Failed to check-in appointment:', err);
-      alert('Не удалось отметить приход');
+      alert(t('appointments.errors.checkInFailed'));
     }
   };
 
@@ -128,7 +129,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       await fetchAppointments();
     } catch (err) {
       console.error('Failed to cancel appointment:', err);
-      alert('Не удалось отменить бронирование');
+      alert(t('appointments.errors.cancelFailed'));
     }
   };
 
@@ -159,8 +160,8 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Бронирования</h2>
-          <p className="text-sm text-[rgb(var(--tc-muted))]">Управление бронированиями столов</p>
+          <h2 className="text-2xl font-semibold">{t('appointments.title')}</h2>
+          <p className="text-sm text-[rgb(var(--tc-muted))]">{t('appointments.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -169,7 +170,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
               setIsQrOpen(true);
             }}
             className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
-            title="Сканировать QR-код бронирования"
+            title={t('appointments.scanQr')}
           >
             📷 QR
           </button>
@@ -177,7 +178,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
             onClick={fetchAppointments}
             className="rounded-lg border border-[rgb(var(--tc-border))] px-4 py-2 text-sm transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
           >
-            🔄 Обновить
+            🔄 {t('common.refresh')}
           </button>
         </div>
       </div>
@@ -192,7 +193,8 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
               : 'text-[rgb(var(--tc-muted))] hover:text-[rgb(var(--tc-fg))]'
           }`}
         >
-          Активные {filter === 'active' && appointments.length > 0 && `(${appointments.length})`}
+          {t('appointments.active')}{' '}
+          {filter === 'active' && appointments.length > 0 && `(${appointments.length})`}
         </button>
         <button
           onClick={() => setFilter('history')}
@@ -202,14 +204,14 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
               : 'text-[rgb(var(--tc-muted))] hover:text-[rgb(var(--tc-fg))]'
           }`}
         >
-          История
+          {t('appointments.history')}
         </button>
       </div>
 
       {/* Content */}
       {loading ? (
         <div className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-8 text-center">
-          <div className="text-lg">Загрузка бронирований...</div>
+          <div className="text-lg">{t('worker.appointments.loading')}</div>
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
@@ -218,15 +220,17 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
             onClick={fetchAppointments}
             className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 hover:bg-red-200"
           >
-            Попробовать снова
+            {t('common.retry')}
           </button>
         </div>
       ) : appointments.length === 0 ? (
         <div className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-8 text-center">
           <div className="mb-4 text-4xl">📅</div>
-          <h3 className="mb-2 text-lg font-medium">Нет бронирований</h3>
+          <h3 className="mb-2 text-lg font-medium">{t('appointments.noAppointments')}</h3>
           <p className="text-sm text-[rgb(var(--tc-muted))]">
-            {filter === 'active' ? 'Активных бронирований пока нет' : 'История бронирований пуста'}
+            {filter === 'active'
+              ? t('appointments.noActiveAppointments')
+              : t('appointments.noHistoryAppointments')}
           </p>
         </div>
       ) : (

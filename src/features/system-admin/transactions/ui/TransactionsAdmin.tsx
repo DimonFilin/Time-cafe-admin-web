@@ -15,6 +15,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 
 export function TransactionsAdmin() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -112,86 +113,86 @@ export function TransactionsAdmin() {
       {
         key: 'id',
         header: 'ID',
-        render: (t) => (
-          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{t.id}</span>
+        render: (row) => (
+          <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{row.id}</span>
         ),
       },
       {
         key: 'user',
-        header: 'User',
-        render: (t) => (
+        header: t('systemAdmin.transactions.user'),
+        render: (row) => (
           <div>
-            {t.user ? (
+            {row.user ? (
               <>
                 <div className="font-medium">
-                  {t.user.firstName} {t.user.lastName}
+                  {row.user.firstName} {row.user.lastName}
                 </div>
-                <div className="text-xs text-[rgb(var(--tc-muted))]">{t.user.email}</div>
+                <div className="text-xs text-[rgb(var(--tc-muted))]">{row.user.email}</div>
               </>
             ) : (
-              <span className="text-xs text-[rgb(var(--tc-muted))]">{t.userId}</span>
+              <span className="text-xs text-[rgb(var(--tc-muted))]">{row.userId}</span>
             )}
           </div>
         ),
       },
       {
         key: 'type',
-        header: 'Type',
-        render: (t) => (
+        header: t('systemAdmin.transactions.type'),
+        render: (row) => (
           <span
             className={`font-mono text-xs ${
-              t.type === 'PAYMENT'
+              row.type === 'PAYMENT'
                 ? 'text-[rgb(var(--tc-success))]'
                 : 'text-[rgb(var(--tc-warning))]'
             }`}
           >
-            {t.type}
+            {row.type}
           </span>
         ),
       },
       {
         key: 'status',
-        header: 'Status',
-        render: (t) => <span className="font-mono text-xs">{t.status}</span>,
+        header: t('common.status'),
+        render: (row) => <span className="font-mono text-xs">{row.status}</span>,
       },
       {
         key: 'amount',
-        header: 'Amount',
-        render: (t) => (
+        header: t('systemAdmin.transactions.amount'),
+        render: (row) => (
           <span className="font-mono">
-            <MoneyAmount value={t.amount} />
+            <MoneyAmount value={row.amount} />
           </span>
         ),
       },
       {
         key: 'createdAt',
-        header: 'Created',
-        render: (t) => (
+        header: t('workers.created'),
+        render: (row) => (
           <span className="text-xs text-[rgb(var(--tc-muted))]">
-            {new Date(t.createdAt).toLocaleString()}
+            {new Date(row.createdAt).toLocaleString()}
           </span>
         ),
       },
       {
         key: 'actions',
-        header: 'Actions',
-        render: (t) => (
+        header: t('common.actions'),
+        render: (row) => (
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => openDetails(t.id)}>
-              View
+            <Button variant="secondary" onClick={() => openDetails(row.id)}>
+              {t('common.view')}
             </Button>
-            {t.type === 'PAYMENT' && t.status === 'COMPLETED' && (
+            {row.type === 'PAYMENT' && row.status === 'COMPLETED' && (
               <Button
                 variant="ghost"
                 onClick={() => {
-                  setRefundTransaction(t);
+                  setRefundTransaction(row);
                   setRefundAmount('');
                   setRefundDescription('');
                   setRefundError(null);
                   setRefundOpen(true);
                 }}
               >
-                Refund
+                {t('systemAdmin.transactions.refund')}
               </Button>
             )}
           </div>
@@ -205,30 +206,36 @@ export function TransactionsAdmin() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Transactions (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.transactions.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            View all transactions and create refunds for completed payments.
+            {t('systemAdmin.transactions.subtitle')}
           </div>
         </div>
         <Button variant="secondary" onClick={refresh} disabled={loading}>
-          Refresh
+          {t('common.refresh')}
         </Button>
       </div>
 
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">User ID</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.transactions.userId')}
+            </div>
             <input
               type="text"
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.userId}
               onChange={(e) => setFilters((s) => ({ ...s, userId: e.target.value }))}
-              placeholder="Filter by user ID"
+              placeholder={t('systemAdmin.transactions.filterByUserId')}
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Type</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.transactions.type')}
+            </div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.type}
@@ -236,13 +243,13 @@ export function TransactionsAdmin() {
                 setFilters((s) => ({ ...s, type: e.target.value as '' | TransactionType }))
               }
             >
-              <option value="">All</option>
+              <option value="">{t('common.all')}</option>
               <option value="PAYMENT">PAYMENT</option>
               <option value="REFUND">REFUND</option>
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Status</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.status')}</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.status}
@@ -250,7 +257,7 @@ export function TransactionsAdmin() {
                 setFilters((s) => ({ ...s, status: e.target.value as '' | TransactionStatus }))
               }
             >
-              <option value="">All</option>
+              <option value="">{t('common.all')}</option>
               <option value="PENDING">PENDING</option>
               <option value="PROCESSING">PROCESSING</option>
               <option value="COMPLETED">COMPLETED</option>
@@ -259,13 +266,15 @@ export function TransactionsAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Order ID</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.transactions.orderId')}
+            </div>
             <input
               type="text"
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.orderId}
               onChange={(e) => setFilters((s) => ({ ...s, orderId: e.target.value }))}
-              placeholder="Filter by order ID"
+              placeholder={t('systemAdmin.transactions.filterByOrderId')}
             />
           </div>
         </div>
@@ -280,7 +289,7 @@ export function TransactionsAdmin() {
       <DataTable
         rows={transactions}
         columns={columns}
-        getRowId={(t) => t.id}
+        getRowId={(row) => row.id}
         isLoading={loading}
         error={null}
         page={page}

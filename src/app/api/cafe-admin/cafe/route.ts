@@ -3,7 +3,7 @@ import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const url = `${BACKEND_URL}/cafe-admin/cafe/my`;
 

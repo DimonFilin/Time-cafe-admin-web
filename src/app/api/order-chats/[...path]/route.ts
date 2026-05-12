@@ -13,7 +13,9 @@ async function forward(req: NextRequest, params: { path: string[] }) {
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     if (contentType.includes('multipart/form-data')) {
-      init.body = await req.formData();
+      // Не пересобирать FormData в Node — граница/файлы часто ломаются; проксируем сырое тело.
+      init.body = await req.arrayBuffer();
+      init.headers = { 'Content-Type': contentType };
     } else {
       init.body = await req.text();
       init.headers = { 'Content-Type': contentType || 'application/json' };

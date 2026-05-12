@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { MediaImage } from '@/shared/ui/media/MediaImage';
+import { proxiedMediaUrl } from '@/shared/lib/proxied-media-url';
 import { chatsApi, ChatMessage, ChatSummary } from '../api/chats-api';
 
 const wsUrl = process.env.NEXT_PUBLIC_SHARED_API_URL || 'http://localhost:3000';
-const CHAT_STATUS_VALUES = ['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const;
-type ChatStatusFilter = (typeof CHAT_STATUS_VALUES)[number];
+type ChatStatusFilter = 'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 
 export function ChatsTab() {
   const [search, setSearch] = useState('');
@@ -22,6 +23,8 @@ export function ChatsTab() {
   const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [userInfoOpen, setUserInfoOpen] = useState(false);
+  const [appointmentOrdersOpen, setAppointmentOrdersOpen] = useState(false);
   const activeChatIdRef = useRef<string | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -37,8 +40,13 @@ export function ChatsTab() {
     () => chats.find((chat) => chat.id === activeChatId) || null,
     [activeChatId, chats],
   );
+  const activeCustomerName = useMemo(() => {
+    if (!activeChat?.user) return 'Пользователь';
+    const full = `${activeChat.user.firstName || ''} ${activeChat.user.lastName || ''}`.trim();
+    return full || activeChat.user.email || 'Пользователь';
+  }, [activeChat]);
 
-  const loadChats = async () => {
+  const loadChats = useCallback(async () => {
     const data = await chatsApi.list({
       search,
       unreadOnly,
@@ -48,14 +56,15 @@ export function ChatsTab() {
       to: toDate || undefined,
     });
     setChats(data.items);
-    if (!activeChatId && data.items[0]) {
-      setActiveChatId(data.items[0].id);
-    }
-  };
+    setActiveChatId((prev) => prev ?? data.items[0]?.id ?? null);
+  }, [search, unreadOnly, statusFilter, fromDate, toDate]);
 
   useEffect(() => {
     void loadChats();
-  }, [search, unreadOnly, statusFilter, fromDate, toDate]);
+  }, [loadChats]);
+
+  const loadChatsRef = useRef(loadChats);
+  loadChatsRef.current = loadChats;
 
   useEffect(() => {
     if (!activeChatId) return;
@@ -91,10 +100,10 @@ export function ChatsTab() {
       if (message.chatId === activeChatIdRef.current) {
         setMessages((prev) => appendUniqueMessage(prev, message));
       }
-      void loadChats();
+      void loadChatsRef.current();
     });
     s.on('chat:unread:update', () => {
-      void loadChats();
+      void loadChatsRef.current();
     });
     if (!disposed) {
       setSocket(s);
@@ -122,6 +131,8 @@ export function ChatsTab() {
     try {
       const uploaded = await Promise.all(picked.map((file) => chatsApi.upload(activeChatId, file)));
       setAttachmentIds((prev) => [...prev, ...uploaded.map((u) => u.id)].slice(0, 4));
+    } catch (err) {
+      console.error('[ChatsTab] upload failed', err);
     } finally {
       setUploading(false);
     }
@@ -209,7 +220,36 @@ export function ChatsTab() {
 
       <div className="flex h-[72vh] min-h-[65vh] flex-col rounded-xl border border-[rgb(var(--tc-border))]">
         <div className="border-b border-[rgb(var(--tc-border))] p-3 font-medium">
-          {activeChat ? `Чат заказа #${activeChat.orderId.slice(0, 8)}` : 'Выберите чат'}
+          {activeChat ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>Чат заказа #{activeChat.orderId.slice(0, 8)}</div>
+              {activeChat.user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppointmentOrdersOpen(false);
+                    setUserInfoOpen(true);
+                  }}
+                  className="flex items-center gap-2 rounded-full border border-[rgb(var(--tc-border))] px-2 py-1 text-sm hover:bg-[rgb(var(--tc-bg-soft))]"
+                >
+                  {activeChat.user.avatarUrl ? (
+                    <MediaImage
+                      src={activeChat.user.avatarUrl}
+                      alt={activeCustomerName}
+                      variant="avatarXs"
+                    />
+                  ) : (
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[rgb(var(--tc-accent))] text-xs font-semibold text-white">
+                      {activeCustomerName.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="max-w-[210px] truncate">{activeCustomerName}</span>
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            'Выберите чат'
+          )}
         </div>
         <div
           ref={messagesScrollRef}
@@ -220,27 +260,55 @@ export function ChatsTab() {
             shouldAutoScrollRef.current = distanceToBottom < 80;
           }}
         >
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`max-w-[85%] rounded-xl p-3 ${m.authorType === 'WORKER' ? 'ml-auto bg-[rgb(var(--tc-accent))] text-white' : 'bg-[rgb(var(--tc-bg-soft))]'}`}
-            >
-              {m.text && <div className="text-sm">{m.text}</div>}
-              {!!m.attachments.length && (
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  {m.attachments.map((a) => (
-                    <button key={a.id} type="button" onClick={() => setPreviewImageUrl(a.url)}>
-                      <img
-                        src={a.url}
-                        alt="attachment"
-                        className="h-80 w-full rounded-md object-cover"
+          {messages.map((m) => {
+            const isWorker = m.authorType === 'WORKER';
+            return (
+              <div key={m.id} className={`flex ${isWorker ? 'justify-end' : 'justify-start'}`}>
+                {!isWorker ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppointmentOrdersOpen(false);
+                      setUserInfoOpen(true);
+                    }}
+                    className="mr-2 mt-1 h-8 w-8 shrink-0"
+                    title={activeCustomerName}
+                  >
+                    {activeChat?.user?.avatarUrl ? (
+                      <MediaImage
+                        src={activeChat.user.avatarUrl}
+                        alt={activeCustomerName}
+                        variant="avatarSm"
                       />
-                    </button>
-                  ))}
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgb(var(--tc-accent))] text-xs font-semibold text-white">
+                        {activeCustomerName.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </button>
+                ) : null}
+                <div
+                  className={`max-w-[85%] rounded-xl p-3 ${isWorker ? 'bg-[rgb(var(--tc-accent))] text-white' : 'bg-[rgb(var(--tc-bg-soft))]'}`}
+                >
+                  <div
+                    className={`mb-1 text-[11px] ${isWorker ? 'text-white/80' : 'text-[rgb(var(--tc-muted))]'}`}
+                  >
+                    {isWorker ? 'Вы' : activeCustomerName}
+                  </div>
+                  {m.text && <div className="text-sm">{m.text}</div>}
+                  {!!m.attachments.length && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {m.attachments.map((a) => (
+                        <button key={a.id} type="button" onClick={() => setPreviewImageUrl(a.url)}>
+                          <MediaImage src={a.url} alt="Вложение" variant="attachment" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
         <div className="space-y-2 border-t border-[rgb(var(--tc-border))] p-3">
           <div className="flex items-center justify-between text-xs text-[rgb(var(--tc-muted))]">
@@ -250,8 +318,9 @@ export function ChatsTab() {
           <div className="flex items-center gap-2">
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               multiple
+              disabled={!activeChatId || uploading}
               onChange={(e) => void handleUpload(e.target.files)}
             />
             <input
@@ -277,13 +346,11 @@ export function ChatsTab() {
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4"
         >
           <div className="relative w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={previewImageUrl}
-              alt="preview"
-              className="max-h-[80vh] w-full rounded-2xl bg-black object-contain"
-            />
+            <MediaImage src={previewImageUrl} alt="Просмотр" variant="preview" />
             <a
-              href={previewImageUrl}
+              href={proxiedMediaUrl(previewImageUrl) || previewImageUrl || '#'}
+              target="_blank"
+              rel="noreferrer"
               download
               className="absolute bottom-[-14px] right-3 rounded-t-2xl rounded-b-xl bg-[rgb(var(--tc-accent))] px-4 py-2 text-sm font-semibold text-white shadow-lg"
             >
@@ -291,6 +358,95 @@ export function ChatsTab() {
             </a>
           </div>
         </button>
+      ) : null}
+      {userInfoOpen && activeChat?.user ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-xl rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-4">
+            <div className="mb-4 flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                {activeChat.user.avatarUrl ? (
+                  <MediaImage
+                    src={activeChat.user.avatarUrl}
+                    alt={activeCustomerName}
+                    variant="avatarMd"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgb(var(--tc-accent))] text-lg font-semibold text-white">
+                    {activeCustomerName.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div className="font-semibold">{activeCustomerName}</div>
+                  <div className="text-sm text-[rgb(var(--tc-muted))]">{activeChat.user.email}</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="rounded-md border border-[rgb(var(--tc-border))] px-2 py-1 text-sm"
+                onClick={() => setUserInfoOpen(false)}
+              >
+                Закрыть
+              </button>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-[rgb(var(--tc-muted))]">Телефон: </span>
+                {activeChat.user.phone || '—'}
+              </div>
+              {activeChat.appointment ? (
+                <div className="rounded-lg border border-[rgb(var(--tc-border))] p-3">
+                  <div className="font-medium">Бронирование</div>
+                  <div className="mt-1 text-[rgb(var(--tc-muted))]">
+                    #{activeChat.appointment.id.slice(0, 8)} ·{' '}
+                    {new Date(activeChat.appointment.dateTime).toLocaleString()} ·{' '}
+                    {activeChat.appointment.duration} мин · {activeChat.appointment.status}
+                  </div>
+                  {activeChat.appointment.notes ? (
+                    <div className="mt-1 text-[rgb(var(--tc-muted))]">
+                      Заметка: {activeChat.appointment.notes}
+                    </div>
+                  ) : null}
+
+                  {activeChat.appointment.orders.length > 0 ? (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setAppointmentOrdersOpen((prev) => !prev)}
+                        className="rounded-md border border-[rgb(var(--tc-border))] px-3 py-1 text-xs"
+                      >
+                        {appointmentOrdersOpen ? 'Скрыть' : 'Показать'} связанные заказы (
+                        {activeChat.appointment.orders.length})
+                      </button>
+                      {appointmentOrdersOpen ? (
+                        <div className="mt-2 space-y-2">
+                          {activeChat.appointment.orders.map((o) => (
+                            <div
+                              key={o.id}
+                              className="rounded-md border border-[rgb(var(--tc-border))] p-2 text-xs"
+                            >
+                              <div className="font-medium">
+                                Заказ #{o.orderNumber || o.id.slice(0, 8)}
+                              </div>
+                              <div className="text-[rgb(var(--tc-muted))]">
+                                Статус: {o.status || '—'} · Сумма: {o.totalAmount || '—'} ·{' '}
+                                {new Date(o.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-[rgb(var(--tc-border))] p-3 text-[rgb(var(--tc-muted))]">
+                  Бронирование не найдено
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );

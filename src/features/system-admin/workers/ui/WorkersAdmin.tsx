@@ -11,6 +11,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 import {
   deleteWorker,
   listWorkers,
@@ -157,7 +158,7 @@ export function WorkersAdmin() {
       },
       {
         key: 'name',
-        header: 'ФИО',
+        header: t('workers.firstName'),
         render: (w) => (
           <div>
             <div className="font-medium">
@@ -172,26 +173,26 @@ export function WorkersAdmin() {
       },
       {
         key: 'role',
-        header: 'Role',
+        header: t('workers.role'),
         render: (w) => <span className="font-mono text-xs">{w.role}</span>,
       },
       {
         key: 'brand',
-        header: 'BrandId',
+        header: t('systemAdmin.workerAccounts.brandId'),
         render: (w) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{w.brandId ?? '-'}</span>
         ),
       },
       {
         key: 'cafe',
-        header: 'CafeId',
+        header: t('systemAdmin.workerAccounts.cafeId'),
         render: (w) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{w.cafeId ?? '-'}</span>
         ),
       },
       {
         key: 'deleted',
-        header: 'Deleted',
+        header: t('systemAdmin.workersManagement.deleted'),
         render: (w) => (
           <input
             type="checkbox"
@@ -227,7 +228,7 @@ export function WorkersAdmin() {
                 setEditOpen(true);
               }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant="secondary"
@@ -235,9 +236,9 @@ export function WorkersAdmin() {
               disabled={w.role === 'SYSTEM_ADMIN' || (meId !== null && w.id === meId)}
               title={
                 w.role === 'SYSTEM_ADMIN'
-                  ? 'Нельзя удалить SYSTEM_ADMIN'
+                  ? t('systemAdmin.workersManagement.cannotDeleteSystemAdmin')
                   : meId !== null && w.id === meId
-                    ? 'Нельзя удалить самого себя'
+                    ? t('systemAdmin.workersManagement.cannotDeleteSelf')
                     : undefined
               }
               onClick={() => {
@@ -247,7 +248,7 @@ export function WorkersAdmin() {
                 setDeleteOpen(true);
               }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         ),
@@ -340,16 +341,18 @@ export function WorkersAdmin() {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Workers (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.workersManagement.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Список берётся из `GET /admin/workers` (по умолчанию скрывает soft-deleted).
+            {t('systemAdmin.workersManagement.subtitle')}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" onClick={refresh} disabled={isLoading}>
-            Refresh
+            {t('common.refresh')}
           </Button>
-          <Button onClick={openCreate}>Add worker</Button>
+          <Button onClick={openCreate}>{t('systemAdmin.workersManagement.addWorker')}</Button>
         </div>
       </div>
 
@@ -361,7 +364,7 @@ export function WorkersAdmin() {
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Role</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('workers.role')}</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.role}
@@ -369,7 +372,7 @@ export function WorkersAdmin() {
                 setFilters((s) => ({ ...s, role: e.target.value as '' | WorkerRole }))
               }
             >
-              <option value="">All</option>
+              <option value="">{t('common.all')}</option>
               {roles.map((r) => (
                 <option key={r} value={r}>
                   {r}
@@ -379,13 +382,13 @@ export function WorkersAdmin() {
           </div>
 
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Brand</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('workers.brand')}</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.brandId}
               onChange={(e) => setFilters((s) => ({ ...s, brandId: e.target.value }))}
             >
-              <option value="">All</option>
+              <option value="">{t('common.all')}</option>
               {brands.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -395,7 +398,9 @@ export function WorkersAdmin() {
           </div>
 
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">CafeId</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.workerAccounts.cafeId')}
+            </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.cafeId}
@@ -410,16 +415,16 @@ export function WorkersAdmin() {
                 checked={filters.includeDeleted}
                 onChange={(e) => setFilters((s) => ({ ...s, includeDeleted: e.target.checked }))}
               />
-              Показывать удалённые
+              {t('systemAdmin.workersManagement.showDeleted')}
             </label>
           </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="text-xs text-[rgb(var(--tc-muted))]">
-            total: <span className="font-mono">{total}</span>
+            {t('systemAdmin.workersManagement.total')}: <span className="font-mono">{total}</span>
             {statsLoading ? (
-              <span className="ml-2">stats...</span>
+              <span className="ml-2">{t('systemAdmin.workersManagement.stats')}...</span>
             ) : (
               <span className="ml-2">
                 {roles.map((r) => (
@@ -439,7 +444,7 @@ export function WorkersAdmin() {
                 refreshStats();
               }}
             >
-              Apply
+              {t('systemAdmin.cafes.apply')}
             </Button>
             <Button
               variant="secondary"
@@ -448,7 +453,7 @@ export function WorkersAdmin() {
                 setPage(1);
               }}
             >
-              Reset
+              {t('systemAdmin.cafes.reset')}
             </Button>
           </div>
         </div>
@@ -472,7 +477,11 @@ export function WorkersAdmin() {
 
       <Modal
         open={editOpen}
-        title={editId ? 'Edit worker' : 'Register worker'}
+        title={
+          editId
+            ? t('systemAdmin.workersManagement.editWorker')
+            : t('systemAdmin.workersManagement.registerWorker')
+        }
         onClose={() => setEditOpen(false)}
         size="2xl"
       >
@@ -483,7 +492,7 @@ export function WorkersAdmin() {
 
           <div className="grid gap-1">
             <div className="text-xs text-[rgb(var(--tc-muted))]">
-              Email {editId ? '(read-only)' : '*'}
+              {editId ? t('systemAdmin.workersManagement.emailReadOnly') : `${t('common.email')} *`}
             </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
@@ -495,7 +504,9 @@ export function WorkersAdmin() {
 
           {!editId && (
             <div className="grid gap-1">
-              <div className="text-xs text-[rgb(var(--tc-muted))]">Password *</div>
+              <div className="text-xs text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.workersManagement.passwordRequired')}
+              </div>
               <input
                 className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
                 value={form.password}
@@ -506,7 +517,9 @@ export function WorkersAdmin() {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1">
-              <div className="text-xs text-[rgb(var(--tc-muted))]">First name *</div>
+              <div className="text-xs text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.workersManagement.firstNameRequired')}
+              </div>
               <input
                 className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
                 value={form.firstName}
@@ -514,7 +527,9 @@ export function WorkersAdmin() {
               />
             </div>
             <div className="grid gap-1">
-              <div className="text-xs text-[rgb(var(--tc-muted))]">Last name *</div>
+              <div className="text-xs text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.workersManagement.lastNameRequired')}
+              </div>
               <input
                 className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
                 value={form.lastName}
@@ -524,7 +539,9 @@ export function WorkersAdmin() {
           </div>
 
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Role *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.workersManagement.roleRequired')}
+            </div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.role}
@@ -540,13 +557,15 @@ export function WorkersAdmin() {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1">
-              <div className="text-xs text-[rgb(var(--tc-muted))]">BrandId</div>
+              <div className="text-xs text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.workerAccounts.brandId')}
+              </div>
               <select
                 className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
                 value={form.brandId}
                 onChange={(e) => setForm((s) => ({ ...s, brandId: e.target.value }))}
               >
-                <option value="">(empty)</option>
+                <option value="">{t('systemAdmin.workersManagement.empty')}</option>
                 {brands.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -555,7 +574,9 @@ export function WorkersAdmin() {
               </select>
             </div>
             <div className="grid gap-1">
-              <div className="text-xs text-[rgb(var(--tc-muted))]">CafeId</div>
+              <div className="text-xs text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.workerAccounts.cafeId')}
+              </div>
               <input
                 className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
                 value={form.cafeId}
@@ -566,10 +587,10 @@ export function WorkersAdmin() {
 
           <div className="mt-2 flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => setEditOpen(false)} disabled={saveLoading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={onSave} disabled={saveLoading}>
-              {saveLoading ? 'Saving...' : 'Save'}
+              {saveLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </div>
@@ -577,9 +598,9 @@ export function WorkersAdmin() {
 
       <ConfirmModal
         open={deleteOpen}
-        title="Удалить работника?"
-        description="Точно хотите удалить аккаунт работника? Это soft delete + удаление в Keycloak."
-        confirmText="Удалить"
+        title={t('systemAdmin.workersManagement.deleteWorker')}
+        description={t('systemAdmin.workersManagement.deleteConfirm')}
+        confirmText={t('common.delete')}
         isDanger
         isLoading={deleteLoading}
         onClose={() => setDeleteOpen(false)}

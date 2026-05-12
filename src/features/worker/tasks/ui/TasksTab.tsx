@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { t } from '@/i18n';
 import { getWorkerTasks, completeTask, uncompleteTask } from '../api/tasks-api';
 import type { WorkerTask, TaskCategory, TaskPriority } from '../types/tasks.types';
 import { PhotoUploadModal } from './PhotoUploadModal';
@@ -33,7 +34,7 @@ export function TasksTab() {
       setTotalCount(response.totalCount);
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load tasks');
+      setError(err instanceof Error ? err.message : t('worker.tasks.loadingError'));
       setTasks([]);
     } finally {
       setLoading(false);
@@ -64,7 +65,7 @@ export function TasksTab() {
         await fetchTasks();
       } catch (err) {
         console.error('Failed to uncomplete task:', err);
-        alert(err instanceof Error ? err.message : 'Failed to update task');
+        alert(err instanceof Error ? err.message : t('worker.tasks.failedToUpdate'));
       } finally {
         setProcessingTask(false);
       }
@@ -120,7 +121,7 @@ export function TasksTab() {
       await fetchTasks();
     } catch (err) {
       console.error('Failed to complete task:', err);
-      alert(err instanceof Error ? err.message : 'Failed to complete task');
+      alert(err instanceof Error ? err.message : t('worker.tasks.failedToComplete'));
     } finally {
       setProcessingTask(false);
       setCurrentTask(null);
@@ -143,7 +144,7 @@ export function TasksTab() {
       await fetchTasks();
     } catch (err) {
       console.error('Failed to complete task:', err);
-      alert(err instanceof Error ? err.message : 'Failed to complete task');
+      alert(err instanceof Error ? err.message : t('worker.tasks.failedToComplete'));
     } finally {
       setProcessingTask(false);
       setCurrentTask(null);
@@ -165,26 +166,26 @@ export function TasksTab() {
   const getPriorityLabel = (priority: TaskPriority) => {
     switch (priority) {
       case 'HIGH':
-        return 'Высокий';
+        return t('worker.tasks.priorities.high');
       case 'MEDIUM':
-        return 'Средний';
+        return t('worker.tasks.priorities.medium');
       case 'LOW':
-        return 'Низкий';
+        return t('worker.tasks.priorities.low');
     }
   };
 
   const getCategoryLabel = (cat: CategoryFilter) => {
     switch (cat) {
       case 'OPENING':
-        return 'Открытие смены';
+        return t('worker.tasks.categories.opening');
       case 'SHIFT':
-        return 'Во время смены';
+        return t('worker.tasks.categories.shift');
       case 'CLOSING':
-        return 'Закрытие смены';
+        return t('worker.tasks.categories.closing');
       case 'GENERAL':
-        return 'Общие';
+        return t('worker.tasks.categories.general');
       case 'ALL':
-        return 'Все задачи';
+        return t('worker.tasks.categories.all');
     }
   };
 
@@ -193,7 +194,7 @@ export function TasksTab() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="mb-4 text-4xl">⏳</div>
-          <p className="text-[rgb(var(--tc-muted))]">Загрузка задач...</p>
+          <p className="text-[rgb(var(--tc-muted))]">{t('worker.tasks.loadingTasks')}</p>
         </div>
       </div>
     );
@@ -203,13 +204,13 @@ export function TasksTab() {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
         <div className="mb-4 text-4xl">⚠️</div>
-        <h3 className="mb-2 text-lg font-medium text-red-900">Ошибка загрузки</h3>
+        <h3 className="mb-2 text-lg font-medium text-red-900">{t('worker.tasks.loadingError')}</h3>
         <p className="mb-4 text-sm text-red-700">{error}</p>
         <button
           onClick={fetchTasks}
           className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
         >
-          Повторить попытку
+          {t('worker.tasks.retryLoad')}
         </button>
       </div>
     );
@@ -220,14 +221,14 @@ export function TasksTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Задачи</h2>
-          <p className="text-sm text-[rgb(var(--tc-muted))]">Чек-листы и задачи на смену</p>
+          <h2 className="text-2xl font-semibold">{t('worker.tasks.title')}</h2>
+          <p className="text-sm text-[rgb(var(--tc-muted))]">{t('worker.tasks.subtitle')}</p>
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-[rgb(var(--tc-accent))]">
             {completedCount}/{totalCount}
           </div>
-          <div className="text-xs text-[rgb(var(--tc-muted))]">Выполнено</div>
+          <div className="text-xs text-[rgb(var(--tc-muted))]">{t('worker.tasks.completed')}</div>
         </div>
       </div>
 
@@ -252,9 +253,11 @@ export function TasksTab() {
       {filteredTasks.length === 0 ? (
         <div className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-8 text-center">
           <div className="mb-4 text-4xl">✅</div>
-          <h3 className="mb-2 text-lg font-medium">Нет задач</h3>
+          <h3 className="mb-2 text-lg font-medium">{t('worker.tasks.noTasks')}</h3>
           <p className="text-sm text-[rgb(var(--tc-muted))]">
-            {category === 'ALL' ? 'На сегодня задач нет' : 'В этой категории пока нет задач'}
+            {category === 'ALL'
+              ? t('worker.tasks.noTasksToday')
+              : t('worker.tasks.noTasksInCategory')}
           </p>
         </div>
       ) : (
@@ -293,18 +296,18 @@ export function TasksTab() {
                       {getPriorityLabel(task.priority)}
                     </span>
                     {task.requiresPhoto && (
-                      <span className="text-sm" title="Требуется фото">
+                      <span className="text-sm" title={t('worker.tasks.requiresPhoto')}>
                         📷
                       </span>
                     )}
                     {task.requiresComment && (
-                      <span className="text-sm" title="Требуется комментарий">
+                      <span className="text-sm" title={t('worker.tasks.requiresComment')}>
                         💬
                       </span>
                     )}
                     {task.estimatedMinutes && (
                       <span className="text-xs text-[rgb(var(--tc-muted))]">
-                        ~{task.estimatedMinutes} мин
+                        ~{task.estimatedMinutes} {t('worker.tasks.minutes')}
                       </span>
                     )}
                   </div>
@@ -315,7 +318,7 @@ export function TasksTab() {
                   )}
                   {task.completed && task.completedAt && (
                     <p className="mt-1 text-xs text-green-600">
-                      ✓ Выполнено{' '}
+                      ✓ {t('worker.tasks.completedAt')}{' '}
                       {new Date(task.completedAt).toLocaleTimeString('ru-RU', {
                         hour: '2-digit',
                         minute: '2-digit',

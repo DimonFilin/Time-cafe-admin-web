@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import { getTaskTemplates, deactivateTaskTemplate } from '../api/tasks-api';
 import type { TaskTemplate } from '../types/tasks.types';
 import { CreateTaskModal } from './CreateTaskModal';
@@ -78,33 +79,29 @@ export function TasksTab({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Tasks</h2>
-          <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Manage task templates for your workers
-          </p>
+          <h2 className="text-xl font-semibold tracking-tight">{t('tasks.title')}</h2>
+          <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">{t('tasks.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setShowInactive(!showInactive)}>
-            {showInactive ? 'Hide Inactive' : 'Show Inactive'}
+            {showInactive ? t('tasks.hideInactive') : t('tasks.showInactive')}
           </Button>
-          <Button onClick={() => setCreateModalOpen(true)}>+ Create Task</Button>
+          <Button onClick={() => setCreateModalOpen(true)}>+ {t('tasks.create')}</Button>
         </div>
       </div>
 
       {error && <Card className="p-3 text-sm text-red-700">{error}</Card>}
 
       {loading ? (
-        <div className="text-center text-[rgb(var(--tc-muted))]">Loading...</div>
+        <div className="text-center text-[rgb(var(--tc-muted))]">{t('common.loading')}</div>
       ) : templates.length === 0 ? (
         <Card className="p-12 text-center">
           <div className="text-lg font-medium text-[rgb(var(--tc-muted))]">
-            No task templates yet
+            {t('tasks.noTemplates')}
           </div>
-          <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">
-            Create your first task template to get started
-          </p>
+          <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">{t('tasks.createFirst')}</p>
           <Button onClick={() => setCreateModalOpen(true)} className="mt-4" variant="secondary">
-            Create Task Template
+            {t('tasks.template')}
           </Button>
         </Card>
       ) : (
@@ -122,7 +119,7 @@ export function TasksTab({
                 </div>
                 {!template.isActive && (
                   <span className="ml-2 rounded-lg bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                    Inactive
+                    {t('tasks.inactive')}
                   </span>
                 )}
               </div>
@@ -138,19 +135,19 @@ export function TasksTab({
                 </span>
                 {template.requiresPhoto && (
                   <span className="rounded-lg bg-purple-100 px-2 py-1 text-xs text-purple-800">
-                    📷 Photo
+                    📷 {t('tasks.requiresPhoto')}
                   </span>
                 )}
                 {template.requiresComment && (
                   <span className="rounded-lg bg-purple-100 px-2 py-1 text-xs text-purple-800">
-                    💬 Comment
+                    💬 {t('tasks.requiresComment')}
                   </span>
                 )}
               </div>
 
               {template.estimatedMinutes && (
                 <div className="mt-2 text-xs text-[rgb(var(--tc-muted))]">
-                  Est. {template.estimatedMinutes} min
+                  {t('tasks.estimatedTime')}: {template.estimatedMinutes} мин
                 </div>
               )}
 
@@ -163,7 +160,7 @@ export function TasksTab({
                   }}
                   className="flex-1 text-xs"
                 >
-                  Edit
+                  {t('common.edit')}
                 </Button>
                 {template.isActive && (
                   <Button
@@ -171,7 +168,7 @@ export function TasksTab({
                     onClick={() => handleDeactivate(template.id)}
                     className="flex-1 text-xs"
                   >
-                    Deactivate
+                    {t('tasks.deactivate')}
                   </Button>
                 )}
               </div>

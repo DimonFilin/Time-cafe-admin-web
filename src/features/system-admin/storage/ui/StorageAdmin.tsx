@@ -8,6 +8,7 @@ import { Card } from '@/shared/ui/card/Card';
 import { DataTable } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -19,10 +20,10 @@ function formatBytes(bytes: number): string {
 
 function getBucketLabel(bucket: string): string {
   const labels: Record<string, string> = {
-    brands: 'Бренды',
-    cafes: 'Кафе',
-    users: 'Пользователи',
-    public: 'Публичные',
+    brands: t('systemAdmin.storage.buckets.brands'),
+    cafes: t('systemAdmin.storage.buckets.cafes'),
+    users: t('systemAdmin.storage.buckets.users'),
+    public: t('systemAdmin.storage.buckets.public'),
   };
   return labels[bucket] || bucket;
 }
@@ -144,7 +145,7 @@ export function StorageAdmin() {
   const columns = [
     {
       key: 'path',
-      header: 'Путь',
+      header: t('systemAdmin.storage.path'),
       render: (file: StorageFile) => (
         <div className="max-w-md truncate font-mono text-xs" title={file.path}>
           {file.path}
@@ -153,34 +154,36 @@ export function StorageAdmin() {
     },
     {
       key: 'relationship',
-      header: 'Связь',
+      header: t('systemAdmin.storage.relationship'),
       render: (file: StorageFile) => (
         <div className="text-sm">
           {file.relationship ? (
             <span className="text-[rgb(var(--tc-fg))]">{file.relationship}</span>
           ) : (
-            <span className="text-[rgb(var(--tc-muted))]">Нет связи</span>
+            <span className="text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.storage.noRelationship')}
+            </span>
           )}
         </div>
       ),
     },
     {
       key: 'size',
-      header: 'Размер',
+      header: t('systemAdmin.storage.size'),
       render: (file: StorageFile) => (
         <span className="text-sm text-[rgb(var(--tc-muted))]">{formatBytes(file.size)}</span>
       ),
     },
     {
       key: 'mimeType',
-      header: 'Тип',
+      header: t('systemAdmin.storage.type'),
       render: (file: StorageFile) => (
         <span className="text-xs text-[rgb(var(--tc-muted))]">{file.mimeType}</span>
       ),
     },
     {
       key: 'lastModified',
-      header: 'Изменён',
+      header: t('systemAdmin.storage.modified'),
       render: (file: StorageFile) => (
         <span className="text-xs text-[rgb(var(--tc-muted))]">
           {new Date(file.lastModified).toLocaleString('ru-RU')}
@@ -189,20 +192,20 @@ export function StorageAdmin() {
     },
     {
       key: 'actions',
-      header: 'Действия',
+      header: t('systemAdmin.storage.actions'),
       render: (file: StorageFile) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleDownload(file)}
             className="rounded-lg bg-[rgb(var(--tc-accent))] px-3 py-1.5 text-xs font-medium text-[rgb(var(--tc-accent-contrast))] hover:opacity-90"
           >
-            Скачать
+            {t('systemAdmin.storage.download')}
           </button>
           <button
             onClick={() => setDeleteModal({ open: true, file })}
             className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800"
           >
-            Удалить
+            {t('common.delete')}
           </button>
         </div>
       ),
@@ -212,9 +215,11 @@ export function StorageAdmin() {
   return (
     <div className="grid gap-6">
       <div>
-        <h1 className="text-2xl font-semibold text-[rgb(var(--tc-fg))]">Управление файлами</h1>
+        <h1 className="text-2xl font-semibold text-[rgb(var(--tc-fg))]">
+          {t('systemAdmin.storage.title')}
+        </h1>
         <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-          Просмотр и управление загруженными файлами
+          {t('systemAdmin.storage.subtitle')}
         </p>
       </div>
 
@@ -226,13 +231,15 @@ export function StorageAdmin() {
 
       <Card className="bg-[rgb(var(--tc-surface))]">
         <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
-          <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">Фильтры</h2>
+          <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+            {t('systemAdmin.storage.filters')}
+          </h2>
         </div>
         <div className="px-6 py-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-[rgb(var(--tc-fg))]">
-                Bucket
+                {t('systemAdmin.storage.bucket')}
               </label>
               <select
                 value={selectedBucket}
@@ -242,7 +249,7 @@ export function StorageAdmin() {
                 }}
                 className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm text-[rgb(var(--tc-fg))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
               >
-                <option value="">Выберите bucket</option>
+                <option value="">{t('systemAdmin.storage.selectBucket')}</option>
                 {buckets &&
                   Object.entries(buckets).map(([key, value]) => (
                     <option key={key} value={value}>
@@ -253,7 +260,7 @@ export function StorageAdmin() {
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-[rgb(var(--tc-fg))]">
-                Префикс (фильтр по пути)
+                {t('systemAdmin.storage.prefix')}
               </label>
               <input
                 type="text"
@@ -272,21 +279,21 @@ export function StorageAdmin() {
           <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
-                Файлы: {getBucketLabel(selectedBucket)}
+                {t('systemAdmin.storage.files')}: {getBucketLabel(selectedBucket)}
               </h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setUploadModal(true)}
                   className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] px-4 py-2 text-sm font-medium text-[rgb(var(--tc-fg))] hover:opacity-90"
                 >
-                  Загрузить файл
+                  {t('systemAdmin.storage.uploadFile')}
                 </button>
                 <button
                   onClick={loadFiles}
                   disabled={loading}
                   className="rounded-lg bg-[rgb(var(--tc-accent))] px-4 py-2 text-sm font-medium text-[rgb(var(--tc-accent-contrast))] hover:opacity-90 disabled:opacity-50"
                 >
-                  {loading ? 'Загрузка...' : 'Обновить'}
+                  {loading ? t('systemAdmin.storage.loadingFiles') : t('common.refresh')}
                 </button>
               </div>
             </div>
@@ -294,11 +301,11 @@ export function StorageAdmin() {
           <div className="px-6 py-4">
             {loading && files.length === 0 ? (
               <div className="py-12 text-center text-sm text-[rgb(var(--tc-muted))]">
-                Загрузка файлов...
+                {t('systemAdmin.storage.loadingFiles')}
               </div>
             ) : files.length === 0 ? (
               <div className="py-12 text-center text-sm text-[rgb(var(--tc-muted))]">
-                Файлы не найдены
+                {t('systemAdmin.storage.noFiles')}
               </div>
             ) : (
               <DataTable
@@ -323,14 +330,10 @@ export function StorageAdmin() {
 
       <ConfirmModal
         open={deleteModal.open}
-        title="Удалить файл?"
-        message={
-          deleteModal.file
-            ? `Вы уверены, что хотите удалить файл "${deleteModal.file.path}"? Это действие нельзя отменить.`
-            : ''
-        }
-        confirmText="Удалить"
-        cancelText="Отмена"
+        title={t('systemAdmin.storage.deleteFile')}
+        message={deleteModal.file ? t('systemAdmin.storage.deleteConfirm') : ''}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteModal({ open: false, file: null })}
         isDanger
@@ -345,7 +348,7 @@ export function StorageAdmin() {
           setUploadFileInput(null);
           setUploadError(null);
         }}
-        title="Загрузить файл"
+        title={t('systemAdmin.storage.uploadFile')}
         size="md"
       >
         <div className="grid gap-4">
@@ -356,7 +359,7 @@ export function StorageAdmin() {
           )}
           <div>
             <label className="mb-2 block text-sm font-medium text-[rgb(var(--tc-fg))]">
-              Путь в bucket
+              {t('systemAdmin.storage.pathInBucket')}
             </label>
             <input
               type="text"
@@ -366,11 +369,13 @@ export function StorageAdmin() {
               className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm text-[rgb(var(--tc-fg))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
             />
             <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-              Пример: brand-id/documents/file.pdf (без bucket в начале)
+              {t('systemAdmin.storage.pathExample')}
             </p>
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-[rgb(var(--tc-fg))]">Файл</label>
+            <label className="mb-2 block text-sm font-medium text-[rgb(var(--tc-fg))]">
+              {t('systemAdmin.storage.file')}
+            </label>
             <input
               type="file"
               onChange={(e) => setUploadFileInput(e.target.files?.[0] || null)}
@@ -387,14 +392,14 @@ export function StorageAdmin() {
               }}
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] px-4 py-2 text-sm font-medium text-[rgb(var(--tc-fg))] hover:opacity-90"
             >
-              Отмена
+              {t('common.cancel')}
             </button>
             <button
               onClick={handleUpload}
               disabled={!uploadPath || !uploadFileInput || uploading}
               className="rounded-lg bg-[rgb(var(--tc-accent))] px-4 py-2 text-sm font-medium text-[rgb(var(--tc-accent-contrast))] hover:opacity-90 disabled:opacity-50"
             >
-              {uploading ? 'Загрузка...' : 'Загрузить'}
+              {uploading ? t('systemAdmin.storage.uploading') : t('common.upload')}
             </button>
           </div>
         </div>

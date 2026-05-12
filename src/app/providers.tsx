@@ -1,11 +1,15 @@
 'use client';
 
 import { ThemeProvider } from 'next-themes';
-import type { ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
+import { WorkerActivityRouteBeacon } from '@/shared/lib/worker-activity-route-beacon';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <Suspense fallback={null}>
+        <WorkerActivityRouteBeacon />
+      </Suspense>
       {children}
     </ThemeProvider>
   );

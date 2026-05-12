@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 

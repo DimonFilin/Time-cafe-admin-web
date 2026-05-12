@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { t } from '@/i18n';
 import { workerApi } from '../api/worker-api';
 import type { WorkerWithRelations } from '../types/worker.types';
 import { OrdersTab } from '../orders/ui/OrdersTab';
@@ -57,30 +58,36 @@ export function WorkerDashboard() {
       setWorker({ ...worker, shiftStatus: newStatus });
 
       // Show notification
-      const message = newStatus === 'ON_SHIFT' ? 'Вы начали смену!' : 'Вы завершили смену';
+      const message =
+        newStatus === 'ON_SHIFT'
+          ? t('worker.dashboard.shiftStarted')
+          : t('worker.dashboard.shiftEnded');
       alert(message);
     } catch (error) {
       console.error('Failed to toggle shift status:', error);
-      alert('Не удалось изменить статус смены');
+      alert(t('worker.dashboard.shiftToggleFailed'));
     }
   };
 
   const tabs = [
-    { id: 'orders' as Tab, label: 'Заказы', icon: '📦' },
-    { id: 'appointments' as Tab, label: 'Бронирования', icon: '📅' },
-    { id: 'tasks' as Tab, label: 'Задачи', icon: '✓' },
+    { id: 'orders' as Tab, label: t('worker.tabs.orders'), icon: '📦' },
+    { id: 'appointments' as Tab, label: t('worker.tabs.appointments'), icon: '📅' },
+    { id: 'tasks' as Tab, label: t('worker.tabs.tasks'), icon: '✓' },
     {
       id: 'chats' as Tab,
-      label: unreadChatsCount > 0 ? `Чаты (${unreadChatsCount})` : 'Чаты',
+      label:
+        unreadChatsCount > 0
+          ? `${t('worker.tabs.chats')} (${unreadChatsCount})`
+          : t('worker.tabs.chats'),
       icon: '💬',
     },
-    { id: 'profile' as Tab, label: 'Профиль', icon: '👤' },
+    { id: 'profile' as Tab, label: t('worker.tabs.profile'), icon: '👤' },
   ];
 
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-lg">Загрузка...</div>
+        <div className="text-lg">{t('worker.dashboard.loading')}</div>
       </div>
     );
   }
@@ -90,8 +97,8 @@ export function WorkerDashboard() {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="mb-4 text-4xl">⚠️</div>
-          <h2 className="mb-2 text-xl font-semibold">Ошибка загрузки</h2>
-          <p className="text-[rgb(var(--tc-muted))]">Не удалось загрузить данные работника</p>
+          <h2 className="mb-2 text-xl font-semibold">{t('worker.dashboard.loadingError')}</h2>
+          <p className="text-[rgb(var(--tc-muted))]">{t('worker.dashboard.failedToLoad')}</p>
         </div>
       </div>
     );
@@ -102,11 +109,11 @@ export function WorkerDashboard() {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="mb-4 text-4xl">⚠️</div>
-          <h2 className="mb-2 text-xl font-semibold">Работник не привязан к кафе</h2>
-          <p className="text-[rgb(var(--tc-muted))]">
-            Обратитесь к администратору для назначения кафе
-          </p>
-          <div className="mt-4 text-xs text-[rgb(var(--tc-muted))]">Worker ID: {worker.id}</div>
+          <h2 className="mb-2 text-xl font-semibold">{t('worker.dashboard.notAssignedToCafe')}</h2>
+          <p className="text-[rgb(var(--tc-muted))]">{t('worker.dashboard.contactAdmin')}</p>
+          <div className="mt-4 text-xs text-[rgb(var(--tc-muted))]">
+            {t('worker.dashboard.workerId')}: {worker.id}
+          </div>
         </div>
       </div>
     );
@@ -131,8 +138,13 @@ export function WorkerDashboard() {
                 <div className="text-xs text-[rgb(var(--tc-muted))]">{worker.email}</div>
               </div>
               <div className="mb-2 text-sm">
-                <span className="font-medium">{worker.cafe?.name || 'Кафе'}</span>
-                <span className="text-[rgb(var(--tc-muted))]"> • Работник</span>
+                <span className="font-medium">
+                  {worker.cafe?.name || t('worker.dashboard.cafe')}
+                </span>
+                <span className="text-[rgb(var(--tc-muted))]">
+                  {' '}
+                  • {t('worker.dashboard.workerRole')}
+                </span>
               </div>
               <button
                 onClick={handleShiftToggle}
@@ -147,7 +159,11 @@ export function WorkerDashboard() {
                 >
                   {worker.shiftStatus === 'ON_SHIFT' ? '🟢' : '⚪'}
                 </span>
-                <span>{worker.shiftStatus === 'ON_SHIFT' ? 'На смене' : 'Не на смене'}</span>
+                <span>
+                  {worker.shiftStatus === 'ON_SHIFT'
+                    ? t('worker.dashboard.onShift')
+                    : t('worker.dashboard.offShift')}
+                </span>
               </button>
             </>
           ) : (
@@ -163,7 +179,11 @@ export function WorkerDashboard() {
                     ? 'bg-green-100 text-green-700 hover:bg-green-200'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
-                title={worker.shiftStatus === 'ON_SHIFT' ? 'На смене' : 'Не на смене'}
+                title={
+                  worker.shiftStatus === 'ON_SHIFT'
+                    ? t('worker.dashboard.onShift')
+                    : t('worker.dashboard.offShift')
+                }
               >
                 <span
                   className={`text-lg ${worker.shiftStatus === 'ON_SHIFT' ? 'animate-pulse' : ''}`}
@@ -199,10 +219,10 @@ export function WorkerDashboard() {
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-[rgb(var(--tc-muted))] transition-colors hover:bg-[rgb(var(--tc-muted))]/10"
-            title={sidebarCollapsed ? 'Развернуть' : 'Свернуть'}
+            title={sidebarCollapsed ? t('worker.dashboard.expand') : t('worker.dashboard.collapse')}
           >
             <span className="text-lg">{sidebarCollapsed ? '→' : '←'}</span>
-            {!sidebarCollapsed && <span>Свернуть</span>}
+            {!sidebarCollapsed && <span>{t('worker.dashboard.collapse')}</span>}
           </button>
         </div>
       </aside>

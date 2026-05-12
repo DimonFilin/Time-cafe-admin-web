@@ -77,7 +77,7 @@ export function CafesTab() {
       // Handle both { items: [...] } and direct array formats
       const regionsList = data.items || (Array.isArray(data) ? data : []);
       setRegions(regionsList);
-    } catch (err) {
+    } catch {
       // Don't propagate - regions are optional
     }
   };

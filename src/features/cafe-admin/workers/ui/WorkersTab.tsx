@@ -11,6 +11,7 @@ import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { InviteWorkerModal } from './InviteWorkerModal';
 import { EditWorkerModal } from './EditWorkerModal';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 
 export function WorkersTab({
   initialOpenInvite = false,
@@ -91,7 +92,7 @@ export function WorkersTab({
   const columns: DataTableColumn<WorkerResponse>[] = [
     {
       key: 'name',
-      header: 'Name',
+      header: t('common.name'),
       render: (w) => (
         <div>
           <div className="font-medium">
@@ -103,7 +104,7 @@ export function WorkersTab({
     },
     {
       key: 'shiftStatus',
-      header: 'Status',
+      header: t('common.status'),
       render: (w) => (
         <span
           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
@@ -112,13 +113,13 @@ export function WorkersTab({
               : 'bg-gray-100 text-gray-700'
           }`}
         >
-          {w.shiftStatus === 'ON_SHIFT' ? 'On Shift' : 'Off Shift'}
+          {w.shiftStatus === 'ON_SHIFT' ? t('workers.onShift') : t('workers.offShift')}
         </span>
       ),
     },
     {
       key: 'balance',
-      header: 'Balance',
+      header: t('workers.balance'),
       render: (w) => (
         <span className="text-sm font-medium">
           <MoneyAmount value={w.balance} />
@@ -127,7 +128,7 @@ export function WorkersTab({
     },
     {
       key: 'createdAt',
-      header: 'Created',
+      header: t('workers.created'),
       render: (w) => (
         <span className="text-sm text-[rgb(var(--tc-muted))]">
           {new Date(w.createdAt).toLocaleDateString()}
@@ -136,11 +137,11 @@ export function WorkersTab({
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       render: (w) => (
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => onViewLogs(w.id)} className="text-xs">
-            View Logs
+            {t('dashboard.activityLogs')}
           </Button>
           <Button
             variant="secondary"
@@ -149,7 +150,7 @@ export function WorkersTab({
               setEditOpen(true);
             }}
           >
-            Edit
+            {t('common.edit')}
           </Button>
           <Button
             variant="ghost"
@@ -158,7 +159,7 @@ export function WorkersTab({
               setDeleteOpen(true);
             }}
           >
-            Delete
+            {t('common.delete')}
           </Button>
         </div>
       ),
@@ -169,17 +170,17 @@ export function WorkersTab({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Workers</h2>
-          <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Manage workers in your cafe</p>
+          <h2 className="text-xl font-semibold tracking-tight">{t('workers.title')}</h2>
+          <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">{t('workers.subtitle')}</p>
         </div>
-        <Button onClick={() => setInviteOpen(true)}>+ Invite Worker</Button>
+        <Button onClick={() => setInviteOpen(true)}>+ {t('workers.invite')}</Button>
       </div>
 
       {/* Filters */}
       <div className="flex gap-4">
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder={t('workers.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-4 py-2 text-sm"
@@ -189,9 +190,9 @@ export function WorkersTab({
           onChange={(e) => setShiftFilter(e.target.value as 'ALL' | 'ON_SHIFT' | 'OFF_SHIFT')}
           className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-4 py-2 text-sm"
         >
-          <option value="ALL">All Workers</option>
-          <option value="ON_SHIFT">On Shift</option>
-          <option value="OFF_SHIFT">Off Shift</option>
+          <option value="ALL">{t('workers.allWorkers')}</option>
+          <option value="ON_SHIFT">{t('workers.onShift')}</option>
+          <option value="OFF_SHIFT">{t('workers.offShift')}</option>
         </select>
       </div>
 
@@ -227,9 +228,9 @@ export function WorkersTab({
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={onConfirmDelete}
-        title="Delete Worker"
-        message="Are you sure you want to delete this worker? This action cannot be undone."
-        confirmText="Delete"
+        title={t('workers.delete')}
+        message={t('workers.deleteConfirm')}
+        confirmText={t('common.delete')}
         loading={deleteLoading}
       />
     </div>

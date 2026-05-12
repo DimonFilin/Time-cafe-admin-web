@@ -4,20 +4,21 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { cn } from '@/shared/lib/cn';
+import { t } from '@/i18n';
 
 const links = [
-  { href: '/system-admin', label: 'Обзор' },
-  { href: '/system-admin/storage', label: 'Storage' },
-  { href: '/system-admin/brands', label: 'Brands' },
-  { href: '/system-admin/cafes', label: 'Cafes' },
-  { href: '/system-admin/workers', label: 'Workers' },
-  { href: '/system-admin/worker-accounts', label: 'Worker Accounts' },
-  { href: '/system-admin/orders', label: 'Orders' },
-  { href: '/system-admin/appointments', label: 'Appointments' },
-  { href: '/system-admin/reviews', label: 'Reviews' },
-  { href: '/system-admin/regions', label: 'Regions' },
-  { href: '/system-admin/users', label: 'Users' },
-  { href: '/system-admin/transactions', label: 'Transactions' },
+  { href: '/system-admin', label: t('systemAdmin.nav.overview') },
+  { href: '/system-admin/storage', label: t('systemAdmin.nav.storage') },
+  { href: '/system-admin/brands', label: t('systemAdmin.nav.brands') },
+  { href: '/system-admin/cafes', label: t('systemAdmin.nav.cafes') },
+  { href: '/system-admin/workers', label: t('systemAdmin.nav.workers') },
+  { href: '/system-admin/worker-accounts', label: t('systemAdmin.nav.workerAccounts') },
+  { href: '/system-admin/orders', label: t('systemAdmin.nav.orders') },
+  { href: '/system-admin/appointments', label: t('systemAdmin.nav.appointments') },
+  { href: '/system-admin/reviews', label: t('systemAdmin.nav.reviews') },
+  { href: '/system-admin/regions', label: t('systemAdmin.nav.regions') },
+  { href: '/system-admin/users', label: t('systemAdmin.nav.users') },
+  { href: '/system-admin/transactions', label: t('systemAdmin.nav.transactions') },
 ];
 
 export function SystemAdminNav() {

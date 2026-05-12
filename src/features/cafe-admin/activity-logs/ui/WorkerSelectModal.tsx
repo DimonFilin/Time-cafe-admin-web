@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import { getWorkers } from '../../workers/api/workers-api';
 import type { WorkerResponse } from '../../workers/types/worker.types';
 
@@ -37,7 +38,7 @@ export function WorkerSelectModal({
       const data = await getWorkers({ limit: 100 });
       setWorkers(data.workers);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch workers');
+      setError(e instanceof Error ? e.message : t('workers.errors.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -56,12 +57,16 @@ export function WorkerSelectModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Select Worker">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('cafeAdmin.activityLogs.workerSelectModal.title')}
+    >
       <div className="space-y-4">
         {/* Search */}
         <input
           type="text"
-          placeholder="Search workers..."
+          placeholder={t('cafeAdmin.activityLogs.workerSelectModal.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
@@ -70,13 +75,13 @@ export function WorkerSelectModal({
         {/* Workers List */}
         {loading ? (
           <div className="py-8 text-center text-sm text-[rgb(var(--tc-muted))]">
-            Loading workers...
+            {t('cafeAdmin.activityLogs.workerSelectModal.loadingWorkers')}
           </div>
         ) : error ? (
           <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
         ) : filteredWorkers.length === 0 ? (
           <div className="py-8 text-center text-sm text-[rgb(var(--tc-muted))]">
-            No workers found
+            {t('cafeAdmin.activityLogs.workerSelectModal.noWorkersFound')}
           </div>
         ) : (
           <div className="max-h-96 space-y-2 overflow-y-auto">
@@ -96,9 +101,11 @@ export function WorkerSelectModal({
                 <div className="text-xs text-[rgb(var(--tc-muted))]">{worker.email}</div>
                 <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
                   {worker.shiftStatus === 'ON_SHIFT' ? (
-                    <span className="text-green-600">On Shift</span>
+                    <span className="text-green-600">
+                      {t('cafeAdmin.activityLogs.workerSelectModal.onShift')}
+                    </span>
                   ) : (
-                    <span>Off Shift</span>
+                    <span>{t('cafeAdmin.activityLogs.workerSelectModal.offShift')}</span>
                   )}
                 </div>
               </button>
@@ -109,7 +116,7 @@ export function WorkerSelectModal({
         {/* Actions */}
         <div className="flex justify-end border-t border-[rgb(var(--tc-border))] pt-4">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </div>

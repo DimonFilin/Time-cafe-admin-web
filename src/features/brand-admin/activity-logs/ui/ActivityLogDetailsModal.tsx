@@ -2,6 +2,7 @@
 
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { getActivityLogTechnicalDisplay } from '@/shared/lib/activity-log-technical-display';
 import type { ActivityLog } from '../api/activity-logs-api';
 
 interface ActivityLogDetailsModalProps {
@@ -12,6 +13,8 @@ interface ActivityLogDetailsModalProps {
 
 export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetailsModalProps) {
   if (!open || !log) return null;
+
+  const technical = getActivityLogTechnicalDisplay(log);
 
   return (
     <Modal open={open} title="Activity Log Details" onClose={onClose}>
@@ -103,54 +106,58 @@ export function ActivityLogDetailsModal({ open, onClose, log }: ActivityLogDetai
           </div>
         )}
 
-        {/* Technical Info */}
-        <div>
-          <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Technical Info</h3>
-          <div className="mt-1 space-y-1 text-sm">
-            {log.ipAddress && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">IP Address:</span>
-                <span className="font-mono">{log.ipAddress}</span>
-              </div>
-            )}
-            {log.userAgent && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">User Agent:</span>
-                <span className="truncate max-w-[300px] font-mono text-xs" title={log.userAgent}>
-                  {log.userAgent}
-                </span>
-              </div>
-            )}
-            {log.endpoint && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Endpoint:</span>
-                <span className="font-mono">{log.endpoint}</span>
-              </div>
-            )}
-            {log.method && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Method:</span>
-                <span className="font-mono">{log.method}</span>
-              </div>
-            )}
-            {log.statusCode !== undefined && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Status Code:</span>
-                <span
-                  className={`font-mono ${log.statusCode >= 400 ? 'text-red-600' : 'text-green-600'}`}
-                >
-                  {log.statusCode}
-                </span>
-              </div>
-            )}
-            {log.duration !== undefined && (
-              <div className="flex justify-between">
-                <span className="text-[rgb(var(--tc-muted))]">Duration:</span>
-                <span className="font-mono">{log.duration}ms</span>
-              </div>
-            )}
+        {technical && (
+          <div>
+            <h3 className="text-sm font-semibold text-[rgb(var(--tc-muted))]">Technical Info</h3>
+            <div className="mt-1 space-y-1 text-sm">
+              {technical.ipAddress && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">IP Address:</span>
+                  <span className="font-mono">{technical.ipAddress}</span>
+                </div>
+              )}
+              {technical.userAgent && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">User Agent:</span>
+                  <span
+                    className="truncate max-w-[300px] font-mono text-xs"
+                    title={technical.userAgent}
+                  >
+                    {technical.userAgent}
+                  </span>
+                </div>
+              )}
+              {technical.endpoint && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">Endpoint:</span>
+                  <span className="font-mono">{technical.endpoint}</span>
+                </div>
+              )}
+              {technical.method && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">Method:</span>
+                  <span className="font-mono">{technical.method}</span>
+                </div>
+              )}
+              {technical.statusCode !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">Status Code:</span>
+                  <span
+                    className={`font-mono ${technical.statusCode >= 400 ? 'text-red-600' : 'text-green-600'}`}
+                  >
+                    {technical.statusCode}
+                  </span>
+                </div>
+              )}
+              {technical.duration !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-[rgb(var(--tc-muted))]">Duration:</span>
+                  <span className="font-mono">{technical.duration}ms</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-end border-t border-[rgb(var(--tc-border))] pt-4">

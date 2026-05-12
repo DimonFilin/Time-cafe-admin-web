@@ -10,7 +10,6 @@ import type {
 import {
   listWorkers,
   registerWorker,
-  updateWorker,
   deleteWorker,
   type WorkerRole,
 } from '@/features/system-admin/workers/api/workers';
@@ -20,6 +19,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 
 type WorkerFormState = {
   email: string;
@@ -94,17 +94,17 @@ export function WorkerAccountsAdmin() {
     const { email, password, firstName, lastName, role, brandId, cafeId } = createForm;
 
     if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim()) {
-      setCreateError('Email, password, first name, and last name are required');
+      setCreateError(t('systemAdmin.workerAccounts.requiredFields'));
       return;
     }
 
     if (role !== 'SYSTEM_ADMIN' && !brandId.trim()) {
-      setCreateError('Brand is required for this role');
+      setCreateError(t('systemAdmin.workerAccounts.brandRequired'));
       return;
     }
 
     if (role === 'CAFE_ADMIN' && !cafeId.trim()) {
-      setCreateError('Cafe is required for CAFE_ADMIN role');
+      setCreateError(t('systemAdmin.workerAccounts.cafeRequired'));
       return;
     }
 
@@ -163,7 +163,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'name',
-        header: 'Name',
+        header: t('common.name'),
         render: (w) => (
           <span>
             {w.firstName} {w.lastName}
@@ -172,7 +172,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'role',
-        header: 'Role',
+        header: t('workers.role'),
         render: (w) => (
           <span className="inline-flex items-center rounded-full bg-[rgb(var(--tc-accent))]/10 px-3 py-1 text-xs font-medium text-[rgb(var(--tc-accent))]">
             {w.role}
@@ -181,7 +181,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'brand',
-        header: 'Brand ID',
+        header: t('systemAdmin.workerAccounts.brandId'),
         render: (w) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">
             {w.brandId ? w.brandId.slice(0, 8) : '—'}
@@ -190,7 +190,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'cafe',
-        header: 'Cafe ID',
+        header: t('systemAdmin.workerAccounts.cafeId'),
         render: (w) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">
             {w.cafeId ? w.cafeId.slice(0, 8) : '—'}
@@ -199,7 +199,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'deleted',
-        header: 'Deleted',
+        header: t('systemAdmin.users.deleted'),
         render: (w) => (
           <input
             type="checkbox"
@@ -211,7 +211,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'createdAt',
-        header: 'Created',
+        header: t('workers.created'),
         render: (w) => (
           <span className="text-xs text-[rgb(var(--tc-muted))]">
             {new Date(w.createdAt).toLocaleDateString()}
@@ -220,7 +220,7 @@ export function WorkerAccountsAdmin() {
       },
       {
         key: 'actions',
-        header: 'Actions',
+        header: t('common.actions'),
         render: (w) => (
           <div className="flex gap-2">
             <Button
@@ -230,7 +230,7 @@ export function WorkerAccountsAdmin() {
                 setDeleteOpen(true);
               }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         ),
@@ -244,19 +244,18 @@ export function WorkerAccountsAdmin() {
       <div className="flex items-center justify-between">
         <div>
           <div className="text-2xl font-semibold tracking-tight">
-            Worker Accounts (SYSTEM_ADMIN)
+            {t('systemAdmin.workerAccounts.title')}
           </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Create, view, and manage worker accounts (BRAND_ADMIN, CAFE_ADMIN, WORKER,
-            SYSTEM_ADMIN).
+            {t('systemAdmin.workerAccounts.subtitle')}
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setCreateOpen(true)}>
-            + Create Worker Account
+            + {t('systemAdmin.workerAccounts.createAccount')}
           </Button>
           <Button variant="secondary" onClick={refresh} disabled={loading}>
-            Refresh
+            {t('common.refresh')}
           </Button>
         </div>
       </div>
@@ -264,31 +263,33 @@ export function WorkerAccountsAdmin() {
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Email</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.email')}</div>
             <input
               type="text"
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.email}
               onChange={(e) => setFilters((s) => ({ ...s, email: e.target.value }))}
-              placeholder="Filter by email"
+              placeholder={t('systemAdmin.users.filterByEmail')}
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Role</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('workers.role')}</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.role}
               onChange={(e) => setFilters((s) => ({ ...s, role: e.target.value }))}
             >
-              <option value="">All roles</option>
-              <option value="SYSTEM_ADMIN">System Admin</option>
-              <option value="BRAND_ADMIN">Brand Admin</option>
-              <option value="CAFE_ADMIN">Cafe Admin</option>
-              <option value="WORKER">Worker</option>
+              <option value="">{t('systemAdmin.workerAccounts.allRoles')}</option>
+              <option value="SYSTEM_ADMIN">{t('workers.roles.systemAdmin')}</option>
+              <option value="BRAND_ADMIN">{t('workers.roles.brandAdmin')}</option>
+              <option value="CAFE_ADMIN">{t('workers.roles.cafeAdmin')}</option>
+              <option value="WORKER">{t('workers.roles.worker')}</option>
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Include Deleted</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.users.includeDeleted')}
+            </div>
             <input
               type="checkbox"
               checked={filters.includeDeleted}
@@ -321,15 +322,15 @@ export function WorkerAccountsAdmin() {
       {/* Create Worker Modal */}
       <Modal
         open={createOpen}
-        title="Create Worker Account"
+        title={t('systemAdmin.workerAccounts.createAccount')}
         onClose={() => setCreateOpen(false)}
         footer={
           <div className="flex gap-2 justify-end">
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleCreate} disabled={createLoading}>
-              {createLoading ? 'Creating...' : 'Create'}
+              {createLoading ? t('systemAdmin.workerAccounts.creating') : t('common.create')}
             </Button>
           </div>
         }
@@ -340,7 +341,7 @@ export function WorkerAccountsAdmin() {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1">Email *</label>
+            <label className="block text-sm font-medium mb-1">{t('common.email')} *</label>
             <input
               type="email"
               value={createForm.email}
@@ -351,74 +352,78 @@ export function WorkerAccountsAdmin() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Password *</label>
+            <label className="block text-sm font-medium mb-1">{t('auth.login.password')} *</label>
             <input
               type="password"
               value={createForm.password}
               onChange={(e) => setCreateForm((s) => ({ ...s, password: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Secure password"
+              placeholder={t('systemAdmin.workerAccounts.securePassword')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">First Name *</label>
+            <label className="block text-sm font-medium mb-1">{t('workers.firstName')} *</label>
             <input
               type="text"
               value={createForm.firstName}
               onChange={(e) => setCreateForm((s) => ({ ...s, firstName: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="First name"
+              placeholder={t('workers.firstName')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Last Name *</label>
+            <label className="block text-sm font-medium mb-1">{t('workers.lastName')} *</label>
             <input
               type="text"
               value={createForm.lastName}
               onChange={(e) => setCreateForm((s) => ({ ...s, lastName: e.target.value }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-              placeholder="Last name"
+              placeholder={t('workers.lastName')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Role *</label>
+            <label className="block text-sm font-medium mb-1">{t('workers.role')} *</label>
             <select
               value={createForm.role}
               onChange={(e) => setCreateForm((s) => ({ ...s, role: e.target.value as WorkerRole }))}
               className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
             >
-              <option value="SYSTEM_ADMIN">System Admin</option>
-              <option value="BRAND_ADMIN">Brand Admin</option>
-              <option value="CAFE_ADMIN">Cafe Admin</option>
-              <option value="WORKER">Worker</option>
+              <option value="SYSTEM_ADMIN">{t('workers.roles.systemAdmin')}</option>
+              <option value="BRAND_ADMIN">{t('workers.roles.brandAdmin')}</option>
+              <option value="CAFE_ADMIN">{t('workers.roles.cafeAdmin')}</option>
+              <option value="WORKER">{t('workers.roles.worker')}</option>
             </select>
           </div>
 
           {createForm.role !== 'SYSTEM_ADMIN' && (
             <div>
-              <label className="block text-sm font-medium mb-1">Brand ID *</label>
+              <label className="block text-sm font-medium mb-1">
+                {t('systemAdmin.workerAccounts.brandId')} *
+              </label>
               <input
                 type="text"
                 value={createForm.brandId}
                 onChange={(e) => setCreateForm((s) => ({ ...s, brandId: e.target.value }))}
                 className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-                placeholder="UUID of the brand"
+                placeholder={t('systemAdmin.workerAccounts.brandIdPlaceholder')}
               />
             </div>
           )}
 
           {createForm.role === 'CAFE_ADMIN' && (
             <div>
-              <label className="block text-sm font-medium mb-1">Cafe ID *</label>
+              <label className="block text-sm font-medium mb-1">
+                {t('systemAdmin.workerAccounts.cafeId')} *
+              </label>
               <input
                 type="text"
                 value={createForm.cafeId}
                 onChange={(e) => setCreateForm((s) => ({ ...s, cafeId: e.target.value }))}
                 className="w-full rounded-md border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
-                placeholder="UUID of the cafe"
+                placeholder={t('systemAdmin.workerAccounts.cafeIdPlaceholder')}
               />
             </div>
           )}
@@ -428,8 +433,8 @@ export function WorkerAccountsAdmin() {
       {/* Delete Modal */}
       <ConfirmModal
         open={deleteOpen}
-        title="Delete Worker Account"
-        message={`Are you sure you want to delete "${deletingWorker?.email}"? This is a soft delete.`}
+        title={t('workers.delete')}
+        message={t('systemAdmin.workerAccounts.deleteConfirm')}
         onConfirm={handleDelete}
         onCancel={() => setDeleteOpen(false)}
         loading={deleteLoading}

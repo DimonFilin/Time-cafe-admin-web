@@ -29,6 +29,36 @@ export interface ChatSummary {
   notificationMode: 'ALL_WORKERS' | 'ROLE_BASED' | 'SPECIFIC_WORKERS';
   unreadCount: number;
   lastMessage?: ChatMessage | null;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+  };
+  order?: {
+    id: string;
+    orderNumber?: string | null;
+    status?: string;
+    totalAmount?: string | null;
+    createdAt: string;
+    appointmentId?: string | null;
+  };
+  appointment?: {
+    id: string;
+    dateTime: string;
+    duration: number;
+    status: string;
+    notes?: string | null;
+    orders: Array<{
+      id: string;
+      orderNumber?: string | null;
+      status?: string;
+      totalAmount?: string | null;
+      createdAt: string;
+    }>;
+  } | null;
   updatedAt: string;
 }
 

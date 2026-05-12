@@ -13,6 +13,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 
 type CafeFormState = {
   name: string;
@@ -135,12 +136,12 @@ export function CafesAdmin() {
       },
       {
         key: 'name',
-        header: 'Название',
+        header: t('common.name'),
         render: (c) => <div className="font-medium">{c.name}</div>,
       },
       {
         key: 'deleted',
-        header: 'Deleted',
+        header: t('systemAdmin.workersManagement.deleted'),
         render: (c) => (
           <input
             type="checkbox"
@@ -153,19 +154,19 @@ export function CafesAdmin() {
       },
       {
         key: 'brand',
-        header: 'Бренд',
+        header: t('systemAdmin.cafes.brand'),
         render: (c) => (
           <span className="text-[rgb(var(--tc-muted))]">{c.brandName ?? c.brandId}</span>
         ),
       },
       {
         key: 'city',
-        header: 'Город',
+        header: t('systemAdmin.cafes.city'),
         render: (c) => <span className="text-[rgb(var(--tc-muted))]">{c.city}</span>,
       },
       {
         key: 'rating',
-        header: 'Rating',
+        header: t('systemAdmin.cafes.rating'),
         render: (c) => <span className="font-mono text-xs">{c.rating}</span>,
       },
       {
@@ -193,7 +194,7 @@ export function CafesAdmin() {
                 setEditOpen(true);
               }}
             >
-              Edit
+              {t('common.edit')}
             </Button>
             <Button
               variant="secondary"
@@ -203,7 +204,7 @@ export function CafesAdmin() {
                 setDeleteOpen(true);
               }}
             >
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         ),
@@ -346,16 +347,18 @@ export function CafesAdmin() {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Cafes (SYSTEM_ADMIN)</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.cafes.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Список берётся из `GET /cafes` (удалённые записи сейчас не показываются backend-ом).
+            {t('systemAdmin.cafes.subtitle')}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="secondary" onClick={refresh} disabled={isLoading}>
-            Refresh
+            {t('common.refresh')}
           </Button>
-          <Button onClick={openCreate}>Create cafe</Button>
+          <Button onClick={openCreate}>{t('systemAdmin.cafes.createCafe')}</Button>
         </div>
       </div>
 
@@ -367,13 +370,15 @@ export function CafesAdmin() {
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Brand</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.cafes.brand')}
+            </div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.brandId}
               onChange={(e) => setFilters((s) => ({ ...s, brandId: e.target.value }))}
             >
-              <option value="">All</option>
+              <option value="">{t('systemAdmin.cafes.all')}</option>
               {brands.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -382,7 +387,7 @@ export function CafesAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">City</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('systemAdmin.cafes.city')}</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.city}
@@ -390,7 +395,9 @@ export function CafesAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">RegionId</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.cafes.regionId')}
+            </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.regionId}
@@ -398,7 +405,7 @@ export function CafesAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Search</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.search')}</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.search}
@@ -413,7 +420,7 @@ export function CafesAdmin() {
               checked={filters.includeDeleted}
               onChange={(e) => setFilters((s) => ({ ...s, includeDeleted: e.target.checked }))}
             />
-            Показывать удалённые
+            {t('systemAdmin.cafes.showDeleted')}
           </label>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
@@ -423,7 +430,7 @@ export function CafesAdmin() {
                 refresh();
               }}
             >
-              Apply
+              {t('systemAdmin.cafes.apply')}
             </Button>
             <Button
               variant="secondary"
@@ -438,7 +445,7 @@ export function CafesAdmin() {
                 setPage(1);
               }}
             >
-              Reset
+              {t('systemAdmin.cafes.reset')}
             </Button>
           </div>
         </div>

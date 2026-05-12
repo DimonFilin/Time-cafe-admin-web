@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { getCafes } from '../../cafes/api/cafes';
 import { MenuTab } from '@/features/cafe-admin/menu/ui/MenuTab';
@@ -10,6 +10,7 @@ export function BrandMenuTab() {
   const [selectedCafeId, setSelectedCafeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const initialCafeSelectedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,7 +21,8 @@ export function BrandMenuTab() {
         const res = await getCafes({ page: 1, limit: 100 });
         if (!cancelled) {
           setCafes((res.items || []).map((c) => ({ id: c.id, name: c.name })));
-          if (res.items?.length && !selectedCafeId) {
+          if (res.items?.length && !initialCafeSelectedRef.current) {
+            initialCafeSelectedRef.current = true;
             setSelectedCafeId(res.items[0].id);
           }
         }
@@ -57,7 +59,9 @@ export function BrandMenuTab() {
   if (cafes.length === 0) {
     return (
       <Card className="p-6">
-        <p className="text-[rgb(var(--tc-muted))]">No cafes in your brand. Create a cafe first.</p>
+        <p className="text-[rgb(var(--tc-muted))]">
+          Нет кафе в вашем бренде. Сначала создайте кафе.
+        </p>
       </Card>
     );
   }

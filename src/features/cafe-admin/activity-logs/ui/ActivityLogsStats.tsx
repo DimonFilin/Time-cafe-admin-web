@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
+import { t } from '@/i18n';
 import {
   getActivityLogsStatistics,
   type ActivityLogsStatistics,
@@ -27,7 +28,7 @@ export function ActivityLogsStats({ filters }: ActivityLogsStatsProps) {
       });
       setStats(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch statistics');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.activityLogs.fetchStatsFailed'));
       setStats(null);
     } finally {
       setLoading(false);
@@ -75,7 +76,9 @@ export function ActivityLogsStats({ filters }: ActivityLogsStatsProps) {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">Total Logs</p>
+            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.totalLogs')}
+            </p>
             <p className="mt-2 text-3xl font-semibold">{totalLogs.toLocaleString()}</p>
           </div>
           <div className="rounded-full bg-blue-100 p-3">
@@ -100,7 +103,9 @@ export function ActivityLogsStats({ filters }: ActivityLogsStatsProps) {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">Logins</p>
+            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.logins')}
+            </p>
             <p className="mt-2 text-3xl font-semibold">{loginCount.toLocaleString()}</p>
           </div>
           <div className="rounded-full bg-green-100 p-3">
@@ -125,7 +130,9 @@ export function ActivityLogsStats({ filters }: ActivityLogsStatsProps) {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">Updates</p>
+            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.updates')}
+            </p>
             <p className="mt-2 text-3xl font-semibold">{updateCount.toLocaleString()}</p>
           </div>
           <div className="rounded-full bg-yellow-100 p-3">
@@ -150,7 +157,9 @@ export function ActivityLogsStats({ filters }: ActivityLogsStatsProps) {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">Critical</p>
+            <p className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+              {t('cafeAdmin.activityLogs.critical')}
+            </p>
             <p className="mt-2 text-3xl font-semibold">{criticalCount.toLocaleString()}</p>
           </div>
           <div className="rounded-full bg-red-100 p-3">

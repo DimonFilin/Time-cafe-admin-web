@@ -5,6 +5,7 @@ import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
 import { inviteWorker } from '../api/workers-api';
 import type { InviteWorkerDto } from '../types/worker.types';
+import { t } from '@/i18n';
 
 interface InviteWorkerModalProps {
   open: boolean;
@@ -32,7 +33,7 @@ export function InviteWorkerModal({ open, onClose, onSuccess }: InviteWorkerModa
       handleClose();
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to invite worker');
+      setError(err instanceof Error ? err.message : t('workers.errors.inviteFailed'));
     } finally {
       setLoading(false);
     }
@@ -45,10 +46,10 @@ export function InviteWorkerModal({ open, onClose, onSuccess }: InviteWorkerModa
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Invite Worker">
+    <Modal open={open} onClose={handleClose} title={t('workers.invite')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Email</label>
+          <label className="mb-1 block text-sm font-medium">{t('common.email')}</label>
           <input
             type="email"
             value={formData.email}
@@ -60,42 +61,42 @@ export function InviteWorkerModal({ open, onClose, onSuccess }: InviteWorkerModa
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">First Name</label>
+          <label className="mb-1 block text-sm font-medium">{t('workers.firstName')}</label>
           <input
             type="text"
             value={formData.firstName}
             onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
             required
-            placeholder="John"
+            placeholder="Иван"
             className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Last Name</label>
+          <label className="mb-1 block text-sm font-medium">{t('workers.lastName')}</label>
           <input
             type="text"
             value={formData.lastName}
             onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
             required
-            placeholder="Doe"
+            placeholder="Иванов"
             className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Password</label>
+          <label className="mb-1 block text-sm font-medium">{t('workers.password')}</label>
           <input
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
-            placeholder="Minimum 8 characters"
+            placeholder={t('workers.passwordMinLength')}
             minLength={8}
             className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            Must be at least 8 characters long
+            {t('workers.passwordRequirement')}
           </p>
         </div>
 
@@ -109,10 +110,10 @@ export function InviteWorkerModal({ open, onClose, onSuccess }: InviteWorkerModa
             disabled={loading}
             className="flex-1"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={loading} className="flex-1">
-            {loading ? 'Inviting...' : 'Invite Worker'}
+            {loading ? t('workers.inviting') : t('workers.invite')}
           </Button>
         </div>
       </form>

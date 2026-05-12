@@ -5,6 +5,7 @@ import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
 import { updateWorker } from '../api/workers-api';
 import type { WorkerResponse, UpdateWorkerDto } from '../types/worker.types';
+import { t } from '@/i18n';
 
 interface EditWorkerModalProps {
   open: boolean;
@@ -53,7 +54,7 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
       handleClose();
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update worker');
+      setError(err instanceof Error ? err.message : t('workers.errors.updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -68,10 +69,10 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
   if (!worker) return null;
 
   return (
-    <Modal open={open} onClose={handleClose} title="Edit Worker">
+    <Modal open={open} onClose={handleClose} title={t('workers.edit')}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1 block text-sm font-medium">Email</label>
+          <label className="mb-1 block text-sm font-medium">{t('common.email')}</label>
           <input
             type="email"
             value={formData.email}
@@ -82,7 +83,7 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">First Name</label>
+          <label className="mb-1 block text-sm font-medium">{t('workers.firstName')}</label>
           <input
             type="text"
             value={formData.firstName}
@@ -93,7 +94,7 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Last Name</label>
+          <label className="mb-1 block text-sm font-medium">{t('workers.lastName')}</label>
           <input
             type="text"
             value={formData.lastName}
@@ -104,17 +105,17 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">New Password (optional)</label>
+          <label className="mb-1 block text-sm font-medium">{t('workers.newPassword')}</label>
           <input
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder="Leave empty to keep current password"
+            placeholder={t('workers.newPasswordPlaceholder')}
             minLength={8}
             className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            Leave empty to keep current password
+            {t('workers.newPasswordPlaceholder')}
           </p>
         </div>
 
@@ -128,10 +129,10 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
             disabled={loading}
             className="flex-1"
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={loading} className="flex-1">
-            {loading ? 'Updating...' : 'Update Worker'}
+            {loading ? t('common.updating') : t('workers.updateWorker')}
           </Button>
         </div>
       </form>

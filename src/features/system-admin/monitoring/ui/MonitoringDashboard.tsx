@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { HealthCheck, SystemMetrics } from '@/entities/system/types/system';
 import { getHealthCheck, getMetrics } from '../api/monitoring';
 import { Card } from '@/shared/ui/card/Card';
+import { t } from '@/i18n';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -41,7 +42,9 @@ function HealthStatusBadge({ status }: { status: 'healthy' | 'unhealthy' }) {
           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
       }`}
     >
-      {status === 'healthy' ? '✓ Здоров' : '✗ Неисправен'}
+      {status === 'healthy'
+        ? `✓ ${t('systemAdmin.monitoring.healthy')}`
+        : `✗ ${t('systemAdmin.monitoring.unhealthy')}`}
     </span>
   );
 }
@@ -97,7 +100,9 @@ export function MonitoringDashboard() {
   if (loading && !health && !metrics) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[rgb(var(--tc-muted))]">Загрузка метрик...</div>
+        <div className="text-sm text-[rgb(var(--tc-muted))]">
+          {t('systemAdmin.monitoring.loadingMetrics')}
+        </div>
       </div>
     );
   }
@@ -116,9 +121,11 @@ export function MonitoringDashboard() {
     <div className="grid gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[rgb(var(--tc-fg))]">Мониторинг системы</h1>
+          <h1 className="text-2xl font-semibold text-[rgb(var(--tc-fg))]">
+            {t('systemAdmin.monitoring.title')}
+          </h1>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Статус здоровья и метрики производительности
+            {t('systemAdmin.monitoring.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -129,14 +136,16 @@ export function MonitoringDashboard() {
               onChange={(e) => setAutoRefresh(e.target.checked)}
               className="rounded"
             />
-            <span className="text-[rgb(var(--tc-muted))]">Автообновление (10с)</span>
+            <span className="text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.monitoring.autoRefresh')}
+            </span>
           </label>
           <button
             onClick={refresh}
             disabled={loading}
             className="rounded-lg bg-[rgb(var(--tc-accent))] px-4 py-2 text-sm font-medium text-[rgb(var(--tc-accent-contrast))] hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? 'Обновление...' : 'Обновить'}
+            {loading ? t('systemAdmin.monitoring.refreshing') : t('systemAdmin.monitoring.refresh')}
           </button>
         </div>
       </div>
@@ -152,7 +161,9 @@ export function MonitoringDashboard() {
         <Card className="bg-[rgb(var(--tc-surface))]">
           <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">Health Check</h2>
+              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+                {t('systemAdmin.monitoring.healthCheck')}
+              </h2>
               <HealthStatusBadge status={health.status} />
             </div>
           </div>
@@ -169,14 +180,14 @@ export function MonitoringDashboard() {
                       <div>
                         <div className="font-medium text-[rgb(var(--tc-fg))] capitalize">
                           {key === 'database'
-                            ? 'База данных'
+                            ? t('systemAdmin.monitoring.database')
                             : key === 'storage'
-                              ? 'Хранилище'
+                              ? t('systemAdmin.monitoring.storage')
                               : key}
                         </div>
                         {check.responseTime !== undefined && (
                           <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-                            Время отклика: {check.responseTime}ms
+                            {t('systemAdmin.monitoring.responseTime')}: {check.responseTime}ms
                           </div>
                         )}
                         {check.message && (
@@ -192,7 +203,8 @@ export function MonitoringDashboard() {
               })}
             </div>
             <div className="mt-4 text-xs text-[rgb(var(--tc-muted))]">
-              Последнее обновление: {new Date(health.timestamp).toLocaleString('ru-RU')}
+              {t('systemAdmin.monitoring.lastUpdated')}:{' '}
+              {new Date(health.timestamp).toLocaleString('ru-RU')}
             </div>
           </div>
         </Card>
@@ -204,13 +216,17 @@ export function MonitoringDashboard() {
           {/* Memory */}
           <Card className="bg-[rgb(var(--tc-surface))]">
             <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
-              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">Память</h2>
+              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+                {t('systemAdmin.monitoring.memory')}
+              </h2>
             </div>
             <div className="px-6 py-4">
               <div className="space-y-3">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-[rgb(var(--tc-muted))]">Использовано</span>
+                    <span className="text-[rgb(var(--tc-muted))]">
+                      {t('systemAdmin.monitoring.used')}
+                    </span>
                     <span className="font-medium text-[rgb(var(--tc-fg))]">
                       {formatBytes(metrics.memory.heapUsed)} /{' '}
                       {formatBytes(metrics.memory.heapTotal)} ({memoryUsagePercent}%)
@@ -244,20 +260,26 @@ export function MonitoringDashboard() {
           {/* Database */}
           <Card className="bg-[rgb(var(--tc-surface))]">
             <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
-              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">База данных</h2>
+              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+                {t('systemAdmin.monitoring.database')}
+              </h2>
             </div>
             <div className="px-6 py-4">
               <div className="text-3xl font-bold text-[rgb(var(--tc-fg))]">
                 {metrics.database.activeConnections}
               </div>
-              <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Активных подключений</div>
+              <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.monitoring.activeConnections')}
+              </div>
             </div>
           </Card>
 
           {/* Requests */}
           <Card className="bg-[rgb(var(--tc-surface))] md:col-span-2">
             <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
-              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">Запросы</h2>
+              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+                {t('systemAdmin.monitoring.requests')}
+              </h2>
             </div>
             <div className="px-6 py-4">
               <div className="grid gap-6 md:grid-cols-4">
@@ -265,32 +287,40 @@ export function MonitoringDashboard() {
                   <div className="text-2xl font-bold text-[rgb(var(--tc-fg))]">
                     {metrics.requests.total.toLocaleString()}
                   </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Всего запросов</div>
+                  <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.monitoring.totalRequests')}
+                  </div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {metrics.requests.successful.toLocaleString()}
                   </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Успешных</div>
+                  <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.monitoring.successful')}
+                  </div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                     {metrics.requests.errors.toLocaleString()}
                   </div>
-                  <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Ошибок</div>
+                  <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.monitoring.errors')}
+                  </div>
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-[rgb(var(--tc-fg))]">
                     {metrics.requests.avgResponseTime.toFixed(1)}ms
                   </div>
                   <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-                    Среднее время отклика
+                    {t('systemAdmin.monitoring.avgResponseTime')}
                   </div>
                 </div>
               </div>
               <div className="mt-4">
                 <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="text-[rgb(var(--tc-muted))]">Успешность</span>
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.monitoring.successRate')}
+                  </span>
                   <span className="font-medium text-[rgb(var(--tc-fg))]">{successRate}%</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-[rgb(var(--tc-surface-2))]">
@@ -306,14 +336,17 @@ export function MonitoringDashboard() {
           {/* Uptime */}
           <Card className="bg-[rgb(var(--tc-surface))] md:col-span-2">
             <div className="border-b border-[rgb(var(--tc-border))] px-6 py-4">
-              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">Время работы</h2>
+              <h2 className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+                {t('systemAdmin.monitoring.uptime')}
+              </h2>
             </div>
             <div className="px-6 py-4">
               <div className="text-3xl font-bold text-[rgb(var(--tc-fg))]">
                 {formatUptime(metrics.uptime)}
               </div>
               <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-                Последнее обновление: {new Date(metrics.timestamp).toLocaleString('ru-RU')}
+                {t('systemAdmin.monitoring.lastUpdated')}:{' '}
+                {new Date(metrics.timestamp).toLocaleString('ru-RU')}
               </div>
             </div>
           </Card>

@@ -12,20 +12,21 @@ import type { AccountSummary } from '@/shared/types/account';
 import { Button } from '@/shared/ui/button/Button';
 import { Card } from '@/shared/ui/card/Card';
 import { Input } from '@/shared/ui/input/Input';
+import { t } from '@/i18n';
 
 function stepTitle(step: LoginStep) {
-  if (step === 'email') return 'Вход';
-  if (step === 'password') return 'Введите пароль';
+  if (step === 'email') return t('auth.login.title');
+  if (step === 'password') return t('auth.login.password');
   if (step === 'chooseAccount') return 'Выберите аккаунт';
   return 'Готово';
 }
 
 function roleLabel(role: AccountSummary['role']) {
-  if (role === 'USER') return 'User';
-  if (role === 'SYSTEM_ADMIN') return 'System Admin';
-  if (role === 'BRAND_ADMIN') return 'Brand Admin';
-  if (role === 'CAFE_ADMIN') return 'Cafe Admin';
-  return 'Worker';
+  if (role === 'USER') return 'Пользователь';
+  if (role === 'SYSTEM_ADMIN') return t('workers.roles.systemAdmin');
+  if (role === 'BRAND_ADMIN') return t('workers.roles.brandAdmin');
+  if (role === 'CAFE_ADMIN') return t('workers.roles.cafeAdmin');
+  return t('workers.roles.worker');
 }
 
 function roleRoute(role: AccountSummary['role']) {
@@ -178,7 +179,9 @@ export function LoginFlow() {
                 className="grid gap-4"
               >
                 <label className="grid gap-2">
-                  <span className="text-xs font-medium text-[rgb(var(--tc-muted))]">Email</span>
+                  <span className="text-xs font-medium text-[rgb(var(--tc-muted))]">
+                    {t('auth.login.email')}
+                  </span>
                   <Input
                     autoComplete="email"
                     inputMode="email"
@@ -199,9 +202,13 @@ export function LoginFlow() {
                 transition={{ duration: 0.18 }}
                 className="grid gap-4"
               >
-                <div className="text-xs text-[rgb(var(--tc-muted))]">Email: {email || '—'}</div>
+                <div className="text-xs text-[rgb(var(--tc-muted))]">
+                  {t('auth.login.email')}: {email || '—'}
+                </div>
                 <label className="grid gap-2">
-                  <span className="text-xs font-medium text-[rgb(var(--tc-muted))]">Пароль</span>
+                  <span className="text-xs font-medium text-[rgb(var(--tc-muted))]">
+                    {t('auth.login.password')}
+                  </span>
                   <Input
                     autoComplete="current-password"
                     type="password"
@@ -268,16 +275,16 @@ export function LoginFlow() {
 
         <div className="flex items-center justify-between gap-3 border-t border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] px-5 py-4">
           <Button variant="ghost" onClick={handleBack} disabled={pending || step === 'email'}>
-            Назад
+            {t('common.back')}
           </Button>
           <Button onClick={handleNext} disabled={pending || !canGoNext || step === 'chooseAccount'}>
             {pending
-              ? 'Загрузка…'
+              ? t('common.loading')
               : step === 'password'
-                ? 'Дальше'
+                ? t('common.next')
                 : step === 'email'
-                  ? 'Продолжить'
-                  : 'Дальше'}
+                  ? t('common.next')
+                  : t('common.next')}
           </Button>
         </div>
       </Card>

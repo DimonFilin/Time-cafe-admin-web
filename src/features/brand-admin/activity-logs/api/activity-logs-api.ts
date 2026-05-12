@@ -185,6 +185,7 @@ export async function getActivityLogsStatistics(
 export async function createActivityLog(data: CreateActivityLogDto): Promise<{ message: string }> {
   const response = await fetch('/api/activity-logs', {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },

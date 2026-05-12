@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
-import { Badge } from '@/shared/ui/badge/Badge';
 import type { BrandSettings, UpdateBrandSettingsRequest } from '../api/settings';
 import {
   getBrandSettings,
@@ -14,13 +14,13 @@ import {
   getBannerSignedUrl,
 } from '../api/settings';
 import { BrandSettingsEditModal } from './BrandSettingsEditModal';
+import { t } from '@/i18n';
 
 export function SettingsTab() {
   const [brand, setBrand] = useState<BrandSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   // Logo upload state
   const [logoUploading, setLogoUploading] = useState(false);
@@ -36,12 +36,47 @@ export function SettingsTab() {
     fetchBrandSettings();
   }, []);
 
-  // Load signed URLs when brand data updates
+  const loadSignedUrls = useCallback(
+    async (
+      brandId: string,
+      logo: string | null | undefined,
+      bannerImage: string | null | undefined,
+    ) => {
+      try {
+        if (logo) {
+          try {
+            const logoRes = await getLogoSignedUrl(brandId);
+            setLogoSignedUrl(logoRes.url);
+          } catch (e) {
+            console.warn('Failed to get signed logo URL:', e);
+            setLogoSignedUrl(logo);
+          }
+        } else {
+          setLogoSignedUrl(null);
+        }
+
+        if (bannerImage) {
+          try {
+            const bannerRes = await getBannerSignedUrl(brandId);
+            setBannerSignedUrl(bannerRes.url);
+          } catch (e) {
+            console.warn('Failed to get signed banner URL:', e);
+            setBannerSignedUrl(bannerImage || null);
+          }
+        } else {
+          setBannerSignedUrl(null);
+        }
+      } catch (e) {
+        console.error('Failed to load signed URLs:', e);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
-    if (brand?.id) {
-      loadSignedUrls(brand.id);
-    }
-  }, [brand?.id, brand?.logo, brand?.bannerImage]);
+    if (!brand?.id) return;
+    void loadSignedUrls(brand.id, brand.logo, brand.bannerImage);
+  }, [brand?.id, brand?.logo, brand?.bannerImage, loadSignedUrls]);
 
   const fetchBrandSettings = async () => {
     try {
@@ -56,49 +91,12 @@ export function SettingsTab() {
     }
   };
 
-  const loadSignedUrls = async (brandId: string) => {
-    try {
-      // Load logo signed URL if exists
-      if (brand?.logo) {
-        try {
-          const logoRes = await getLogoSignedUrl(brandId);
-          setLogoSignedUrl(logoRes.url);
-        } catch (e) {
-          console.warn('Failed to get signed logo URL:', e);
-          // Fallback to original URL
-          setLogoSignedUrl(brand.logo);
-        }
-      } else {
-        setLogoSignedUrl(null);
-      }
-
-      // Load banner signed URL if exists
-      if (brand?.bannerImage) {
-        try {
-          const bannerRes = await getBannerSignedUrl(brandId);
-          setBannerSignedUrl(bannerRes.url);
-        } catch (e) {
-          console.warn('Failed to get signed banner URL:', e);
-          // Fallback to original URL
-          setBannerSignedUrl(brand?.bannerImage || null);
-        }
-      } else {
-        setBannerSignedUrl(null);
-      }
-    } catch (e) {
-      console.error('Failed to load signed URLs:', e);
-    }
-  };
-
   const handleSaveSettings = async (data: UpdateBrandSettingsRequest) => {
     try {
-      setSaving(true);
       const updated = await updateBrandSettings(data);
       setBrand(updated);
     } catch (e) {
       throw e;
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -134,13 +132,13 @@ export function SettingsTab() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Settings</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('brandAdmin.settings.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Customize your brand profile, colors, and visual assets.
+            {t('brandAdmin.settings.subtitle')}
           </p>
         </div>
         <Card className="p-6">
-          <p className="text-center text-[rgb(var(--tc-muted))]">Loading...</p>
+          <p className="text-center text-[rgb(var(--tc-muted))]">{t('common.loading')}</p>
         </Card>
       </div>
     );
@@ -150,16 +148,16 @@ export function SettingsTab() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Settings</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('brandAdmin.settings.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Customize your brand profile, colors, and visual assets.
+            {t('brandAdmin.settings.subtitle')}
           </p>
         </div>
         <Card className="p-6">
           <div className="rounded-lg bg-red-50 p-4">
             <p className="text-sm text-red-600">{error}</p>
             <Button onClick={fetchBrandSettings} className="mt-4 text-sm">
-              Retry
+              {t('common.retry')}
             </Button>
           </div>
         </Card>
@@ -188,13 +186,13 @@ export function SettingsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Settings</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('brandAdmin.settings.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Customize your brand profile, colors, and visual assets.
+            {t('brandAdmin.settings.subtitle')}
           </p>
         </div>
         <Button onClick={() => setEditOpen(true)} className="text-sm">
-          Edit Settings
+          {t('brandAdmin.settings.editSettings')}
         </Button>
       </div>
 
@@ -204,7 +202,7 @@ export function SettingsTab() {
           <div>
             <h3 className="font-semibold">{brand.name}</h3>
             <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-              Status:{' '}
+              {t('common.status')}:{' '}
               <span
                 className={`inline-block px-2 py-1 rounded text-xs font-medium mt-1 ${getStatusColor(brand.status)}`}
               >
@@ -213,26 +211,38 @@ export function SettingsTab() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-[rgb(var(--tc-muted))]">Verified</p>
-            <p className="mt-1 font-semibold">{brand.isVerified ? '✓ Yes' : '✗ No'}</p>
+            <p className="text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.settings.verified')}
+            </p>
+            <p className="mt-1 font-semibold">
+              {brand.isVerified
+                ? `✓ ${t('brandAdmin.settings.yes')}`
+                : `✗ ${t('brandAdmin.settings.no')}`}
+            </p>
           </div>
         </div>
       </Card>
 
       {/* Brand Information */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Brand Information</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('brandAdmin.settings.brandInfo')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">Name</p>
+            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
+              {t('common.name')}
+            </p>
             <p className="mt-1 text-sm">{brand.name}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">Email</p>
+            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
+              {t('common.email')}
+            </p>
             <p className="mt-1 text-sm">{brand.email || '—'}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">Phone</p>
+            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
+              {t('common.phone')}
+            </p>
             <p className="mt-1 text-sm">{brand.phone || '—'}</p>
           </div>
           <div>
@@ -253,12 +263,14 @@ export function SettingsTab() {
             </p>
           </div>
           <div className="md:col-span-2">
-            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">Address</p>
+            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
+              {t('common.address')}
+            </p>
             <p className="mt-1 text-sm">{brand.address || '—'}</p>
           </div>
           <div className="md:col-span-2">
             <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
-              Description
+              {t('common.description')}
             </p>
             <p className="mt-1 text-sm">{brand.description || '—'}</p>
           </div>
@@ -267,25 +279,32 @@ export function SettingsTab() {
 
       {/* Visual Assets */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Visual Assets</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('brandAdmin.settings.visualAssets')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Logo */}
           <div>
-            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase mb-3">Logo</p>
+            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase mb-3">
+              {t('brandAdmin.settings.logo')}
+            </p>
             {logoSignedUrl && (
-              <img
+              <Image
                 src={logoSignedUrl}
                 alt="Brand Logo"
+                width={80}
+                height={80}
+                unoptimized
                 className="h-20 w-20 rounded-lg border border-[rgb(var(--tc-border))] object-cover mb-3"
               />
             )}
             {!logoSignedUrl && (
               <div className="h-20 w-20 rounded-lg border border-[rgb(var(--tc-border))] flex items-center justify-center text-[rgb(var(--tc-muted))] mb-3">
-                No Logo
+                {t('brandAdmin.settings.noLogo')}
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium mb-2">Upload Logo</label>
+              <label className="block text-sm font-medium mb-2">
+                {t('brandAdmin.settings.uploadLogo')}
+              </label>
               <input
                 type="file"
                 accept="image/*"
@@ -298,7 +317,7 @@ export function SettingsTab() {
               />
               {logoError && <p className="mt-2 text-sm text-red-600">{logoError}</p>}
               {logoUploading && (
-                <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">Uploading...</p>
+                <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">{t('common.uploading')}</p>
               )}
             </div>
           </div>
@@ -306,22 +325,27 @@ export function SettingsTab() {
           {/* Banner */}
           <div>
             <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase mb-3">
-              Banner
+              {t('brandAdmin.settings.banner')}
             </p>
             {bannerSignedUrl && (
-              <img
+              <Image
                 src={bannerSignedUrl}
                 alt="Brand Banner"
+                width={800}
+                height={80}
+                unoptimized
                 className="h-20 w-full rounded-lg border border-[rgb(var(--tc-border))] object-cover mb-3"
               />
             )}
             {!bannerSignedUrl && (
               <div className="h-20 w-full rounded-lg border border-[rgb(var(--tc-border))] flex items-center justify-center text-[rgb(var(--tc-muted))] mb-3">
-                No Banner
+                {t('brandAdmin.settings.noBanner')}
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium mb-2">Upload Banner</label>
+              <label className="block text-sm font-medium mb-2">
+                {t('brandAdmin.settings.uploadBanner')}
+              </label>
               <input
                 type="file"
                 accept="image/*"
@@ -334,7 +358,7 @@ export function SettingsTab() {
               />
               {bannerError && <p className="mt-2 text-sm text-red-600">{bannerError}</p>}
               {bannerUploading && (
-                <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">Uploading...</p>
+                <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">{t('common.uploading')}</p>
               )}
             </div>
           </div>
@@ -344,7 +368,7 @@ export function SettingsTab() {
       {/* Brand Colors */}
       {(brand.primaryColor || brand.secondaryColor || brand.accentColor) && (
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Brand Colors</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('brandAdmin.settings.brandColors')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {brand.primaryColor && (
               <div>
@@ -352,7 +376,9 @@ export function SettingsTab() {
                   className="h-16 rounded-lg border border-[rgb(var(--tc-border))] mb-2"
                   style={{ backgroundColor: brand.primaryColor }}
                 />
-                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">Primary</p>
+                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">
+                  {t('brandAdmin.settings.primaryColor')}
+                </p>
                 <p className="text-sm font-mono">{brand.primaryColor}</p>
               </div>
             )}
@@ -362,7 +388,9 @@ export function SettingsTab() {
                   className="h-16 rounded-lg border border-[rgb(var(--tc-border))] mb-2"
                   style={{ backgroundColor: brand.secondaryColor }}
                 />
-                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">Secondary</p>
+                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">
+                  {t('brandAdmin.settings.secondaryColor')}
+                </p>
                 <p className="text-sm font-mono">{brand.secondaryColor}</p>
               </div>
             )}
@@ -372,7 +400,9 @@ export function SettingsTab() {
                   className="h-16 rounded-lg border border-[rgb(var(--tc-border))] mb-2"
                   style={{ backgroundColor: brand.accentColor }}
                 />
-                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">Accent</p>
+                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">
+                  {t('brandAdmin.settings.accentColor')}
+                </p>
                 <p className="text-sm font-mono">{brand.accentColor}</p>
               </div>
             )}
@@ -382,7 +412,9 @@ export function SettingsTab() {
                   className="h-16 rounded-lg border border-[rgb(var(--tc-border))] mb-2"
                   style={{ backgroundColor: brand.backgroundColor }}
                 />
-                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">Background</p>
+                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">
+                  {t('brandAdmin.settings.backgroundColor')}
+                </p>
                 <p className="text-sm font-mono">{brand.backgroundColor}</p>
               </div>
             )}
@@ -392,7 +424,9 @@ export function SettingsTab() {
                   className="h-16 rounded-lg border border-[rgb(var(--tc-border))] mb-2"
                   style={{ backgroundColor: brand.textColor }}
                 />
-                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">Text</p>
+                <p className="text-xs font-semibold text-[rgb(var(--tc-muted))]">
+                  {t('brandAdmin.settings.textColor')}
+                </p>
                 <p className="text-sm font-mono">{brand.textColor}</p>
               </div>
             )}
@@ -403,10 +437,10 @@ export function SettingsTab() {
       {/* Font Settings */}
       {brand.fontFamily && (
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Font Settings</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('brandAdmin.settings.fontSettings')}</h3>
           <div>
             <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
-              Font Family
+              {t('brandAdmin.settings.fontFamily')}
             </p>
             <p className="mt-2 text-sm capitalize">{brand.fontFamily}</p>
           </div>
@@ -415,7 +449,9 @@ export function SettingsTab() {
 
       {/* Metadata */}
       <Card className="p-6 bg-[rgb(var(--tc-bg-alt))]">
-        <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">Last Updated</p>
+        <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
+          {t('brandAdmin.settings.lastUpdated')}
+        </p>
         <p className="mt-1 text-sm">
           {new Date(brand.updatedAt).toLocaleDateString()}{' '}
           {new Date(brand.updatedAt).toLocaleTimeString()}

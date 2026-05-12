@@ -5,6 +5,8 @@ import { Card } from '@/shared/ui/card/Card';
 import { Badge } from '@/shared/ui/badge/Badge';
 import { Button } from '@/shared/ui/button/Button';
 import { BrandEditModal } from './BrandEditModal';
+import { MediaImage } from '@/shared/ui/media/MediaImage';
+import { t } from '@/i18n';
 
 interface Brand {
   id: string;
@@ -28,7 +30,6 @@ interface Brand {
 interface BrandStats {
   cafesCount: number;
   workersCount: number;
-  apiKeysCount: number;
   ordersCount: number;
   reviewsAverage: number;
 }
@@ -122,13 +123,13 @@ export function BrandOverviewTab() {
     return (
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Brand Overview</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('brandAdmin.overview.title')}</h2>
         </div>
         <Card className="p-6">
           <div className="text-center">
-            <p className="text-red-500">{error || 'Failed to load brand data'}</p>
+            <p className="text-red-500">{error || t('errors.unknown')}</p>
             <Button onClick={fetchBrandData} className="mt-4">
-              Retry
+              {t('common.retry')}
             </Button>
           </div>
         </Card>
@@ -141,13 +142,13 @@ export function BrandOverviewTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Brand Overview</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('brandAdmin.overview.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Manage your brand profile, contact information, and view key statistics.
+            {t('brandAdmin.overview.subtitle')}
           </p>
         </div>
         <Button onClick={() => setEditOpen(true)} variant="secondary">
-          Edit Profile
+          {t('brandAdmin.overview.editProfile')}
         </Button>
       </div>
 
@@ -158,11 +159,7 @@ export function BrandOverviewTab() {
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               {brand.logo ? (
-                <img
-                  src={brand.logo}
-                  alt={brand.name}
-                  className="h-16 w-16 rounded-lg object-cover"
-                />
+                <MediaImage src={brand.logo} alt={brand.name} variant="tileMd" />
               ) : (
                 <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-[rgb(var(--tc-accent))]">
                   <span className="text-2xl font-bold text-white">{brand.name[0]}</span>
@@ -174,7 +171,11 @@ export function BrandOverviewTab() {
                   <Badge className={`${getStatusColor(brand.status)} text-white`}>
                     {brand.status}
                   </Badge>
-                  {brand.isVerified && <Badge className="bg-blue-500 text-white">Verified</Badge>}
+                  {brand.isVerified && (
+                    <Badge className="bg-blue-500 text-white">
+                      {t('brandAdmin.overview.verified')}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -183,7 +184,9 @@ export function BrandOverviewTab() {
           {/* Description */}
           {brand.description && (
             <div>
-              <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Description</h4>
+              <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+                {t('common.description')}
+              </h4>
               <p className="mt-1 text-sm">{brand.description}</p>
             </div>
           )}
@@ -192,7 +195,9 @@ export function BrandOverviewTab() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {brand.email && (
               <div>
-                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Email</h4>
+                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+                  {t('common.email')}
+                </h4>
                 <p className="mt-1 text-sm">
                   <a
                     href={`mailto:${brand.email}`}
@@ -205,7 +210,9 @@ export function BrandOverviewTab() {
             )}
             {brand.phone && (
               <div>
-                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Phone</h4>
+                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+                  {t('common.phone')}
+                </h4>
                 <p className="mt-1 text-sm">
                   <a
                     href={`tel:${brand.phone}`}
@@ -233,13 +240,17 @@ export function BrandOverviewTab() {
             )}
             {brand.address && (
               <div>
-                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Address</h4>
+                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+                  {t('common.address')}
+                </h4>
                 <p className="mt-1 text-sm">{brand.address}</p>
               </div>
             )}
             {brand.primaryColor && (
               <div>
-                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Primary Color</h4>
+                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+                  {t('brandAdmin.settings.primaryColor')}
+                </h4>
                 <div className="mt-1 flex items-center gap-2">
                   <div
                     className="h-6 w-6 rounded border border-[rgb(var(--tc-border))]"
@@ -255,13 +266,15 @@ export function BrandOverviewTab() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card className="p-4">
             <div className="text-center">
               <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
                 {stats.cafesCount}
               </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Cafes</p>
+              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                {t('brandAdmin.overview.cafesCount')}
+              </p>
             </div>
           </Card>
           <Card className="p-4">
@@ -269,15 +282,9 @@ export function BrandOverviewTab() {
               <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
                 {stats.workersCount}
               </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Workers</p>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
-                {stats.apiKeysCount}
-              </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">API Keys</p>
+              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                {t('brandAdmin.overview.workersCount')}
+              </p>
             </div>
           </Card>
           <Card className="p-4">
@@ -285,7 +292,9 @@ export function BrandOverviewTab() {
               <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
                 {stats.ordersCount}
               </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Total Orders</p>
+              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+                {t('brandAdmin.overview.ordersCount')}
+              </p>
             </div>
           </Card>
         </div>
@@ -303,7 +312,7 @@ export function BrandOverviewTab() {
 
       {/* Quick Actions */}
       <Card className="p-6">
-        <h3 className="mb-4 text-lg font-semibold">Quick Actions</h3>
+        <h3 className="mb-4 text-lg font-semibold">{t('brandAdmin.overview.quickActions')}</h3>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <button
             onClick={() =>
@@ -315,8 +324,10 @@ export function BrandOverviewTab() {
             }
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">Invite Worker</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Add a new team member</div>
+            <div className="font-medium">{t('brandAdmin.overview.inviteWorker')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.inviteWorkerDesc')}
+            </div>
           </button>
           <button
             onClick={() =>
@@ -326,8 +337,10 @@ export function BrandOverviewTab() {
             }
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">Manage Cafes</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">View and edit cafes</div>
+            <div className="font-medium">{t('brandAdmin.overview.manageCafes')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.manageCafesDesc')}
+            </div>
           </button>
           <button
             onClick={() =>
@@ -337,8 +350,10 @@ export function BrandOverviewTab() {
             }
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">View Activity Logs</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">Check recent activities</div>
+            <div className="font-medium">{t('brandAdmin.overview.viewActivityLogs')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.viewActivityLogsDesc')}
+            </div>
           </button>
           <button
             onClick={() =>
@@ -348,8 +363,10 @@ export function BrandOverviewTab() {
             }
             className="rounded-lg border border-[rgb(var(--tc-border))] p-4 text-left transition-colors hover:bg-[rgb(var(--tc-surface-1))]"
           >
-            <div className="font-medium">Manage Workers</div>
-            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">View and edit team</div>
+            <div className="font-medium">{t('brandAdmin.overview.manageWorkers')}</div>
+            <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.manageWorkersDesc')}
+            </div>
           </button>
         </div>
       </Card>
