@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { t } from '@/i18n';
-import { workerApi } from '../api/worker-api';
-import type { WorkerWithRelations } from '../types/worker.types';
+import { workerApi, type ToggleShiftError } from '../api/worker-api';
+import type { WorkerMeSchedule, WorkerWithRelations } from '../types/worker.types';
 import { OrdersTab } from '../orders/ui/OrdersTab';
 import { AppointmentsTab } from '../appointments/ui/AppointmentsTab';
 import { TasksTab } from '../tasks/ui/TasksTab';
@@ -13,12 +13,32 @@ import { chatsApi } from '@/features/chats/api/chats-api';
 
 type Tab = 'orders' | 'appointments' | 'tasks' | 'chats' | 'profile';
 
+function isRequireConfirmError(error: unknown): error is ToggleShiftError {
+  return (
+    error instanceof Error &&
+    'requireConfirm' in error &&
+    (error as ToggleShiftError).requireConfirm === true
+  );
+}
+
+function formatTodayLines(schedule: WorkerMeSchedule): string {
+  const src = (s: string) =>
+    s === 'CAFE' ? t('worker.dashboard.sourceCafe') : t('worker.dashboard.sourceWorker');
+  return schedule.effectiveSegments
+    .filter((seg) => seg.startDateMsk === schedule.todayMsk)
+    .map((seg) => `${seg.open}–${seg.close} (${src(seg.source)})`)
+    .join('\n');
+}
+
 export function WorkerDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('orders');
   const [worker, setWorker] = useState<WorkerWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [unreadChatsCount, setUnreadChatsCount] = useState(0);
+  const [schedule, setSchedule] = useState<WorkerMeSchedule | null>(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchWorker = async () => {
@@ -34,6 +54,27 @@ export function WorkerDashboard() {
 
     fetchWorker();
   }, []);
+
+  useEffect(() => {
+    if (!worker?.cafeId) return;
+    let cancelled = false;
+    const loadSchedule = async () => {
+      setScheduleLoading(true);
+      setScheduleError(null);
+      try {
+        const sch = await workerApi.getMySchedule();
+        if (!cancelled) setSchedule(sch);
+      } catch {
+        if (!cancelled) setScheduleError(t('worker.dashboard.scheduleLoadFailed'));
+      } finally {
+        if (!cancelled) setScheduleLoading(false);
+      }
+    };
+    void loadSchedule();
+    return () => {
+      cancelled = true;
+    };
+  }, [worker?.cafeId, worker?.id]);
 
   useEffect(() => {
     const refreshUnread = async () => {
@@ -52,20 +93,66 @@ export function WorkerDashboard() {
   const handleShiftToggle = async () => {
     if (!worker) return;
 
-    try {
-      const newStatus = worker.shiftStatus === 'ON_SHIFT' ? 'OFF_SHIFT' : 'ON_SHIFT';
-      await workerApi.toggleShiftStatus();
-      setWorker({ ...worker, shiftStatus: newStatus });
-
-      // Show notification
+    const notifySuccess = (newStatus: 'ON_SHIFT' | 'OFF_SHIFT') => {
       const message =
         newStatus === 'ON_SHIFT'
           ? t('worker.dashboard.shiftStarted')
           : t('worker.dashboard.shiftEnded');
       alert(message);
+    };
+
+    const refreshAfterToggle = async (newStatus: 'ON_SHIFT' | 'OFF_SHIFT') => {
+      const me = await workerApi.getMe();
+      setWorker(me);
+      try {
+        const sch = await workerApi.getMySchedule();
+        setSchedule(sch);
+        setScheduleError(null);
+      } catch {
+        setScheduleError(t('worker.dashboard.scheduleLoadFailed'));
+      }
+      notifySuccess(newStatus);
+    };
+
+    const newStatus: 'ON_SHIFT' | 'OFF_SHIFT' =
+      worker.shiftStatus === 'ON_SHIFT' ? 'OFF_SHIFT' : 'ON_SHIFT';
+
+    try {
+      await workerApi.toggleShiftStatus();
+      await refreshAfterToggle(newStatus);
     } catch (error) {
-      console.error('Failed to toggle shift status:', error);
-      alert(t('worker.dashboard.shiftToggleFailed'));
+      if (!isRequireConfirmError(error)) {
+        console.error('Failed to toggle shift status:', error);
+        alert(t('worker.dashboard.shiftToggleFailed'));
+        return;
+      }
+
+      let sch = schedule;
+      if (!sch) {
+        try {
+          sch = await workerApi.getMySchedule();
+          setSchedule(sch);
+        } catch {
+          alert(t('worker.dashboard.scheduleLoadFailed'));
+          return;
+        }
+      }
+
+      if (!window.confirm(t('worker.dashboard.confirmOutsideFirst'))) return;
+
+      const lines = formatTodayLines(sch);
+      const secondBody = lines
+        ? `${t('worker.dashboard.confirmOutsideSecond')}\n\n${lines}`
+        : t('worker.dashboard.confirmOutsideSecond');
+      if (!window.confirm(secondBody)) return;
+
+      try {
+        await workerApi.toggleShiftStatus({ confirmOutsideSchedule: true });
+        await refreshAfterToggle(newStatus);
+      } catch (e2) {
+        console.error('Failed to toggle shift after confirm:', e2);
+        alert(t('worker.dashboard.shiftToggleFailed'));
+      }
     }
   };
 
@@ -118,6 +205,75 @@ export function WorkerDashboard() {
       </div>
     );
   }
+
+  const todaySegs =
+    schedule?.effectiveSegments.filter((s) => s.startDateMsk === schedule.todayMsk) ?? [];
+  const cafeToday = todaySegs.filter((s) => s.source === 'CAFE');
+
+  const schedulePanel = (
+    <div className="mb-6 space-y-4 rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-4 shadow-sm">
+      <p className="text-xs text-[rgb(var(--tc-muted))]">{t('worker.dashboard.scheduleTabHint')}</p>
+      {scheduleLoading && (
+        <p className="text-sm text-[rgb(var(--tc-muted))]">{t('common.loading')}</p>
+      )}
+      {scheduleError && (
+        <p className="text-sm text-red-600" role="alert">
+          {scheduleError}
+        </p>
+      )}
+      {!scheduleLoading && schedule && (
+        <>
+          <div>
+            <h3 className="mb-1 text-sm font-semibold text-[rgb(var(--tc-fg))]">
+              {t('worker.dashboard.cafe')}
+            </h3>
+            {schedule.cafeScheduleStatus === 'NOT_SET' ? (
+              <p className="text-sm text-[rgb(var(--tc-muted))]">
+                {t('worker.dashboard.cafeScheduleNotSet')}
+              </p>
+            ) : (
+              <div className="text-sm">
+                <p className="text-[rgb(var(--tc-muted))]">
+                  {worker.cafe?.name ? `${worker.cafe.name}. ` : ''}
+                  {cafeToday.length > 0 ? (
+                    <ul className="mt-2 list-inside list-disc space-y-1">
+                      {cafeToday.map((s) => (
+                        <li key={`${s.startIso}-${s.endIso}`}>
+                          {s.open}–{s.close}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="block pt-1 text-[rgb(var(--tc-muted))]">
+                      {t('worker.dashboard.cafeNoSegmentsToday')}
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="mb-1 text-sm font-semibold">{t('worker.dashboard.myShiftsTitle')}</h3>
+            {todaySegs.length === 0 ? (
+              <p className="text-sm text-[rgb(var(--tc-muted))]">—</p>
+            ) : (
+              <ul className="list-inside list-disc space-y-1 text-sm">
+                {todaySegs.map((s) => (
+                  <li key={`${s.startIso}-${s.endIso}-${s.source}`}>
+                    {s.open}–{s.close} (
+                    {s.source === 'CAFE'
+                      ? t('worker.dashboard.sourceCafe')
+                      : t('worker.dashboard.sourceWorker')}
+                    )
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex h-screen bg-[rgb(var(--tc-bg))]">
@@ -229,7 +385,8 @@ export function WorkerDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-16 md:pb-0">
-        <div className="mx-auto max-w-7xl p-4 md:p-6">
+        <div className="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
+          {schedulePanel}
           {activeTab === 'orders' && <OrdersTab cafeId={worker.cafeId} />}
           {activeTab === 'appointments' && <AppointmentsTab cafeId={worker.cafeId} />}
           {activeTab === 'tasks' && <TasksTab />}

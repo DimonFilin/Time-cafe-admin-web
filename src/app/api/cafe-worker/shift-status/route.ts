@@ -1,16 +1,19 @@
-import { NextResponse } from 'next/server';
-import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
-import { env } from '@/shared/config/env';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function PATCH() {
+import { env } from '@/shared/config/env';
+import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+
+export async function PATCH(request: NextRequest) {
   try {
     const backendUrl = `${env.backendUrl}/cafe-worker/shift-status`;
+    const body = await request.text();
 
     const response = await fetchWithAuthRefresh(backendUrl, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: body || '{}',
     });
 
     return response;

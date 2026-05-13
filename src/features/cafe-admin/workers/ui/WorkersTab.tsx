@@ -10,7 +10,6 @@ import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { InviteWorkerModal } from './InviteWorkerModal';
 import { EditWorkerModal } from './EditWorkerModal';
-import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import { t } from '@/i18n';
 
 export function WorkersTab({
@@ -114,15 +113,6 @@ export function WorkersTab({
           }`}
         >
           {w.shiftStatus === 'ON_SHIFT' ? t('workers.onShift') : t('workers.offShift')}
-        </span>
-      ),
-    },
-    {
-      key: 'balance',
-      header: t('workers.balance'),
-      render: (w) => (
-        <span className="text-sm font-medium">
-          <MoneyAmount value={w.balance} />
         </span>
       ),
     },

@@ -6,7 +6,6 @@ export interface WorkerResponse {
   role: 'WORKER';
   cafeId: string;
   brandId: string;
-  balance: string;
   shiftStatus: 'ON_SHIFT' | 'OFF_SHIFT';
   createdAt: string;
   lastActivityAt?: string;

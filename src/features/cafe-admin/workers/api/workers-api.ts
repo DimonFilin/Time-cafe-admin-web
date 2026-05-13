@@ -24,7 +24,40 @@ export async function getWorkers(filters?: WorkersFilters): Promise<WorkersRespo
     throw new Error(error.message || 'Failed to fetch workers');
   }
 
-  return response.json();
+  const payload = (await response.json()) as
+    | WorkersResponse
+    | {
+        workers?: WorkerResponse[];
+        total?: number;
+        page?: number;
+        limit?: number;
+      };
+
+  // Backward-compatible normalization: backend may return either
+  // { workers, pagination } or { workers, total, page, limit }.
+  if ('pagination' in payload && payload.pagination) {
+    return payload as WorkersResponse;
+  }
+
+  const legacy = payload as {
+    workers?: WorkerResponse[];
+    total?: number;
+    page?: number;
+    limit?: number;
+  };
+  const total = typeof legacy.total === 'number' ? legacy.total : 0;
+  const page = typeof legacy.page === 'number' ? legacy.page : filters?.page || 1;
+  const limit = typeof legacy.limit === 'number' ? legacy.limit : filters?.limit || 20;
+
+  return {
+    workers: Array.isArray(legacy.workers) ? legacy.workers : [],
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / Math.max(1, limit))),
+    },
+  };
 }
 
 export async function getWorkerById(id: string): Promise<WorkerResponse> {

@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button/Button';
 import { updateWorker } from '../api/workers-api';
 import type { WorkerResponse, UpdateWorkerDto } from '../types/worker.types';
 import { t } from '@/i18n';
+import { WorkerShiftSchedulePanel } from './WorkerShiftSchedulePanel';
 
 interface EditWorkerModalProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface EditWorkerModalProps {
 }
 
 export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorkerModalProps) {
+  const [tab, setTab] = useState<'profile' | 'schedule'>('profile');
   const [formData, setFormData] = useState<UpdateWorkerDto>({
     email: '',
     firstName: '',
@@ -23,6 +25,10 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setTab('profile');
+  }, [open, worker?.id]);
 
   useEffect(() => {
     if (worker) {
@@ -69,73 +75,102 @@ export function EditWorkerModal({ open, onClose, worker, onSuccess }: EditWorker
   if (!worker) return null;
 
   return (
-    <Modal open={open} onClose={handleClose} title={t('workers.edit')}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('common.email')}</label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
-          />
-        </div>
+    <Modal open={open} onClose={handleClose} title={t('workers.edit')} size="lg">
+      <div className="mb-4 flex gap-2 border-b border-[rgb(var(--tc-border))] pb-3">
+        <button
+          type="button"
+          onClick={() => setTab('profile')}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            tab === 'profile'
+              ? 'bg-[rgb(var(--tc-accent))] text-white'
+              : 'text-[rgb(var(--tc-muted))] hover:bg-[rgb(var(--tc-muted))]/10'
+          }`}
+        >
+          {t('workers.tabProfile')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('schedule')}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            tab === 'schedule'
+              ? 'bg-[rgb(var(--tc-accent))] text-white'
+              : 'text-[rgb(var(--tc-muted))] hover:bg-[rgb(var(--tc-muted))]/10'
+          }`}
+        >
+          {t('workers.tabSchedule')}
+        </button>
+      </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('workers.firstName')}</label>
-          <input
-            type="text"
-            value={formData.firstName}
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-            required
-            className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
-          />
-        </div>
+      {tab === 'schedule' ? (
+        <WorkerShiftSchedulePanel workerId={worker.id} />
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('common.email')}</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+              className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
+            />
+          </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('workers.lastName')}</label>
-          <input
-            type="text"
-            value={formData.lastName}
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-            required
-            className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
-          />
-        </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('workers.firstName')}</label>
+            <input
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+              required
+              className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
+            />
+          </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('workers.newPassword')}</label>
-          <input
-            type="password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder={t('workers.newPasswordPlaceholder')}
-            minLength={8}
-            className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
-          />
-          <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            {t('workers.newPasswordPlaceholder')}
-          </p>
-        </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('workers.lastName')}</label>
+            <input
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+              required
+              className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
+            />
+          </div>
 
-        {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+          <div>
+            <label className="mb-1 block text-sm font-medium">{t('workers.newPassword')}</label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder={t('workers.newPasswordPlaceholder')}
+              minLength={8}
+              className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
+              {t('workers.newPasswordPlaceholder')}
+            </p>
+          </div>
 
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleClose}
-            disabled={loading}
-            className="flex-1"
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" variant="primary" disabled={loading} className="flex-1">
-            {loading ? t('common.updating') : t('workers.updateWorker')}
-          </Button>
-        </div>
-      </form>
+          {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleClose}
+              disabled={loading}
+              className="flex-1"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="primary" disabled={loading} className="flex-1">
+              {loading ? t('common.updating') : t('workers.updateWorker')}
+            </Button>
+          </div>
+        </form>
+      )}
     </Modal>
   );
 }
