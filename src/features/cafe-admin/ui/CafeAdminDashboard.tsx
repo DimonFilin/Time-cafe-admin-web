@@ -8,6 +8,7 @@ import { OverviewTab } from '../overview/ui/OverviewTab';
 import { CafeInfoTab } from '../cafe/ui/CafeInfoTab';
 import { MenuTab } from '../menu/ui/MenuTab';
 import { ChatsTab } from '@/features/chats/ui/ChatsTab';
+import { CafeLayoutEditorTab } from '@/features/layout/ui/CafeLayoutEditorTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
 import { t } from '@/i18n';
 import { logWorkerActivity } from '@/shared/lib/log-worker-activity';
@@ -16,7 +17,15 @@ import {
   ActivityCategory,
 } from '@/features/brand-admin/activity-logs/api/activity-logs-api';
 
-type TabId = 'overview' | 'workers' | 'tasks' | 'menu' | 'chats' | 'cafe-info' | 'activity-logs';
+type TabId =
+  | 'overview'
+  | 'workers'
+  | 'tasks'
+  | 'menu'
+  | 'chats'
+  | 'cafe-info'
+  | 'layout'
+  | 'activity-logs';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: t('dashboard.overview') },
@@ -25,6 +34,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'menu', label: t('dashboard.menu') },
   { id: 'chats', label: t('dashboard.chats') },
   { id: 'cafe-info', label: t('dashboard.cafeInfo') },
+  { id: 'layout', label: 'Планировка' },
   { id: 'activity-logs', label: t('dashboard.activityLogs') },
 ];
 
@@ -129,6 +139,8 @@ export function CafeAdminDashboard() {
         return <ChatsTab />;
       case 'activity-logs':
         return <ActivityLogsTab />;
+      case 'layout':
+        return <CafeLayoutEditorTab scope="cafe-admin" />;
       default:
         return null;
     }

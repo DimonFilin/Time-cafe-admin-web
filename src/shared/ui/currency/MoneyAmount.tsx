@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { BelarussianRubelIcon } from './BelarussianRubelIcon';
+import { BYN_ICON_CLASS } from './CurrencyUnitLabel';
 
 function formatAmount(value: string | number, fractionDigits: number): string {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -12,7 +13,7 @@ function formatAmount(value: string | number, fractionDigits: number): string {
 }
 
 /**
- * Amount with Belarusian ruble symbol (Br). Use for all monetary values in the admin UI.
+ * Amount with Belarusian ruble SVG symbol (BelarussianRubelIcon). Use for all monetary values in the admin UI.
  */
 export function MoneyAmount({
   value,
@@ -29,12 +30,14 @@ export function MoneyAmount({
 }) {
   const text = formatAmount(value, fractionDigits);
   return (
-    <span className={cn('inline-flex items-center gap-0.5 align-middle', className)} title="BYN">
+    <span
+      className={cn('inline-flex items-center gap-0.5 align-middle', className)}
+      title="Белорусский рубль"
+    >
       <BelarussianRubelIcon
-        className={cn(
-          'inline shrink-0 text-[rgb(var(--tc-fg))]',
-          iconClassName ?? 'h-[1.05em] w-[0.85em]',
-        )}
+        className={cn(BYN_ICON_CLASS, 'text-[rgb(var(--tc-fg))]', iconClassName)}
+        role="img"
+        aria-label="Символ белорусского рубля"
       />
       <span className="tabular-nums">{text}</span>
       {suffix != null ? <span className="tabular-nums">{suffix}</span> : null}

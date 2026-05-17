@@ -9,9 +9,10 @@ import { AppointmentsTab } from '../appointments/ui/AppointmentsTab';
 import { TasksTab } from '../tasks/ui/TasksTab';
 import { ProfileTab } from '../profile/ui/ProfileTab';
 import { ChatsTab } from '@/features/chats/ui/ChatsTab';
+import { CafeLayoutEditorTab } from '@/features/layout/ui/CafeLayoutEditorTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
 
-type Tab = 'orders' | 'appointments' | 'tasks' | 'chats' | 'profile';
+type Tab = 'orders' | 'appointments' | 'tasks' | 'chats' | 'layout' | 'profile';
 
 function isRequireConfirmError(error: unknown): error is ToggleShiftError {
   return (
@@ -168,6 +169,7 @@ export function WorkerDashboard() {
           : t('worker.tabs.chats'),
       icon: '💬',
     },
+    { id: 'layout' as Tab, label: 'Планировка', icon: '🗺️' },
     { id: 'profile' as Tab, label: t('worker.tabs.profile'), icon: '👤' },
   ];
 
@@ -391,6 +393,7 @@ export function WorkerDashboard() {
           {activeTab === 'appointments' && <AppointmentsTab cafeId={worker.cafeId} />}
           {activeTab === 'tasks' && <TasksTab />}
           {activeTab === 'chats' && <ChatsTab />}
+          {activeTab === 'layout' && <CafeLayoutEditorTab scope="worker" />}
           {activeTab === 'profile' && <ProfileTab worker={worker} />}
         </div>
       </main>

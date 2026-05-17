@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { Logo } from '@/shared/ui/logo/Logo';
@@ -12,25 +13,31 @@ import {
 } from '@/features/brand-admin/activity-logs/api/activity-logs-api';
 
 export function Header() {
-  const [isAuthed, setIsAuthed] = useState(false);
+  const pathname = usePathname();
+  const [sessionOk, setSessionOk] = useState(false);
+
+  const isAuthed = pathname === '/login' ? false : sessionOk;
 
   useEffect(() => {
+    if (pathname === '/login') {
+      return;
+    }
     let cancelled = false;
     const check = async () => {
       try {
         const res = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
         if (cancelled) return;
-        setIsAuthed(res.ok);
+        setSessionOk(res.ok);
       } catch {
         if (cancelled) return;
-        setIsAuthed(false);
+        setSessionOk(false);
       }
     };
     void check();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <header className="border-b border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))]">

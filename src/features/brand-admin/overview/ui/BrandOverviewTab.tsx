@@ -40,10 +40,90 @@ export function BrandOverviewTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const occToday = () => new Date().toISOString().slice(0, 10);
+  const [occCafes, setOccCafes] = useState<Array<{ id: string; name: string }>>([]);
+  const [occCafeId, setOccCafeId] = useState<string>('all');
+  const [occDate, setOccDate] = useState(occToday);
+  const [occTo, setOccTo] = useState(occToday);
+  const [occRange, setOccRange] = useState(false);
+  const [occRows, setOccRows] = useState<
+    Array<{ id: string; name: string; pct: number | null; err?: string }>
+  >([]);
+  const [occLoading, setOccLoading] = useState(false);
+  const [occErr, setOccErr] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBrandData();
   }, []);
+
+  useEffect(() => {
+    if (!brand) return;
+    (async () => {
+      try {
+        const r = await fetch('/api/brand/cafes?page=1&limit=200', { credentials: 'include' });
+        if (!r.ok) return;
+        const j = await r.json();
+        const items = (j.items || []) as Array<{ id: string; name?: string }>;
+        setOccCafes(items.map((x) => ({ id: x.id, name: x.name || x.id })));
+      } catch {
+        setOccCafes([]);
+      }
+    })();
+  }, [brand?.id]);
+
+  useEffect(() => {
+    if (!brand || occCafes.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      setOccLoading(true);
+      setOccErr(null);
+      try {
+        const q = occRange
+          ? `from=${encodeURIComponent(occDate)}&to=${encodeURIComponent(occTo)}`
+          : `date=${encodeURIComponent(occDate)}`;
+        const targets = occCafeId === 'all' ? occCafes : occCafes.filter((c) => c.id === occCafeId);
+        if (!targets.length) {
+          if (!cancelled) {
+            setOccRows([]);
+            setOccLoading(false);
+          }
+          return;
+        }
+        const settled = await Promise.all(
+          targets.map(async (c) => {
+            const res = await fetch(`/api/cafe-layout/cafes/${c.id}/occupancy?${q}`, {
+              credentials: 'include',
+              cache: 'no-store',
+            });
+            const j = (await res.json()) as Record<string, unknown>;
+            if (!res.ok) {
+              return {
+                id: c.id,
+                name: c.name,
+                pct: null,
+                err: String(j.message || j.error || res.status),
+              };
+            }
+            const pct =
+              j.mode === 'range' && j.summary
+                ? (j.summary as { avgOccupancyPercent: number }).avgOccupancyPercent
+                : typeof j.occupancyPercent === 'number'
+                  ? j.occupancyPercent
+                  : null;
+            return { id: c.id, name: c.name, pct, err: undefined };
+          }),
+        );
+        if (!cancelled) setOccRows(settled);
+      } catch (e) {
+        if (!cancelled) setOccErr(e instanceof Error ? e.message : 'Ошибка');
+      } finally {
+        if (!cancelled) setOccLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [brand?.id, occCafes, occCafeId, occDate, occTo, occRange]);
 
   const fetchBrandData = async () => {
     try {
@@ -299,6 +379,86 @@ export function BrandOverviewTab() {
           </Card>
         </div>
       )}
+
+      <Card className="p-6">
+        <h3 className="mb-2 text-lg font-semibold">Загрузка по записям (кафе)</h3>
+        <p className="mb-3 text-sm text-[rgb(var(--tc-muted))]">
+          Выберите кафе или все сразу. Для диапазона — среднее дневных процентов (до 31 дня).
+        </p>
+        <div className="mb-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Кафе</label>
+            <select
+              value={occCafeId}
+              onChange={(e) => setOccCafeId(e.target.value)}
+              className="min-w-[12rem] rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+            >
+              <option value="all">Все кафе</option>
+              {occCafes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={occRange}
+              onChange={(e) => setOccRange(e.target.checked)}
+              className="rounded border-[rgb(var(--tc-border))]"
+            />
+            Диапазон
+          </label>
+          <div>
+            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+              {occRange ? 'С' : 'Дата'}
+            </label>
+            <input
+              type="date"
+              value={occDate}
+              onChange={(e) => setOccDate(e.target.value)}
+              className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+            />
+          </div>
+          {occRange && (
+            <div>
+              <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">По</label>
+              <input
+                type="date"
+                value={occTo}
+                onChange={(e) => setOccTo(e.target.value)}
+                className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+              />
+            </div>
+          )}
+        </div>
+        {occLoading && <p className="text-sm text-[rgb(var(--tc-muted))]">Загрузка...</p>}
+        {occErr && <p className="text-sm text-red-600">{occErr}</p>}
+        {!occLoading && occRows.length > 0 && (
+          <ul className="mt-2 divide-y divide-[rgb(var(--tc-border))] rounded-lg border border-[rgb(var(--tc-border))]">
+            {occRows.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm"
+              >
+                <span className="font-medium">{row.name}</span>
+                <span className="tabular-nums text-[rgb(var(--tc-muted))]">
+                  {row.err ? (
+                    <span className="text-red-600">{row.err}</span>
+                  ) : row.pct != null ? (
+                    <span className="text-lg font-semibold text-[rgb(var(--tc-fg))]">
+                      {row.pct}%
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {/* Edit Modal */}
       {brand && (

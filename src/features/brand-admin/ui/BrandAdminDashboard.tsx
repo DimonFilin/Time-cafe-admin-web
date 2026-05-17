@@ -10,6 +10,7 @@ import { AnalyticsTab } from '../analytics/ui/AnalyticsTab';
 import { ActivityLogsTab } from '../activity-logs/ui/ActivityLogsTab';
 import { BrandMenuTab } from '../menu/ui/BrandMenuTab';
 import { ChatsTab } from '@/features/chats/ui/ChatsTab';
+import { CafeLayoutEditorTab } from '@/features/layout/ui/CafeLayoutEditorTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
 import { logWorkerActivity } from '@/shared/lib/log-worker-activity';
 import {
@@ -26,6 +27,7 @@ type TabId =
   | 'workers'
   | 'settings'
   | 'analytics'
+  | 'layout'
   | 'activity-logs';
 
 const TABS: { id: TabId; label: string }[] = [
@@ -37,6 +39,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'workers', label: 'Работники' },
   { id: 'settings', label: 'Настройки' },
   { id: 'analytics', label: 'Аналитика' },
+  { id: 'layout', label: 'Планировка' },
   { id: 'activity-logs', label: 'Логи активности' },
 ];
 
@@ -124,6 +127,8 @@ export function BrandAdminDashboard() {
         return <SettingsTab />;
       case 'analytics':
         return <AnalyticsTab />;
+      case 'layout':
+        return <CafeLayoutEditorTab scope="brand-admin" />;
       case 'activity-logs':
         return <ActivityLogsTab />;
       default:

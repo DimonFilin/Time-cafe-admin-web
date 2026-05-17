@@ -26,7 +26,9 @@ export async function GET(req: Request) {
   const refreshToken = cookieStore.get('tc_refresh')?.value;
 
   let currentAccessToken = accessToken;
+  let triedRefreshWithStoredRefresh = false;
   if (!currentAccessToken && refreshToken) {
+    triedRefreshWithStoredRefresh = true;
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       currentAccessToken = refreshed.accessToken;
@@ -34,10 +36,15 @@ export async function GET(req: Request) {
   }
 
   if (!currentAccessToken) {
-    return NextResponse.json(
+    const res = NextResponse.json(
       { message: 'Unauthorized', code: 'AUTH_RELOGIN_REQUIRED' },
       { status: 401 },
     );
+    if (triedRefreshWithStoredRefresh) {
+      res.cookies.delete('tc_access');
+      res.cookies.delete('tc_refresh');
+    }
+    return res;
   }
 
   let response: Response;
