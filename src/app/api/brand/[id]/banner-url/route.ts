@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!response.ok) {
       const text = await response.text();
       return NextResponse.json(
-        { message: text || 'Failed to get banner URL' },
+        { message: text || t('apiErrors.getBannerUrl') },
         { status: response.status },
       );
     }
@@ -23,6 +24,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json(data);
   } catch (error) {
     console.error('[api/brand/[id]/banner-url] Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { t } from '@/i18n';
 
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
@@ -13,6 +14,6 @@ export async function DELETE(
     return fetchWithAuthRefresh(url, { method: 'DELETE' });
   } catch (error) {
     console.error('[schedule-absences DELETE] Error:', error);
-    return NextResponse.json({ error: 'Failed to delete absence' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.deleteAbsence') }, { status: 500 });
   }
 }

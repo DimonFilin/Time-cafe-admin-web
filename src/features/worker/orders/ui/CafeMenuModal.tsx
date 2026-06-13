@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 
 interface MenuItem {
   id: string;
@@ -45,7 +46,7 @@ export function CafeMenuModal({ cafeId, isOpen, onClose }: CafeMenuModalProps) {
     const controller = new AbortController();
     fetch(`/api/cafes/${cafeId}/menu`, { signal: controller.signal })
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to load menu');
+        if (!res.ok) throw new Error(t('apiErrors.fetchMenu'));
         return res.json();
       })
       .then((data) => {
@@ -54,7 +55,7 @@ export function CafeMenuModal({ cafeId, isOpen, onClose }: CafeMenuModalProps) {
       })
       .catch((e) => {
         if (controller.signal.aborted) return;
-        setError(e instanceof Error ? e.message : 'Failed to load menu');
+        setError(e instanceof Error ? e.message : t('apiErrors.fetchMenu'));
         setMenu(null);
       });
     return () => controller.abort();

@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 // Cafe Admin Activity Logs API Client
 // Reuses types from brand-admin but uses cafe-admin endpoints
 
@@ -140,7 +141,7 @@ export async function getActivityLogs(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch activity logs');
+    throw new Error(t('apiErrors.fetchActivityLogs'));
   }
 
   return response.json();
@@ -166,7 +167,7 @@ export async function getActivityLogsStatistics(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch activity logs statistics');
+    throw new Error(t('apiErrors.fetchActivityLogsStats'));
   }
 
   return response.json();

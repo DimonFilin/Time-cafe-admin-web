@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 export async function GET(
   request: NextRequest,
@@ -16,7 +17,7 @@ export async function GET(
     if (!response.ok) {
       const text = await response.text();
       return NextResponse.json(
-        { message: text || 'Failed to download document' },
+        { message: text || t('apiErrors.downloadDocument') },
         { status: response.status },
       );
     }
@@ -26,6 +27,6 @@ export async function GET(
     return NextResponse.json(data);
   } catch (error) {
     console.error('[api/brand/documents/[id]/download] Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

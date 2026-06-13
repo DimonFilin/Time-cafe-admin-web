@@ -1,4 +1,5 @@
 import type { ActivityLog } from '../api/activity-logs-api';
+import { t } from '@/i18n';
 
 /**
  * Конвертирует массив логов в CSV формат
@@ -102,7 +103,7 @@ export function exportLogsToCSV(logs: ActivityLog[], filename?: string): void {
   const csvContent = convertLogsToCSV(logs);
 
   if (!csvContent) {
-    throw new Error('No logs to export');
+    throw new Error(t('brandAdmin.activityLogs.noLogsToExport'));
   }
 
   const defaultFilename = `activity-logs-${new Date().toISOString().split('T')[0]}.csv`;

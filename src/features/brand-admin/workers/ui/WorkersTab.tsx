@@ -11,6 +11,7 @@ import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { InviteWorkerModal, type InviteFormData } from './InviteWorkerModal';
 import { EditWorkerModal, type EditFormData } from './EditWorkerModal';
 import { getCafes, type CafeListItem } from '../../cafes/api/cafes';
+import { t } from '@/i18n';
 
 export function WorkersTab({
   initialOpenInvite = false,
@@ -65,7 +66,7 @@ export function WorkersTab({
       setWorkers(data.items);
       setTotal(data.total);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch workers');
+      setError(e instanceof Error ? e.message : t('workers.errors.fetchFailed'));
       setWorkers([]);
     } finally {
       setLoading(false);
@@ -108,7 +109,7 @@ export function WorkersTab({
       setInviteOpen(false);
       await fetchWorkers();
     } catch (e) {
-      setInviteError(e instanceof Error ? e.message : 'Failed to invite worker');
+      setInviteError(e instanceof Error ? e.message : t('workers.errors.inviteFailed'));
     } finally {
       setInviteLoading(false);
     }
@@ -122,7 +123,7 @@ export function WorkersTab({
       setEditOpen(false);
       await fetchWorkers();
     } catch (e) {
-      setEditError(e instanceof Error ? e.message : 'Failed to update worker');
+      setEditError(e instanceof Error ? e.message : t('workers.errors.updateFailed'));
     } finally {
       setEditLoading(false);
     }
@@ -136,16 +137,26 @@ export function WorkersTab({
       setDeleteOpen(false);
       await fetchWorkers();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete worker');
+      setError(e instanceof Error ? e.message : t('workers.errors.deleteFailed'));
     } finally {
       setDeleteLoading(false);
     }
   };
 
+  const roleLabel = (role: string) => {
+    const map: Record<string, string> = {
+      SYSTEM_ADMIN: t('workers.roles.systemAdmin'),
+      BRAND_ADMIN: t('workers.roles.brandAdmin'),
+      CAFE_ADMIN: t('workers.roles.cafeAdmin'),
+      WORKER: t('workers.roles.worker'),
+    };
+    return map[role] ?? role;
+  };
+
   const columns: DataTableColumn<WorkerProfile>[] = [
     {
       key: 'name',
-      header: 'Name',
+      header: t('brandAdmin.workers.name'),
       render: (w) => (
         <div>
           <div className="font-medium">
@@ -157,12 +168,12 @@ export function WorkersTab({
     },
     {
       key: 'role',
-      header: 'Role',
-      render: (w) => <span className="text-sm">{w.role}</span>,
+      header: t('workers.role'),
+      render: (w) => <span className="text-sm">{roleLabel(w.role)}</span>,
     },
     {
       key: 'cafeId',
-      header: 'Cafe',
+      header: t('workers.cafe'),
       render: (w) => {
         if (!w.cafeId) return <span className="text-[rgb(var(--tc-muted))]">—</span>;
         const cafe = cafes.find((c) => c.id === w.cafeId);
@@ -171,7 +182,7 @@ export function WorkersTab({
     },
     {
       key: 'createdAt',
-      header: 'Created',
+      header: t('workers.created'),
       render: (w) => (
         <span className="text-sm text-[rgb(var(--tc-muted))]">
           {new Date(w.createdAt).toLocaleDateString()}
@@ -180,11 +191,11 @@ export function WorkersTab({
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('workers.actions'),
       render: (w) => (
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => onViewLogs(w.id)} className="text-xs">
-            View Logs
+            {t('brandAdmin.workers.viewLogs')}
           </Button>
           <Button
             variant="secondary"
@@ -194,7 +205,7 @@ export function WorkersTab({
               setEditError(null);
             }}
           >
-            Edit
+            {t('workers.edit')}
           </Button>
           {currentUser?.id !== w.id && (
             <Button
@@ -204,7 +215,7 @@ export function WorkersTab({
                 setDeleteOpen(true);
               }}
             >
-              Delete
+              {t('workers.delete')}
             </Button>
           )}
         </div>
@@ -216,9 +227,9 @@ export function WorkersTab({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Workers</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('workers.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Invite and manage team members for your brand.
+            {t('brandAdmin.workers.subtitle')}
           </p>
         </div>
         <Button
@@ -227,7 +238,7 @@ export function WorkersTab({
             setInviteError(null);
           }}
         >
-          + Invite Worker
+          + {t('workers.invite')}
         </Button>
       </div>
 
@@ -275,9 +286,9 @@ export function WorkersTab({
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={onConfirmDelete}
-        title="Delete Worker"
-        message="Are you sure you want to delete this worker?"
-        confirmText="Delete"
+        title={t('workers.delete')}
+        message={t('workers.deleteConfirm')}
+        confirmText={t('workers.delete')}
         loading={deleteLoading}
       />
     </div>

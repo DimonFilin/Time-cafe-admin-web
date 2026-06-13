@@ -6,15 +6,18 @@ export function FixtureShape({
   pxPerMeter,
   active,
   delFlash,
+  conflict,
 }: {
   f: PlanFixture;
   pxPerMeter: number;
   active?: boolean;
   delFlash?: boolean;
+  conflict?: boolean;
 }) {
   const b = furnitureBoundsPx(f, pxPerMeter);
-  const stroke = delFlash ? '#dc2626' : active ? '#ea580c' : '#374151';
-  const fill = delFlash
+  const highlight = delFlash || conflict;
+  const stroke = highlight ? '#dc2626' : active ? '#ea580c' : '#374151';
+  const fill = highlight
     ? 'rgba(220,38,38,0.35)'
     : active
       ? 'rgba(234,88,12,0.15)'

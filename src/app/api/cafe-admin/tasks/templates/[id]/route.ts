@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 const env = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
@@ -18,6 +19,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     });
   } catch (error) {
     console.error('Cafe admin task template PATCH error:', error);
-    return NextResponse.json({ error: 'Failed to update task template' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.updateTaskTemplate') }, { status: 500 });
   }
 }

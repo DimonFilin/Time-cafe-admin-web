@@ -1,5 +1,6 @@
 'use client';
 
+import { BlurNumberInput } from './BlurNumberInput';
 import type { PlacementDraft, PlacementPreset } from './layout-placement';
 
 type Props = {
@@ -65,26 +66,26 @@ export function LayoutPlacementPanel({
       </div>
       <div>
         <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">{widthLabel}</label>
-        <input
-          type="number"
+        <BlurNumberInput
+          value={draft.widthM}
           min={0.2}
           max={10}
           step={0.05}
-          value={draft.widthM}
-          onChange={(e) => onDraftChange({ widthM: Number(e.target.value) || 0.2 })}
+          fallback={0.2}
+          onCommit={(widthM) => onDraftChange({ widthM })}
           className="w-24 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
         />
       </div>
       {showDepth && (
         <div>
           <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">{depthLabel}</label>
-          <input
-            type="number"
+          <BlurNumberInput
+            value={draft.depthM}
             min={0.2}
             max={10}
             step={0.05}
-            value={draft.depthM}
-            onChange={(e) => onDraftChange({ depthM: Number(e.target.value) || 0.2 })}
+            fallback={0.2}
+            onCommit={(depthM) => onDraftChange({ depthM })}
             className="w-24 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
           />
         </div>

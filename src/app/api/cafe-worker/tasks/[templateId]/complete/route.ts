@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { t } from '@/i18n';
 
 import { env } from '@/shared/config/env';
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest, props: RouteParams) {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to complete task' }));
+      const error = await response.json().catch(() => ({ message: t('apiErrors.completeTask') }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest, props: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error completing task:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }
 
@@ -58,7 +59,7 @@ export async function DELETE(request: NextRequest, props: RouteParams) {
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to uncomplete task' }));
+      const error = await response.json().catch(() => ({ message: t('apiErrors.uncompleteTask') }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -66,6 +67,6 @@ export async function DELETE(request: NextRequest, props: RouteParams) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error uncompleting task:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

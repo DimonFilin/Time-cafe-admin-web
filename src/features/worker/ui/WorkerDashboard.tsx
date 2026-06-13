@@ -8,11 +8,22 @@ import { OrdersTab } from '../orders/ui/OrdersTab';
 import { AppointmentsTab } from '../appointments/ui/AppointmentsTab';
 import { TasksTab } from '../tasks/ui/TasksTab';
 import { ProfileTab } from '../profile/ui/ProfileTab';
+import { WorkerSidebarSchedule } from './WorkerSidebarSchedule';
 import { ChatsTab } from '@/features/chats/ui/ChatsTab';
 import { CafeLayoutEditorTab } from '@/features/layout/ui/CafeLayoutEditorTab';
+import { GuestWalletTab } from '../guest-wallet/ui/GuestWalletTab';
+import { ReceptionScanTab } from '@/features/reception/ui/ReceptionScanTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
 
-type Tab = 'orders' | 'appointments' | 'tasks' | 'chats' | 'layout' | 'profile';
+type Tab =
+  | 'orders'
+  | 'appointments'
+  | 'reception'
+  | 'tasks'
+  | 'chats'
+  | 'layout'
+  | 'wallet'
+  | 'profile';
 
 function isRequireConfirmError(error: unknown): error is ToggleShiftError {
   return (
@@ -160,6 +171,7 @@ export function WorkerDashboard() {
   const tabs = [
     { id: 'orders' as Tab, label: t('worker.tabs.orders'), icon: '📦' },
     { id: 'appointments' as Tab, label: t('worker.tabs.appointments'), icon: '📅' },
+    { id: 'reception' as Tab, label: 'Ресепшен', icon: '🎫' },
     { id: 'tasks' as Tab, label: t('worker.tabs.tasks'), icon: '✓' },
     {
       id: 'chats' as Tab,
@@ -170,6 +182,7 @@ export function WorkerDashboard() {
       icon: '💬',
     },
     { id: 'layout' as Tab, label: 'Планировка', icon: '🗺️' },
+    { id: 'wallet' as Tab, label: 'Депозит', icon: '💳' },
     { id: 'profile' as Tab, label: t('worker.tabs.profile'), icon: '👤' },
   ];
 
@@ -207,75 +220,6 @@ export function WorkerDashboard() {
       </div>
     );
   }
-
-  const todaySegs =
-    schedule?.effectiveSegments.filter((s) => s.startDateMsk === schedule.todayMsk) ?? [];
-  const cafeToday = todaySegs.filter((s) => s.source === 'CAFE');
-
-  const schedulePanel = (
-    <div className="mb-6 space-y-4 rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-4 shadow-sm">
-      <p className="text-xs text-[rgb(var(--tc-muted))]">{t('worker.dashboard.scheduleTabHint')}</p>
-      {scheduleLoading && (
-        <p className="text-sm text-[rgb(var(--tc-muted))]">{t('common.loading')}</p>
-      )}
-      {scheduleError && (
-        <p className="text-sm text-red-600" role="alert">
-          {scheduleError}
-        </p>
-      )}
-      {!scheduleLoading && schedule && (
-        <>
-          <div>
-            <h3 className="mb-1 text-sm font-semibold text-[rgb(var(--tc-fg))]">
-              {t('worker.dashboard.cafe')}
-            </h3>
-            {schedule.cafeScheduleStatus === 'NOT_SET' ? (
-              <p className="text-sm text-[rgb(var(--tc-muted))]">
-                {t('worker.dashboard.cafeScheduleNotSet')}
-              </p>
-            ) : (
-              <div className="text-sm">
-                <p className="text-[rgb(var(--tc-muted))]">
-                  {worker.cafe?.name ? `${worker.cafe.name}. ` : ''}
-                  {cafeToday.length > 0 ? (
-                    <ul className="mt-2 list-inside list-disc space-y-1">
-                      {cafeToday.map((s) => (
-                        <li key={`${s.startIso}-${s.endIso}`}>
-                          {s.open}–{s.close}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span className="block pt-1 text-[rgb(var(--tc-muted))]">
-                      {t('worker.dashboard.cafeNoSegmentsToday')}
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
-          </div>
-          <div>
-            <h3 className="mb-1 text-sm font-semibold">{t('worker.dashboard.myShiftsTitle')}</h3>
-            {todaySegs.length === 0 ? (
-              <p className="text-sm text-[rgb(var(--tc-muted))]">—</p>
-            ) : (
-              <ul className="list-inside list-disc space-y-1 text-sm">
-                {todaySegs.map((s) => (
-                  <li key={`${s.startIso}-${s.endIso}-${s.source}`}>
-                    {s.open}–{s.close} (
-                    {s.source === 'CAFE'
-                      ? t('worker.dashboard.sourceCafe')
-                      : t('worker.dashboard.sourceWorker')}
-                    )
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
 
   return (
     <div className="flex h-screen bg-[rgb(var(--tc-bg))]">
@@ -323,6 +267,11 @@ export function WorkerDashboard() {
                     : t('worker.dashboard.offShift')}
                 </span>
               </button>
+              <WorkerSidebarSchedule
+                schedule={schedule}
+                loading={scheduleLoading}
+                error={scheduleError}
+              />
             </>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -388,13 +337,29 @@ export function WorkerDashboard() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-16 md:pb-0">
         <div className="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
-          {schedulePanel}
+          <div className="md:hidden">
+            <WorkerSidebarSchedule
+              schedule={schedule}
+              loading={scheduleLoading}
+              error={scheduleError}
+            />
+          </div>
           {activeTab === 'orders' && <OrdersTab cafeId={worker.cafeId} />}
           {activeTab === 'appointments' && <AppointmentsTab cafeId={worker.cafeId} />}
+          {activeTab === 'reception' && <ReceptionScanTab cafeId={worker.cafeId} />}
           {activeTab === 'tasks' && <TasksTab />}
           {activeTab === 'chats' && <ChatsTab />}
           {activeTab === 'layout' && <CafeLayoutEditorTab scope="worker" />}
-          {activeTab === 'profile' && <ProfileTab worker={worker} />}
+          {activeTab === 'wallet' && <GuestWalletTab />}
+          {activeTab === 'profile' && (
+            <ProfileTab
+              worker={worker}
+              schedule={schedule}
+              scheduleLoading={scheduleLoading}
+              scheduleError={scheduleError}
+              onWorkerUpdated={setWorker}
+            />
+          )}
         </div>
       </main>
 

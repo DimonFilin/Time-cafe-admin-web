@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import { listWorkers, type WorkerProfile } from '../../workers/api/workers';
 
 interface WorkerSelectModalProps {
@@ -25,7 +26,7 @@ export function WorkerSelectModal({
 
   useEffect(() => {
     if (open) {
-      fetchWorkers();
+      void fetchWorkers();
     }
   }, [open]);
 
@@ -36,7 +37,7 @@ export function WorkerSelectModal({
       const data = await listWorkers({ page: 1, limit: 100 });
       setWorkers(data.items);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch workers');
+      setError(e instanceof Error ? e.message : t('workers.errors.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -59,34 +60,32 @@ export function WorkerSelectModal({
   if (!open) return null;
 
   return (
-    <Modal open={open} title="Select Worker" onClose={onClose}>
+    <Modal
+      open={open}
+      title={t('cafeAdmin.activityLogs.workerSelectModal.title')}
+      onClose={onClose}
+    >
       <div className="space-y-4">
-        {/* Search */}
-        <div>
-          <input
-            type="search"
-            placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
-            autoFocus
-          />
-        </div>
+        <input
+          type="search"
+          placeholder={t('cafeAdmin.activityLogs.workerSelectModal.searchPlaceholder')}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
+          autoFocus
+        />
 
-        {/* Error */}
         {error && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
-        {/* Loading */}
         {loading && (
           <div className="py-8 text-center text-sm text-[rgb(var(--tc-muted))]">
-            Loading workers...
+            {t('cafeAdmin.activityLogs.workerSelectModal.loadingWorkers')}
           </div>
         )}
 
-        {/* Workers List */}
         {!loading && filteredWorkers.length === 0 && (
           <div className="py-8 text-center text-sm text-[rgb(var(--tc-muted))]">
-            {searchQuery ? 'No workers found matching your search' : 'No workers found'}
+            {t('cafeAdmin.activityLogs.workerSelectModal.noWorkersFound')}
           </div>
         )}
 
@@ -95,6 +94,7 @@ export function WorkerSelectModal({
             {filteredWorkers.map((worker) => (
               <button
                 key={worker.id}
+                type="button"
                 onClick={() => handleSelect(worker)}
                 className={`w-full rounded-xl border p-3 text-left transition-colors hover:bg-[rgb(var(--tc-surface-2))] ${
                   selectedWorkerId === worker.id
@@ -116,10 +116,9 @@ export function WorkerSelectModal({
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex justify-end gap-2 border-t border-[rgb(var(--tc-border))] pt-4">
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       </div>

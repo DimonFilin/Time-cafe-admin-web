@@ -1,7 +1,9 @@
+import { t } from '@/i18n';
+
 export function formatApiError(input: unknown): string {
   if (input instanceof Error) return input.message;
   if (typeof input === 'string') return input;
-  if (!input || typeof input !== 'object') return 'Unknown error';
+  if (!input || typeof input !== 'object') return t('errors.unknown');
 
   const anyObj = input as Record<string, unknown>;
   const message = anyObj.message;
@@ -15,18 +17,20 @@ export function formatApiError(input: unknown): string {
 
   if (typeof anyObj.error === 'string' && anyObj.error.trim()) return anyObj.error;
 
-  if (typeof anyObj.statusCode === 'number') return `Error ${anyObj.statusCode}`;
+  if (typeof anyObj.statusCode === 'number') {
+    return `${t('common.error')} ${anyObj.statusCode}`;
+  }
 
-  return 'Unknown error';
+  return t('errors.unknown');
 }
 
 export function formatApiErrorFromText(text: string): string {
-  const t = text.trim();
-  if (!t) return 'Unknown error';
+  const trimmed = text.trim();
+  if (!trimmed) return t('errors.unknown');
   try {
-    const parsed = JSON.parse(t);
+    const parsed = JSON.parse(trimmed);
     return formatApiError(parsed);
   } catch {
-    return t;
+    return trimmed;
   }
 }

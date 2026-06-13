@@ -31,7 +31,7 @@ type TabId =
   | 'activity-logs';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'overview', label: 'Обзор' },
+  { id: 'overview', label: 'Бренды' },
   { id: 'cafes', label: 'Кафе' },
   { id: 'menu', label: 'Меню' },
   { id: 'chats', label: 'Чаты' },

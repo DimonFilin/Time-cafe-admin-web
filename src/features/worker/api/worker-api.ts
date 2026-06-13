@@ -12,6 +12,34 @@ export const workerApi = {
     return clientFetch<WorkerMeSchedule>('/api/cafe-worker/me/schedule');
   },
 
+  async updateProfile(body: {
+    firstName?: string;
+    lastName?: string;
+    birthDate?: string | null;
+    avatar?: string | null;
+  }): Promise<WorkerWithRelations> {
+    return clientFetch<WorkerWithRelations>('/api/cafe-worker/me/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  },
+
+  async uploadAvatar(file: File): Promise<WorkerWithRelations> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/cafe-worker/me/avatar', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { message?: string };
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<WorkerWithRelations>;
+  },
+
   async toggleShiftStatus(options?: { confirmOutsideSchedule?: boolean }): Promise<void> {
     const res = await fetch('/api/cafe-worker/shift-status', {
       method: 'PATCH',

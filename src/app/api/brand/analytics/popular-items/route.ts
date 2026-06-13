@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 interface WorkerResponse {
   brandId: string;
@@ -12,12 +13,12 @@ async function getWorkerWithAuthRefresh(): Promise<WorkerResponse> {
   const response = await fetchWithAuthRefresh(workerUrl, { method: 'GET', cache: 'no-store' });
 
   if (!response || typeof response.status !== 'number') {
-    throw new Error('Invalid response fetching worker');
+    throw new Error(t('apiErrors.invalidWorkerResponse'));
   }
 
   if (response.status >= 400) {
     const text = await response.text().catch(() => '');
-    throw new Error(`Failed to fetch worker: ${response.status} ${text}`);
+    throw new Error(t('apiErrors.fetchWorkerAuth'));
   }
 
   const text = await response.text().catch(() => '');
@@ -29,10 +30,7 @@ export async function GET() {
     // Get current worker with auth refresh
     const worker = await getWorkerWithAuthRefresh();
     if (!worker.brandId) {
-      return NextResponse.json(
-        { message: 'No brand associated with this worker' },
-        { status: 400 },
-      );
+      return NextResponse.json({ message: t('apiErrors.noBrandForWorker') }, { status: 400 });
     }
 
     // Forward request to backend
@@ -40,6 +38,6 @@ export async function GET() {
     return await fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/analytics/popular-items] GET Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

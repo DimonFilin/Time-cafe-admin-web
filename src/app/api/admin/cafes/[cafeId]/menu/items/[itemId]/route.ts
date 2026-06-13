@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 import { env } from '@/shared/config/env';
+import { t } from '@/i18n';
 
 export async function PATCH(
   req: NextRequest,
@@ -17,7 +18,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('[admin-cafe-menu-item] PATCH failed:', error);
-    return NextResponse.json({ message: 'Failed to update menu item' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.updateMenuItem') }, { status: 500 });
   }
 }
 
@@ -31,6 +32,6 @@ export async function DELETE(
     return fetchWithAuthRefresh(url, { method: 'DELETE' });
   } catch (error) {
     console.error('[admin-cafe-menu-item] DELETE failed:', error);
-    return NextResponse.json({ message: 'Failed to delete menu item' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.deleteMenuItem') }, { status: 500 });
   }
 }

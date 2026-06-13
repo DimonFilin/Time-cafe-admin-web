@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 
 interface InviteWorkerModalProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function InviteWorkerModal({
         {error && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         <div>
-          <label className="block text-sm font-medium">Email</label>
+          <label className="block text-sm font-medium">{t('common.email')}</label>
           <input
             type="email"
             required

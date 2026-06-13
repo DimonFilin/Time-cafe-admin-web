@@ -1,4 +1,5 @@
 import type { WorkerTasksResponse, CompleteTaskDto } from '../types/tasks.types';
+import { t } from '@/i18n';
 
 const API_BASE = '/api/cafe-worker/tasks';
 
@@ -14,8 +15,8 @@ export async function getWorkerTasks(date?: string): Promise<WorkerTasksResponse
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to fetch tasks' }));
-    throw new Error(error.message || 'Failed to fetch tasks');
+    const error = await response.json().catch(() => ({ message: t('apiErrors.fetchTasks') }));
+    throw new Error(error.message || t('apiErrors.fetchTasks'));
   }
 
   return response.json();
@@ -38,8 +39,8 @@ export async function completeTask(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to complete task' }));
-    throw new Error(error.message || 'Failed to complete task');
+    const error = await response.json().catch(() => ({ message: t('apiErrors.completeTask') }));
+    throw new Error(error.message || t('apiErrors.completeTask'));
   }
 
   return response.json();
@@ -58,8 +59,8 @@ export async function uncompleteTask(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to uncomplete task' }));
-    throw new Error(error.message || 'Failed to uncomplete task');
+    const error = await response.json().catch(() => ({ message: t('apiErrors.uncompleteTask') }));
+    throw new Error(error.message || t('apiErrors.uncompleteTask'));
   }
 
   return response.json();

@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button/Button';
 import { Badge } from '@/shared/ui/badge/Badge';
 import { CafeFormModal } from './CafeFormModal';
 import { CafeDeleteModal } from './CafeDeleteModal';
+import { t } from '@/i18n';
 
 interface Cafe {
   id: string;
@@ -30,6 +31,12 @@ interface Region {
   id: string;
   name: string;
   country: string;
+}
+
+function formatCreatedAt(value?: string) {
+  if (!value) return '—';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('ru-RU');
 }
 
 export function CafesTab() {
@@ -57,12 +64,12 @@ export function CafesTab() {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/brand/cafes?page=${page}&limit=${pageSize}`);
-      if (!response.ok) throw new Error('Failed to fetch cafes');
+      if (!response.ok) throw new Error(t('brandAdmin.cafes.fetchFailed'));
       const data = await response.json();
       setCafes(data.items || []);
       setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to fetch cafes');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('brandAdmin.cafes.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -74,74 +81,61 @@ export function CafesTab() {
       if (!response.ok) return;
 
       const data = await response.json();
-      // Handle both { items: [...] } and direct array formats
       const regionsList = data.items || (Array.isArray(data) ? data : []);
       setRegions(regionsList);
     } catch {
-      // Don't propagate - regions are optional
+      // regions are optional
     }
   };
 
   const handleCreateCafe = async (data: Partial<Cafe>) => {
-    try {
-      const response = await fetch('/api/brand/cafes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+    const response = await fetch('/api/brand/cafes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create cafe');
-      }
-
-      const newCafe = await response.json();
-      setCafes([newCafe, ...cafes]);
-      setCreateOpen(false);
-    } catch (err) {
-      throw err;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || t('brandAdmin.cafes.createFailed'));
     }
+
+    const newCafe = await response.json();
+    setCafes([newCafe, ...cafes]);
+    setCreateOpen(false);
   };
 
   const handleEditCafe = async (data: Partial<Cafe>) => {
     if (!editingCafe) return;
 
-    try {
-      const response = await fetch(`/api/brand/cafes/${editingCafe.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+    const response = await fetch(`/api/brand/cafes/${editingCafe.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update cafe');
-      }
-
-      const updatedCafe = await response.json();
-      setCafes(cafes.map((c) => (c.id === editingCafe.id ? updatedCafe : c)));
-      setEditingCafe(null);
-    } catch (err) {
-      throw err;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || t('brandAdmin.cafes.updateFailed'));
     }
+
+    const updatedCafe = await response.json();
+    setCafes(cafes.map((c) => (c.id === editingCafe.id ? updatedCafe : c)));
+    setEditingCafe(null);
   };
 
   const handleDeleteCafe = async () => {
     if (!deletingCafe) return;
 
-    try {
-      const response = await fetch(`/api/brand/cafes/${deletingCafe.id}`, {
-        method: 'DELETE',
-      });
+    const response = await fetch(`/api/brand/cafes/${deletingCafe.id}`, {
+      method: 'DELETE',
+    });
 
-      if (!response.ok) throw new Error('Failed to delete cafe');
+    if (!response.ok) throw new Error(t('brandAdmin.cafes.deleteFailed'));
 
-      setCafes(cafes.filter((c) => c.id !== deletingCafe.id));
-      setDeleteOpen(false);
-      setDeletingCafe(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete cafe');
-    }
+    setCafes(cafes.filter((c) => c.id !== deletingCafe.id));
+    setDeleteOpen(false);
+    setDeletingCafe(null);
   };
 
   if (loading) {
@@ -155,43 +149,48 @@ export function CafesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Cafes</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('brandAdmin.cafes.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Manage cafes for your brand. Total: {cafes.length}
+            {t('brandAdmin.cafes.subtitlePrefix')} {cafes.length}
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} variant="primary">
-          Create Cafe
+          {t('brandAdmin.cafes.createCafe')}
         </Button>
       </div>
 
-      {/* Error Message */}
       {error && (
         <Card className="border border-red-200 bg-red-50 p-4">
           <p className="text-sm text-red-600">{error}</p>
         </Card>
       )}
 
-      {/* Cafes Table */}
       <Card className="overflow-hidden">
         {cafes.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-[rgb(var(--tc-muted))]">No cafes yet. Create one to get started!</p>
+            <p className="text-[rgb(var(--tc-muted))]">{t('brandAdmin.cafes.empty')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[rgb(var(--tc-border))]">
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">City</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Address</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Rating</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">Created</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold">Actions</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('common.name')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">{t('common.city')}</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    {t('common.address')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    {t('common.rating')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                    {t('workers.created')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold">
+                    {t('common.actions')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -215,7 +214,7 @@ export function CafesTab() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-sm text-[rgb(var(--tc-muted))]">
-                      {new Date(cafe.createdAt).toLocaleDateString()}
+                      {formatCreatedAt(cafe.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -224,7 +223,7 @@ export function CafesTab() {
                           variant="secondary"
                           className="text-xs"
                         >
-                          Edit
+                          {t('common.edit')}
                         </Button>
                         <Button
                           onClick={() => {
@@ -233,7 +232,7 @@ export function CafesTab() {
                           }}
                           className="text-xs bg-red-600 hover:bg-red-700"
                         >
-                          Delete
+                          {t('common.delete')}
                         </Button>
                       </div>
                     </td>
@@ -245,7 +244,6 @@ export function CafesTab() {
         )}
       </Card>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button
@@ -253,22 +251,21 @@ export function CafesTab() {
             variant="secondary"
             disabled={page === 1}
           >
-            Previous
+            {t('common.previous')}
           </Button>
           <span className="text-sm">
-            Page {page} of {totalPages}
+            {page} / {totalPages}
           </span>
           <Button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             variant="secondary"
             disabled={page === totalPages}
           >
-            Next
+            {t('common.next')}
           </Button>
         </div>
       )}
 
-      {/* Create/Edit Modal */}
       <CafeFormModal
         cafe={editingCafe}
         regions={regions}
@@ -280,7 +277,6 @@ export function CafesTab() {
         onSave={editingCafe ? handleEditCafe : handleCreateCafe}
       />
 
-      {/* Delete Confirmation Modal */}
       <CafeDeleteModal
         cafe={deletingCafe}
         isOpen={deleteOpen}

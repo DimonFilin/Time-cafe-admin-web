@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 const env = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Cafe admin tasks templates GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch task templates' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.fetchTaskTemplates') }, { status: 500 });
   }
 }
 
@@ -47,6 +48,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('Cafe admin tasks templates POST error:', error);
-    return NextResponse.json({ error: 'Failed to create task template' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.createTaskTemplate') }, { status: 500 });
   }
 }

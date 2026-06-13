@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 interface WorkerResponse {
   brandId: string;
@@ -12,12 +13,12 @@ async function getWorkerWithAuthRefresh(): Promise<WorkerResponse> {
   const response = await fetchWithAuthRefresh(workerUrl, { method: 'GET', cache: 'no-store' });
 
   if (!response || typeof response.status !== 'number') {
-    throw new Error('Invalid response fetching worker');
+    throw new Error(t('apiErrors.invalidWorkerResponse'));
   }
 
   if (response.status >= 400) {
     const text = await response.text().catch(() => '');
-    throw new Error(`Failed to fetch worker: ${response.status} ${text}`);
+    throw new Error(t('apiErrors.fetchWorkerAuth'));
   }
 
   const text = await response.text().catch(() => '');
@@ -29,13 +30,13 @@ export async function GET() {
     // get current worker to determine brandId with auth refresh
     const worker = await getWorkerWithAuthRefresh();
     if (!worker.brandId)
-      return NextResponse.json({ message: 'No brand associated' }, { status: 400 });
+      return NextResponse.json({ message: t('apiErrors.noBrandAssociated') }, { status: 400 });
 
     const url = `${env.backendUrl}/brands/${worker.brandId}/documents`;
     return await fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/documents] GET error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }
 
@@ -47,12 +48,12 @@ export async function POST(request: NextRequest) {
     // get worker with auth refresh
     const worker = await getWorkerWithAuthRefresh();
     if (!worker.brandId)
-      return NextResponse.json({ message: 'No brand associated' }, { status: 400 });
+      return NextResponse.json({ message: t('apiErrors.noBrandAssociated') }, { status: 400 });
 
     const url = `${env.backendUrl}/brands/${worker.brandId}/documents`;
     return await fetchWithAuthRefresh(url, { method: 'POST', body: form, cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/documents] POST error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import type { Cafe } from '../types/cafe.types';
 import { parseOpeningHoursJson } from '../lib/schedule-map';
+import { t } from '@/i18n';
 
 type NestedBrand = { id?: string; name?: string };
 type NestedRegion = { id?: string; name?: string };
@@ -7,7 +8,7 @@ type NestedRegion = { id?: string; name?: string };
 /** Maps Prisma-shaped cafe (nested brand/region) to flat Cafe for the admin UI. */
 export function normalizeCafe(raw: unknown): Cafe {
   if (!raw || typeof raw !== 'object') {
-    throw new Error('Invalid cafe payload');
+    throw new Error(t('errors.validationError'));
   }
   const o = raw as Record<string, unknown>;
   const brand = o.brand as NestedBrand | undefined;
@@ -36,6 +37,11 @@ export function normalizeCafe(raw: unknown): Cafe {
     brandName: (typeof o.brandName === 'string' && o.brandName) || brand?.name,
     regionName: (typeof o.regionName === 'string' && o.regionName) || region?.name,
     cafeApiUrl: o.cafeApiUrl != null ? String(o.cafeApiUrl) : undefined,
+    phone: o.phone != null ? String(o.phone) : undefined,
+    email: o.email != null ? String(o.email) : undefined,
+    occupancyMode:
+      o.occupancyMode === 'COUNT' || o.occupancyMode === 'PERCENT' ? o.occupancyMode : 'PERCENT',
+    totalCapacity: typeof o.totalCapacity === 'number' ? o.totalCapacity : undefined,
     schedule: parseOpeningHoursJson(o.openingHours),
     chatSettings: chatSettings
       ? {

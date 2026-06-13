@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +21,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('[api/activity-logs/statistics] GET Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

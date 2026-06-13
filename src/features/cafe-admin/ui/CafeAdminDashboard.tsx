@@ -34,7 +34,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'menu', label: t('dashboard.menu') },
   { id: 'chats', label: t('dashboard.chats') },
   { id: 'cafe-info', label: t('dashboard.cafeInfo') },
-  { id: 'layout', label: 'Планировка' },
+  { id: 'layout', label: t('dashboard.layout') },
   { id: 'activity-logs', label: t('dashboard.activityLogs') },
 ];
 

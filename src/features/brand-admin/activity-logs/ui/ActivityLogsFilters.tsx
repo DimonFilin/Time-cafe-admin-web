@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import {
   ActivityAction,
   ActivityCategory,
@@ -50,10 +51,9 @@ export function ActivityLogsFiltersComponent({
     <>
       <Card className="p-4">
         <div className="flex flex-wrap items-end gap-4">
-          {/* Worker Filter */}
-          <div className="flex-1 min-w-[200px]">
+          <div className="min-w-[200px] flex-1">
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--tc-muted))]">
-              Worker
+              {t('cafeAdmin.activityLogs.worker')}
             </label>
             {selectedWorker ? (
               <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export function ActivityLogsFiltersComponent({
                   <div className="text-xs text-[rgb(var(--tc-muted))]">{selectedWorker.email}</div>
                 </div>
                 <Button variant="ghost" onClick={handleClearWorker} className="text-sm">
-                  Clear
+                  {t('cafeAdmin.activityLogs.clear')}
                 </Button>
               </div>
             ) : (
@@ -73,82 +73,133 @@ export function ActivityLogsFiltersComponent({
                 onClick={() => setWorkerSelectOpen(true)}
                 className="w-full"
               >
-                Select Worker
+                {t('cafeAdmin.activityLogs.selectWorker')}
               </Button>
             )}
           </div>
 
-          {/* Action Filter */}
-          <div className="flex-1 min-w-[150px]">
+          <div className="min-w-[150px] flex-1">
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--tc-muted))]">
-              Action
+              {t('cafeAdmin.activityLogs.action')}
             </label>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.action || ''}
               onChange={(e) => updateFilter('action', e.target.value as ActivityAction)}
             >
-              <option value="">All Actions</option>
-              <optgroup label="Auth">
-                <option value={ActivityAction.LOGIN}>Login</option>
-                <option value={ActivityAction.LOGOUT}>Logout</option>
-                <option value={ActivityAction.PASSWORD_CHANGE}>Password Change</option>
+              <option value="">{t('cafeAdmin.activityLogs.allActions')}</option>
+              <optgroup label={t('cafeAdmin.activityLogs.groups.auth')}>
+                <option value={ActivityAction.LOGIN}>
+                  {t('cafeAdmin.activityLogs.actions.login')}
+                </option>
+                <option value={ActivityAction.LOGOUT}>
+                  {t('cafeAdmin.activityLogs.actions.logout')}
+                </option>
+                <option value={ActivityAction.PASSWORD_CHANGE}>
+                  {t('cafeAdmin.activityLogs.actions.passwordChange')}
+                </option>
               </optgroup>
-              <optgroup label="Data">
-                <option value={ActivityAction.CREATE}>Create</option>
-                <option value={ActivityAction.UPDATE}>Update</option>
-                <option value={ActivityAction.DELETE}>Delete</option>
-                <option value={ActivityAction.BULK_UPDATE}>Bulk Update</option>
-                <option value={ActivityAction.BULK_DELETE}>Bulk Delete</option>
+              <optgroup label={t('cafeAdmin.activityLogs.groups.data')}>
+                <option value={ActivityAction.CREATE}>
+                  {t('cafeAdmin.activityLogs.actions.create')}
+                </option>
+                <option value={ActivityAction.UPDATE}>
+                  {t('cafeAdmin.activityLogs.actions.update')}
+                </option>
+                <option value={ActivityAction.DELETE}>
+                  {t('cafeAdmin.activityLogs.actions.delete')}
+                </option>
+                <option value={ActivityAction.BULK_UPDATE}>
+                  {t('cafeAdmin.activityLogs.actions.bulkUpdate')}
+                </option>
+                <option value={ActivityAction.BULK_DELETE}>
+                  {t('cafeAdmin.activityLogs.actions.bulkDelete')}
+                </option>
               </optgroup>
-              <optgroup label="Views">
-                <option value={ActivityAction.VIEW_LIST}>View List</option>
-                <option value={ActivityAction.VIEW_DETAIL}>View Detail</option>
-                <option value={ActivityAction.VIEW_REPORT}>View Report</option>
-                <option value={ActivityAction.EXPORT_DATA}>Export Data</option>
+              <optgroup label={t('cafeAdmin.activityLogs.groups.views')}>
+                <option value={ActivityAction.VIEW_LIST}>
+                  {t('cafeAdmin.activityLogs.actions.viewList')}
+                </option>
+                <option value={ActivityAction.VIEW_DETAIL}>
+                  {t('cafeAdmin.activityLogs.actions.viewDetail')}
+                </option>
+                <option value={ActivityAction.VIEW_REPORT}>
+                  {t('cafeAdmin.activityLogs.actions.viewReport')}
+                </option>
+                <option value={ActivityAction.EXPORT_DATA}>
+                  {t('cafeAdmin.activityLogs.actions.exportData')}
+                </option>
               </optgroup>
-              <optgroup label="Navigation">
-                <option value={ActivityAction.PAGE_VIEW}>Page View</option>
-                <option value={ActivityAction.MODAL_OPEN}>Modal Open</option>
-                <option value={ActivityAction.MODAL_CLOSE}>Modal Close</option>
-                <option value={ActivityAction.TAB_SWITCH}>Tab Switch</option>
+              <optgroup label={t('cafeAdmin.activityLogs.groups.navigation')}>
+                <option value={ActivityAction.PAGE_VIEW}>
+                  {t('cafeAdmin.activityLogs.actions.pageView')}
+                </option>
+                <option value={ActivityAction.MODAL_OPEN}>
+                  {t('cafeAdmin.activityLogs.actions.modalOpen')}
+                </option>
+                <option value={ActivityAction.MODAL_CLOSE}>
+                  {t('cafeAdmin.activityLogs.actions.modalClose')}
+                </option>
+                <option value={ActivityAction.TAB_SWITCH}>
+                  {t('cafeAdmin.activityLogs.actions.tabSwitch')}
+                </option>
               </optgroup>
-              <optgroup label="Config">
-                <option value={ActivityAction.UPDATE_SETTINGS}>Update Settings</option>
-                <option value={ActivityAction.UPDATE_PERMISSIONS}>Update Permissions</option>
+              <optgroup label={t('cafeAdmin.activityLogs.groups.config')}>
+                <option value={ActivityAction.UPDATE_SETTINGS}>
+                  {t('cafeAdmin.activityLogs.actions.updateSettings')}
+                </option>
+                <option value={ActivityAction.UPDATE_PERMISSIONS}>
+                  {t('cafeAdmin.activityLogs.actions.updatePermissions')}
+                </option>
               </optgroup>
-              <optgroup label="Special">
-                <option value={ActivityAction.FILE_UPLOAD}>File Upload</option>
-                <option value={ActivityAction.FILE_DELETE}>File Delete</option>
-                <option value={ActivityAction.PAYMENT_PROCESS}>Payment Process</option>
+              <optgroup label={t('cafeAdmin.activityLogs.groups.special')}>
+                <option value={ActivityAction.FILE_UPLOAD}>
+                  {t('cafeAdmin.activityLogs.actions.fileUpload')}
+                </option>
+                <option value={ActivityAction.FILE_DELETE}>
+                  {t('cafeAdmin.activityLogs.actions.fileDelete')}
+                </option>
+                <option value={ActivityAction.PAYMENT_PROCESS}>
+                  {t('cafeAdmin.activityLogs.actions.paymentProcess')}
+                </option>
               </optgroup>
             </select>
           </div>
 
-          {/* Category Filter */}
-          <div className="flex-1 min-w-[150px]">
+          <div className="min-w-[150px] flex-1">
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--tc-muted))]">
-              Category
+              {t('cafeAdmin.activityLogs.category')}
             </label>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={filters.category || ''}
               onChange={(e) => updateFilter('category', e.target.value as ActivityCategory)}
             >
-              <option value="">All Categories</option>
-              <option value={ActivityCategory.AUTH}>Auth</option>
-              <option value={ActivityCategory.DATA}>Data</option>
-              <option value={ActivityCategory.VIEW}>View</option>
-              <option value={ActivityCategory.CONFIG}>Config</option>
-              <option value={ActivityCategory.FINANCIAL}>Financial</option>
-              <option value={ActivityCategory.SECURITY}>Security</option>
+              <option value="">{t('cafeAdmin.activityLogs.allCategories')}</option>
+              <option value={ActivityCategory.AUTH}>
+                {t('cafeAdmin.activityLogs.categories.auth')}
+              </option>
+              <option value={ActivityCategory.DATA}>
+                {t('cafeAdmin.activityLogs.categories.data')}
+              </option>
+              <option value={ActivityCategory.VIEW}>
+                {t('cafeAdmin.activityLogs.categories.view')}
+              </option>
+              <option value={ActivityCategory.CONFIG}>
+                {t('cafeAdmin.activityLogs.categories.config')}
+              </option>
+              <option value={ActivityCategory.FINANCIAL}>
+                {t('cafeAdmin.activityLogs.categories.financial')}
+              </option>
+              <option value={ActivityCategory.SECURITY}>
+                {t('cafeAdmin.activityLogs.categories.security')}
+              </option>
             </select>
           </div>
 
-          {/* Start Date */}
-          <div className="flex-1 min-w-[150px]">
+          <div className="min-w-[150px] flex-1">
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--tc-muted))]">
-              Start Date
+              {t('cafeAdmin.activityLogs.startDate')}
             </label>
             <input
               type="date"
@@ -158,10 +209,9 @@ export function ActivityLogsFiltersComponent({
             />
           </div>
 
-          {/* End Date */}
-          <div className="flex-1 min-w-[150px]">
+          <div className="min-w-[150px] flex-1">
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--tc-muted))]">
-              End Date
+              {t('cafeAdmin.activityLogs.endDate')}
             </label>
             <input
               type="date"
@@ -171,7 +221,6 @@ export function ActivityLogsFiltersComponent({
             />
           </div>
 
-          {/* Reset Button */}
           {hasActiveFilters && (
             <div>
               <Button
@@ -182,18 +231,18 @@ export function ActivityLogsFiltersComponent({
                 }}
                 className="text-sm"
               >
-                Reset Filters
+                {t('cafeAdmin.activityLogs.resetFilters')}
               </Button>
             </div>
           )}
         </div>
 
-        {/* Active Filters Summary */}
         {hasActiveFilters && (
           <div className="mt-3 flex flex-wrap gap-2">
             {selectedWorker && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-[rgb(var(--tc-surface-2))] px-2 py-1 text-xs">
-                Worker: {selectedWorker.firstName} {selectedWorker.lastName}
+                {t('cafeAdmin.activityLogs.worker')}: {selectedWorker.firstName}{' '}
+                {selectedWorker.lastName}
                 <button
                   onClick={handleClearWorker}
                   className="ml-1 hover:text-[rgb(var(--tc-danger))]"
@@ -204,7 +253,7 @@ export function ActivityLogsFiltersComponent({
             )}
             {filters.action && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-[rgb(var(--tc-surface-2))] px-2 py-1 text-xs">
-                Action: {filters.action}
+                {t('cafeAdmin.activityLogs.action')}: {filters.action}
                 <button
                   onClick={() => updateFilter('action', undefined)}
                   className="ml-1 hover:text-[rgb(var(--tc-danger))]"
@@ -215,7 +264,7 @@ export function ActivityLogsFiltersComponent({
             )}
             {filters.category && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-[rgb(var(--tc-surface-2))] px-2 py-1 text-xs">
-                Category: {filters.category}
+                {t('cafeAdmin.activityLogs.category')}: {filters.category}
                 <button
                   onClick={() => updateFilter('category', undefined)}
                   className="ml-1 hover:text-[rgb(var(--tc-danger))]"
@@ -226,7 +275,7 @@ export function ActivityLogsFiltersComponent({
             )}
             {filters.startDate && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-[rgb(var(--tc-surface-2))] px-2 py-1 text-xs">
-                From: {filters.startDate}
+                {t('cafeAdmin.activityLogs.from')}: {filters.startDate}
                 <button
                   onClick={() => updateFilter('startDate', undefined)}
                   className="ml-1 hover:text-[rgb(var(--tc-danger))]"
@@ -237,7 +286,7 @@ export function ActivityLogsFiltersComponent({
             )}
             {filters.endDate && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-[rgb(var(--tc-surface-2))] px-2 py-1 text-xs">
-                To: {filters.endDate}
+                {t('cafeAdmin.activityLogs.to')}: {filters.endDate}
                 <button
                   onClick={() => updateFilter('endDate', undefined)}
                   className="ml-1 hover:text-[rgb(var(--tc-danger))]"

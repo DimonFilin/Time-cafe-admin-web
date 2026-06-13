@@ -40,7 +40,7 @@ export function TasksTab({
       // Backend returns array directly, not wrapped in object
       setTemplates(Array.isArray(data) ? data : []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch templates');
+      setError(e instanceof Error ? e.message : t('tasks.errors.fetchFailed'));
       setTemplates([]);
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export function TasksTab({
       await deactivateTaskTemplate(id);
       await fetchTemplates();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to deactivate template');
+      setError(e instanceof Error ? e.message : t('tasks.errors.deactivateFailed'));
     }
   };
 

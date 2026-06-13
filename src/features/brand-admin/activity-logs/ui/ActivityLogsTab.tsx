@@ -12,6 +12,7 @@ import { ActivityLogsFiltersComponent } from './ActivityLogsFilters';
 import { ActivityLogDetailsModal } from './ActivityLogDetailsModal';
 import { ActivityLogsStats } from './ActivityLogsStats';
 import { exportLogsToCSV } from '../lib/export-csv';
+import { t } from '@/i18n';
 
 export function ActivityLogsTab() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -30,7 +31,6 @@ export function ActivityLogsTab() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Check for pre-selected worker from localStorage
   useEffect(() => {
     const selectedWorkerId = localStorage.getItem('activityLogs_selectedWorkerId');
     if (selectedWorkerId) {
@@ -38,7 +38,6 @@ export function ActivityLogsTab() {
         ...prev,
         workerId: selectedWorkerId,
       }));
-      // Clear from localStorage after applying
       localStorage.removeItem('activityLogs_selectedWorkerId');
     }
   }, []);
@@ -55,7 +54,7 @@ export function ActivityLogsTab() {
       setLogs(data.logs);
       setTotal(data.pagination.total);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch activity logs');
+      setError(e instanceof Error ? e.message : t('brandAdmin.activityLogs.fetchFailed'));
       setLogs([]);
     } finally {
       setLoading(false);
@@ -72,7 +71,7 @@ export function ActivityLogsTab() {
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     });
-    setPage(1); // Reset to first page when filters change
+    setPage(1);
   };
 
   const handleResetFilters = () => {
@@ -101,20 +100,19 @@ export function ActivityLogsTab() {
     setExporting(true);
     setError(null);
     try {
-      // Fetch all logs with current filters (no pagination limit)
       const data = await getActivityLogs({
         ...filters,
-        limit: 10000, // Large limit for export
+        limit: 10000,
       });
 
       if (data.logs.length === 0) {
-        setError('No logs to export');
+        setError(t('brandAdmin.activityLogs.noLogsToExport'));
         return;
       }
 
       exportLogsToCSV(data.logs);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to export logs');
+      setError(e instanceof Error ? e.message : t('brandAdmin.activityLogs.exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -124,9 +122,11 @@ export function ActivityLogsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Activity Logs</h2>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t('cafeAdmin.activityLogs.title')}
+          </h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            View and monitor all activity within your brand.
+            {t('brandAdmin.activityLogs.subtitle')}
           </p>
         </div>
         <button
@@ -134,7 +134,9 @@ export function ActivityLogsTab() {
           disabled={exporting || loading}
           className="px-4 py-2 text-sm font-medium text-white bg-[rgb(var(--tc-accent))] rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {exporting ? 'Exporting...' : 'Export CSV'}
+          {exporting
+            ? t('brandAdmin.activityLogs.exporting')
+            : t('brandAdmin.activityLogs.exportCsv')}
         </button>
       </div>
 

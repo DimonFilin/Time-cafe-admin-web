@@ -61,60 +61,30 @@ export function furnitureBoundsPx(
   };
 }
 
-function rectsOverlap(
-  a: { x: number; y: number; w: number; h: number },
-  b: { x: number; y: number; w: number; h: number },
-  gap = 2,
-): boolean {
-  return !(
-    a.x + a.w + gap <= b.x ||
-    b.x + b.w + gap <= a.x ||
-    a.y + a.h + gap <= b.y ||
-    b.y + b.h + gap <= a.y
-  );
-}
-
-export function findFurnitureCollisionIds(
-  tables: PlanTable[],
-  chairs: PlanChair[],
+/** Canvas corners of a centered furniture footprint, accounting for rotationDeg. */
+export function furnitureOrientedCorners(
+  item: { x: number; y: number; widthM: number; heightM: number; rotationDeg?: number },
   pxPerMeter: number,
-): { tableIds: Set<string>; chairIds: Set<string> } {
-  const tableIds = new Set<string>();
-  const chairIds = new Set<string>();
-  const tBounds = tables.map((t) => ({
-    id: t.id,
-    ...furnitureBoundsPx(t, pxPerMeter),
+): Point[] {
+  const w = metersToPx(item.widthM, pxPerMeter);
+  const h = metersToPx(item.heightM, pxPerMeter);
+  const cx = item.x;
+  const cy = item.y;
+  const rad = ((item.rotationDeg ?? 0) * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const hw = w / 2;
+  const hh = h / 2;
+  const local: Point[] = [
+    { x: -hw, y: -hh },
+    { x: hw, y: -hh },
+    { x: hw, y: hh },
+    { x: -hw, y: hh },
+  ];
+  return local.map((p) => ({
+    x: cx + p.x * cos - p.y * sin,
+    y: cy + p.x * sin + p.y * cos,
   }));
-  const cBounds = chairs.map((c) => ({
-    id: c.id,
-    ...furnitureBoundsPx(c, pxPerMeter),
-  }));
-
-  for (let i = 0; i < tBounds.length; i++) {
-    for (let j = i + 1; j < tBounds.length; j++) {
-      if (rectsOverlap(tBounds[i], tBounds[j])) {
-        tableIds.add(tBounds[i].id);
-        tableIds.add(tBounds[j].id);
-      }
-    }
-  }
-  for (let i = 0; i < cBounds.length; i++) {
-    for (let j = i + 1; j < cBounds.length; j++) {
-      if (rectsOverlap(cBounds[i], cBounds[j])) {
-        chairIds.add(cBounds[i].id);
-        chairIds.add(cBounds[j].id);
-      }
-    }
-  }
-  for (const tb of tBounds) {
-    for (const cb of cBounds) {
-      if (rectsOverlap(tb, cb)) {
-        tableIds.add(tb.id);
-        chairIds.add(cb.id);
-      }
-    }
-  }
-  return { tableIds, chairIds };
 }
 
 export function hitTestTable(tables: PlanTable[], p: Point, pxPerMeter: number): PlanTable | null {
@@ -133,15 +103,6 @@ export function hitTestChair(chairs: PlanChair[], p: Point, pxPerMeter: number):
     if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) return c;
   }
   return null;
-}
-
-export function furnitureIntersectsNormRect(
-  item: { x: number; y: number; widthM: number; heightM: number },
-  r: { x: number; y: number; w: number; h: number },
-  pxPerMeter: number,
-): boolean {
-  const b = furnitureBoundsPx(item, pxPerMeter);
-  return !(b.x + b.w < r.x || r.x + r.w < b.x || b.y + b.h < r.y || r.y + r.h < b.y);
 }
 
 function elementProps(el: LayoutElementRecord): Record<string, unknown> {

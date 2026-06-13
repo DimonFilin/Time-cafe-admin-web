@@ -3,6 +3,7 @@
 import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 import type { ActivityLog } from '../api/activity-logs-api';
 
 interface ActivityLogsTableProps {
@@ -44,7 +45,7 @@ export function ActivityLogsTable({
   const columns: DataTableColumn<ActivityLog>[] = [
     {
       key: 'createdAt',
-      header: 'Time',
+      header: t('cafeAdmin.activityLogs.time'),
       render: (log) => (
         <div className="text-sm">
           <div className="font-medium">{new Date(log.createdAt).toLocaleDateString()}</div>
@@ -56,7 +57,7 @@ export function ActivityLogsTable({
     },
     {
       key: 'worker',
-      header: 'Worker',
+      header: t('cafeAdmin.activityLogs.worker'),
       render: (log) => (
         <div className="text-sm">
           <div className="font-medium">
@@ -70,35 +71,49 @@ export function ActivityLogsTable({
     },
     {
       key: 'action',
-      header: 'Action',
-      render: (log) => (
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium ${getActionBadgeColor(log.action)}`}
-          >
-            {log.action}
-          </span>
-          {log.severity === 'CRITICAL' && (
-            <span className="inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-              !
+      header: t('cafeAdmin.activityLogs.action'),
+      render: (log) => {
+        const event = getEventPresentation(log);
+        const showBaseAction = event.baseAction !== event.label;
+        return (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium ${event.colorClassName}`}
+              title={event.title}
+            >
+              {event.icon ? `${event.icon} ` : ''}
+              {event.label}
             </span>
-          )}
-          {log.severity === 'WARNING' && (
-            <span className="inline-flex items-center rounded-lg bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
-              ⚠
-            </span>
-          )}
-        </div>
-      ),
+            {showBaseAction && (
+              <span
+                className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-medium ${getActionBadgeColor(event.baseAction)}`}
+                title={t('cafeAdmin.activityLogs.baseAction')}
+              >
+                {event.baseAction}
+              </span>
+            )}
+            {log.severity === 'CRITICAL' && (
+              <span className="inline-flex items-center rounded-lg bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                !
+              </span>
+            )}
+            {log.severity === 'WARNING' && (
+              <span className="inline-flex items-center rounded-lg bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
+                ⚠
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'category',
-      header: 'Category',
+      header: t('cafeAdmin.activityLogs.category'),
       render: (log) => <span className="text-sm text-[rgb(var(--tc-muted))]">{log.category}</span>,
     },
     {
       key: 'resource',
-      header: 'Resource',
+      header: t('cafeAdmin.activityLogs.resource'),
       render: (log) => {
         if (!log.resourceType) {
           return <span className="text-sm text-[rgb(var(--tc-muted))]">—</span>;
@@ -107,7 +122,7 @@ export function ActivityLogsTable({
           <div className="text-sm">
             <div className="font-medium">{log.resourceType}</div>
             {log.resourceId && (
-              <div className="text-xs text-[rgb(var(--tc-muted))] truncate max-w-[150px]">
+              <div className="max-w-[150px] truncate text-xs text-[rgb(var(--tc-muted))]">
                 {log.resourceId}
               </div>
             )}
@@ -117,17 +132,26 @@ export function ActivityLogsTable({
     },
     {
       key: 'details',
-      header: 'Details',
-      render: (log) => (
-        <div className="flex items-center gap-2">
-          {log.cafe && <span className="text-xs text-[rgb(var(--tc-muted))]">{log.cafe.name}</span>}
-          {onViewDetails && (
-            <Button variant="ghost" onClick={() => onViewDetails(log)} className="text-xs">
-              View
-            </Button>
-          )}
-        </div>
-      ),
+      header: t('cafeAdmin.activityLogs.details'),
+      render: (log) => {
+        const summary = getLogSummary(log);
+        return (
+          <div className="flex items-center gap-3">
+            {onViewDetails && (
+              <Button variant="ghost" onClick={() => onViewDetails(log)} className="text-xs">
+                {t('cafeAdmin.activityLogs.view')}
+              </Button>
+            )}
+            {summary && (
+              <div className="min-w-0">
+                <div className="max-w-[360px] truncate text-xs text-[rgb(var(--tc-muted))]">
+                  {summary}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -138,7 +162,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('createdAt')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Time
+        {t('cafeAdmin.activityLogs.time')}
         {renderSortIcon('createdAt')}
       </button>
     ) as unknown as string;
@@ -148,7 +172,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('workerEmail')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Worker
+        {t('cafeAdmin.activityLogs.worker')}
         {renderSortIcon('workerEmail')}
       </button>
     ) as unknown as string;
@@ -158,7 +182,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('action')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Action
+        {t('cafeAdmin.activityLogs.action')}
         {renderSortIcon('action')}
       </button>
     ) as unknown as string;
@@ -168,7 +192,7 @@ export function ActivityLogsTable({
         onClick={() => onSort('category')}
         className="flex items-center hover:text-[rgb(var(--tc-accent))]"
       >
-        Category
+        {t('cafeAdmin.activityLogs.category')}
         {renderSortIcon('category')}
       </button>
     ) as unknown as string;
@@ -214,4 +238,151 @@ function getActionBadgeColor(action: string): string {
     default:
       return 'bg-gray-100 text-gray-800';
   }
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') return null;
+  return value as Record<string, unknown>;
+}
+
+function getString(details: Record<string, unknown> | null, key: string): string | null {
+  if (!details) return null;
+  const v = details[key];
+  return typeof v === 'string' ? v : null;
+}
+
+function getEventPresentation(log: ActivityLog): {
+  label: string;
+  baseAction: string;
+  colorClassName: string;
+  icon?: string;
+  title?: string;
+} {
+  const baseAction = String(log.action);
+  const details = asRecord(log.details);
+  const detailsAction = getString(details, 'action');
+
+  // Shift status updates are stored in details.action (START_SHIFT / END_SHIFT)
+  if (log.resourceType === 'WORKER' && baseAction === 'UPDATE' && detailsAction) {
+    if (detailsAction === 'START_SHIFT') {
+      return {
+        label: 'START_SHIFT',
+        baseAction,
+        colorClassName: 'bg-green-100 text-green-800',
+        icon: '🟢',
+        title: getString(details, 'message') ?? undefined,
+      };
+    }
+    if (detailsAction === 'END_SHIFT') {
+      return {
+        label: 'END_SHIFT',
+        baseAction,
+        colorClassName: 'bg-red-100 text-red-800',
+        icon: '⚪',
+        title: getString(details, 'message') ?? undefined,
+      };
+    }
+  }
+
+  // Task completion (worker checked/un-checked task)
+  if (log.resourceType === 'TASK_COMPLETION') {
+    if (baseAction === 'CREATE') {
+      return {
+        label: 'TASK_COMPLETED',
+        baseAction,
+        colorClassName: 'bg-green-100 text-green-800',
+        icon: '✅',
+      };
+    }
+    if (baseAction === 'DELETE') {
+      return {
+        label: 'TASK_UNCOMPLETED',
+        baseAction,
+        colorClassName: 'bg-gray-100 text-gray-800',
+        icon: '↩',
+      };
+    }
+  }
+
+  // Order status transitions (no explicit details in backend logs; infer from endpoint)
+  if (log.resourceType === 'ORDER' && baseAction === 'UPDATE' && log.endpoint) {
+    if (log.endpoint.includes('/orders/') && log.endpoint.includes('/confirm')) {
+      return {
+        label: 'ORDER_CONFIRM',
+        baseAction,
+        colorClassName: 'bg-blue-100 text-blue-800',
+        icon: '🧾',
+      };
+    }
+    if (log.endpoint.includes('/orders/') && log.endpoint.includes('/complete')) {
+      return {
+        label: 'ORDER_COMPLETE',
+        baseAction,
+        colorClassName: 'bg-green-100 text-green-800',
+        icon: '✅',
+      };
+    }
+    if (log.endpoint.includes('/orders/') && log.endpoint.includes('/cancel')) {
+      return {
+        label: 'ORDER_CANCEL',
+        baseAction,
+        colorClassName: 'bg-red-100 text-red-800',
+        icon: '✖',
+      };
+    }
+  }
+
+  return {
+    label: baseAction,
+    baseAction,
+    colorClassName: getActionBadgeColor(baseAction),
+  };
+}
+
+function extractOrderIdFromEndpoint(endpoint?: string): string | null {
+  if (!endpoint) return null;
+  const m = endpoint.match(/\/orders\/([^/?]+)\//);
+  return m?.[1] ?? null;
+}
+
+function getLogSummary(log: ActivityLog): string | null {
+  const details = asRecord(log.details);
+
+  // Shift status summary
+  const detailsAction = getString(details, 'action');
+  if (
+    log.resourceType === 'WORKER' &&
+    String(log.action) === 'UPDATE' &&
+    (detailsAction === 'START_SHIFT' || detailsAction === 'END_SHIFT')
+  ) {
+    const message = getString(details, 'message');
+    const prev = getString(details, 'previousStatus');
+    const next = getString(details, 'shiftStatus');
+    if (message && prev && next) return `${message} (${prev} → ${next})`;
+    if (message) return message;
+    if (prev && next) return `${t('cafeAdmin.activityLogs.shiftStatus')}: ${prev} → ${next}`;
+    return null;
+  }
+
+  // Task completion summary
+  if (log.resourceType === 'TASK_COMPLETION') {
+    const taskTitle = getString(details, 'taskTitle');
+    const completionDate = getString(details, 'completionDate');
+    if (taskTitle && completionDate) return `${taskTitle} • ${completionDate}`;
+    if (taskTitle) return taskTitle;
+    return null;
+  }
+
+  // Order update summary (infer order id)
+  if (log.resourceType === 'ORDER' && String(log.action) === 'UPDATE') {
+    const id = log.resourceId || extractOrderIdFromEndpoint(log.endpoint);
+    if (id) return `${t('cafeAdmin.activityLogs.order')}: ${id}`;
+    return log.endpoint ? `${t('cafeAdmin.activityLogs.orderUpdate')}: ${log.endpoint}` : null;
+  }
+
+  // Generic details summary: show message if present
+  const message = getString(details, 'message');
+  if (message) return message;
+
+  return null;
 }

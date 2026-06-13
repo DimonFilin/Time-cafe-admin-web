@@ -28,7 +28,7 @@ export default function Home() {
             className="rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-4 hover:bg-[rgb(var(--tc-surface-2))]"
             href="/admin"
           >
-            <div className="text-sm font-semibold">Backend ping</div>
+            <div className="text-sm font-semibold">Проверка backend</div>
             <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
               Проверка связи с backend-shared
             </div>

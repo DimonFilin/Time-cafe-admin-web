@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ cafeId: string }> }) {
   try {
@@ -17,6 +18,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ caf
     return fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[cafe-layout occupancy GET] Error:', error);
-    return NextResponse.json({ error: 'Failed to load occupancy' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.loadOccupancy') }, { status: 500 });
   }
 }

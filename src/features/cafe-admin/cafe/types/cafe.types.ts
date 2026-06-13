@@ -7,6 +7,9 @@ export interface UpdateCafeDto {
   latitude?: number;
   longitude?: number;
   cafeApiUrl?: string;
+  phone?: string;
+  email?: string;
+  occupancyMode?: 'PERCENT' | 'COUNT';
   chatEnabled?: boolean;
   chatNotificationMode?: 'ALL_WORKERS' | 'ROLE_BASED' | 'SPECIFIC_WORKERS';
   chatNotificationRoles?: ('SYSTEM_ADMIN' | 'BRAND_ADMIN' | 'CAFE_ADMIN' | 'WORKER')[];
@@ -47,6 +50,10 @@ export interface Cafe {
   brandName?: string;
   regionName?: string;
   cafeApiUrl?: string;
+  phone?: string;
+  email?: string;
+  occupancyMode?: 'PERCENT' | 'COUNT';
+  totalCapacity?: number;
   /** Parsed from API `openingHours` (weekly hours). */
   schedule?: CafeSchedule;
   chatSettings?: {

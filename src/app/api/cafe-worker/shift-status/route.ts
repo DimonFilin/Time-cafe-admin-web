@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { t } from '@/i18n';
 
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
@@ -19,6 +20,6 @@ export async function PATCH(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('[shift-status] Error:', error);
-    return NextResponse.json({ error: 'Failed to toggle shift status' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.toggleShiftStatus') }, { status: 500 });
   }
 }

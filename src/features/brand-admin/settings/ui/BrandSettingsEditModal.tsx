@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import type { BrandSettings, UpdateBrandSettingsRequest } from '../api/settings';
+import { t } from '@/i18n';
 
 interface BrandSettingsEditModalProps {
   brand: BrandSettings;
@@ -12,11 +13,11 @@ interface BrandSettingsEditModalProps {
 }
 
 const COLOR_FIELDS = [
-  { name: 'primaryColor', label: 'Primary Color' },
-  { name: 'secondaryColor', label: 'Secondary Color' },
-  { name: 'accentColor', label: 'Accent Color' },
-  { name: 'backgroundColor', label: 'Background Color' },
-  { name: 'textColor', label: 'Text Color' },
+  { name: 'primaryColor', labelKey: 'brandAdmin.settings.primaryColor' },
+  { name: 'secondaryColor', labelKey: 'brandAdmin.settings.secondaryColor' },
+  { name: 'accentColor', labelKey: 'brandAdmin.settings.accentColor' },
+  { name: 'backgroundColor', labelKey: 'brandAdmin.settings.backgroundColor' },
+  { name: 'textColor', labelKey: 'brandAdmin.settings.textColor' },
 ];
 
 export function BrandSettingsEditModal({
@@ -63,7 +64,8 @@ export function BrandSettingsEditModal({
       await onSave(formData);
       onClose();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to save settings';
+      const errorMsg =
+        err instanceof Error ? err.message : t('brandAdmin.modals.saveSettingsFailed');
       console.error('[BrandSettingsEditModal] Save error:', err);
       setError(errorMsg);
     } finally {
@@ -75,7 +77,7 @@ export function BrandSettingsEditModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto">
       <Card className="w-full max-w-2xl p-6 my-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">Brand Settings</h2>
+          <h2 className="text-xl font-semibold">{t('brandAdmin.modals.brandSettings')}</h2>
           <button
             onClick={onClose}
             className="text-[rgb(var(--tc-muted))] hover:text-[rgb(var(--tc-fg))]"
@@ -91,13 +93,15 @@ export function BrandSettingsEditModal({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Brand Info Section */}
           <div>
-            <h3 className="text-sm font-semibold mb-4">Brand Information</h3>
+            <h3 className="text-sm font-semibold mb-4">
+              {t('brandAdmin.modals.brandInformation')}
+            </h3>
             <div className="space-y-4">
-              {/* Name */}
               <div>
-                <label className="block text-sm font-medium mb-1">Brand Name *</label>
+                <label className="block text-sm font-medium mb-1">
+                  {t('brandAdmin.modals.brandName')} *
+                </label>
                 <input
                   type="text"
                   name="name"
@@ -108,9 +112,8 @@ export function BrandSettingsEditModal({
                 />
               </div>
 
-              {/* Email */}
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label className="block text-sm font-medium mb-1">{t('common.email')}</label>
                 <input
                   type="email"
                   name="email"
@@ -120,9 +123,8 @@ export function BrandSettingsEditModal({
                 />
               </div>
 
-              {/* Phone */}
               <div>
-                <label className="block text-sm font-medium mb-1">Phone</label>
+                <label className="block text-sm font-medium mb-1">{t('common.phone')}</label>
                 <input
                   type="tel"
                   name="phone"
@@ -132,9 +134,8 @@ export function BrandSettingsEditModal({
                 />
               </div>
 
-              {/* Address */}
               <div>
-                <label className="block text-sm font-medium mb-1">Address</label>
+                <label className="block text-sm font-medium mb-1">{t('common.address')}</label>
                 <input
                   type="text"
                   name="address"
@@ -144,9 +145,8 @@ export function BrandSettingsEditModal({
                 />
               </div>
 
-              {/* Website */}
               <div>
-                <label className="block text-sm font-medium mb-1">Website</label>
+                <label className="block text-sm font-medium mb-1">{t('common.website')}</label>
                 <input
                   type="url"
                   name="website"
@@ -156,9 +156,8 @@ export function BrandSettingsEditModal({
                 />
               </div>
 
-              {/* Description */}
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">{t('common.description')}</label>
                 <textarea
                   name="description"
                   value={formData.description || ''}
@@ -170,15 +169,15 @@ export function BrandSettingsEditModal({
             </div>
           </div>
 
-          {/* Customization Section */}
           <div>
-            <h3 className="text-sm font-semibold mb-4">Brand Customization</h3>
+            <h3 className="text-sm font-semibold mb-4">
+              {t('brandAdmin.modals.brandCustomization')}
+            </h3>
             <div className="space-y-4">
-              {/* Colors Grid */}
               <div className="grid grid-cols-2 gap-4">
-                {COLOR_FIELDS.map(({ name, label }) => (
+                {COLOR_FIELDS.map(({ name, labelKey }) => (
                   <div key={name}>
-                    <label className="block text-sm font-medium mb-2">{label}</label>
+                    <label className="block text-sm font-medium mb-2">{t(labelKey)}</label>
                     <div className="flex gap-2 items-center">
                       <input
                         type="color"
@@ -199,9 +198,10 @@ export function BrandSettingsEditModal({
                 ))}
               </div>
 
-              {/* Font Family */}
               <div>
-                <label className="block text-sm font-medium mb-1">Font Family</label>
+                <label className="block text-sm font-medium mb-1">
+                  {t('brandAdmin.settings.fontFamily')}
+                </label>
                 <select
                   name="fontFamily"
                   value={formData.fontFamily || 'sans-serif'}
@@ -211,27 +211,26 @@ export function BrandSettingsEditModal({
                   <option value="sans-serif">Без засечек</option>
                   <option value="serif">С засечками</option>
                   <option value="monospace">Моноширинный</option>
-                  <option value="cursive">Cursive</option>
+                  <option value="cursive">Курсив</option>
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Form Actions */}
           <div className="flex justify-end gap-2 pt-4 border-t border-[rgb(var(--tc-border))]">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-[rgb(var(--tc-fg))] hover:bg-[rgb(var(--tc-border))] rounded-lg transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 text-sm font-medium text-white bg-[rgb(var(--tc-accent))] hover:opacity-90 disabled:opacity-50 rounded-lg transition-opacity"
             >
-              {loading ? 'Saving...' : 'Save Settings'}
+              {loading ? t('common.saving') : t('brandAdmin.modals.saveSettings')}
             </button>
           </div>
         </form>

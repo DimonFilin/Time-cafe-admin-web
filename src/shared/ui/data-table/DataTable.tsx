@@ -23,6 +23,7 @@ export function DataTable<T>({
   total,
   onPageChange,
   onPageSizeChange,
+  emptyMessage,
 }: {
   rows: T[];
   columns: DataTableColumn<T>[];
@@ -34,6 +35,7 @@ export function DataTable<T>({
   total: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  emptyMessage?: string;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const canPrev = page > 1;
@@ -75,7 +77,7 @@ export function DataTable<T>({
             ) : rows.length === 0 ? (
               <tr>
                 <td className="px-4 py-6 text-[rgb(var(--tc-muted))]" colSpan={columns.length}>
-                  Нет данных
+                  {emptyMessage ?? 'Нет данных'}
                 </td>
               </tr>
             ) : (

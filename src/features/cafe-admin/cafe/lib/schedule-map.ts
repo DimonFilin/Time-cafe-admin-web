@@ -13,13 +13,13 @@ export const SCHEDULE_DAYS = [
 export type ScheduleDayKey = (typeof SCHEDULE_DAYS)[number];
 
 export const SCHEDULE_DAY_LABELS: Record<ScheduleDayKey, string> = {
-  monday: 'Monday',
-  tuesday: 'Tuesday',
-  wednesday: 'Wednesday',
-  thursday: 'Thursday',
-  friday: 'Friday',
-  saturday: 'Saturday',
-  sunday: 'Sunday',
+  monday: 'Понедельник',
+  tuesday: 'Вторник',
+  wednesday: 'Среда',
+  thursday: 'Четверг',
+  friday: 'Пятница',
+  saturday: 'Суббота',
+  sunday: 'Воскресенье',
 };
 
 const DEFAULT_DAY: DaySchedule = {

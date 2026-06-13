@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
 import type { WorkerProfile } from '../api/workers';
+import { t } from '@/i18n';
 
 interface EditWorkerModalProps {
   open: boolean;
@@ -70,7 +71,9 @@ export function EditWorkerModal({
         {error && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         <div className="text-sm text-[rgb(var(--tc-muted))]">
-          <p>Email: {worker.email}</p>
+          <p>
+            {t('common.email')}: {worker.email}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

@@ -78,7 +78,7 @@ export function ReviewsAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (r) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{r.id}</span>
         ),

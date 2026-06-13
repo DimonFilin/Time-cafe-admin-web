@@ -5,10 +5,10 @@ import { t } from '@/i18n';
 import { getMyCafe, updateMyCafe } from '../api/cafe-api';
 import { Cafe } from '../types/cafe.types';
 import { EditCafeModal } from './EditCafeModal';
-import { EditScheduleModal } from './EditScheduleModal';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
-import { SCHEDULE_DAYS, SCHEDULE_DAY_LABELS } from '../lib/schedule-map';
+import { CafeCardForm } from '@/features/cafe-card/ui/CafeCardForm';
+import { cafeToCardValues } from '@/features/cafe-card/lib/map-from-cafe-admin';
 
 function InfoField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -24,7 +24,6 @@ export function CafeInfoTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [savingChatSettings, setSavingChatSettings] = useState(false);
 
   const loadCafe = async () => {
@@ -75,8 +74,8 @@ export function CafeInfoTab() {
 
   const brandLabel = cafe.brandName?.trim() || cafe.brandId;
   const regionLabel = cafe.regionName?.trim() || cafe.regionId;
-  const savedSchedule = cafe.schedule;
   const chatSettings = cafe.chatSettings;
+  const cardValues = cafeToCardValues(cafe);
 
   const saveChatSettings = async (payload: {
     chatEnabled?: boolean;
@@ -110,9 +109,6 @@ export function CafeInfoTab() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" onClick={() => setIsScheduleModalOpen(true)}>
-              {t('cafeAdmin.cafeInfo.editSchedule')}
-            </Button>
             <Button type="button" variant="primary" onClick={() => setIsEditModalOpen(true)}>
               {t('cafeAdmin.cafeInfo.editInformation')}
             </Button>
@@ -121,48 +117,21 @@ export function CafeInfoTab() {
       </Card>
 
       <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold">{t('cafeAdmin.cafeInfo.basicInformation')}</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <InfoField label={t('cafeAdmin.cafeInfo.name')}>{cafe.name}</InfoField>
+        <CafeCardForm
+          variant="cafe-admin"
+          mode="edit"
+          values={cardValues}
+          onChange={() => {}}
+          cafeId={cafe.id}
+          readOnly
+        />
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border-t border-[rgb(var(--tc-border))] pt-4">
           <InfoField label={t('cafeAdmin.cafeInfo.brand')}>{brandLabel}</InfoField>
           <InfoField label={t('cafeAdmin.cafeInfo.region')}>{regionLabel}</InfoField>
           <InfoField label={t('cafeAdmin.cafeInfo.rating')}>
             {cafe.rating.toFixed(1)} ({cafe.reviewsCount})
           </InfoField>
-          {cafe.description ? (
-            <div className="sm:col-span-2 lg:col-span-3">
-              <InfoField label={t('cafeAdmin.cafeInfo.description')}>{cafe.description}</InfoField>
-            </div>
-          ) : null}
         </div>
-      </Card>
-
-      <Card className="p-6">
-        <h3 className="mb-4 text-base font-semibold">{t('cafeAdmin.cafeInfo.openingHours')}</h3>
-        {savedSchedule ? (
-          <ul className="divide-y divide-[rgb(var(--tc-border))] rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] text-sm">
-            {SCHEDULE_DAYS.map((day) => {
-              const d = savedSchedule[day];
-              return (
-                <li
-                  key={day}
-                  className="flex items-center justify-between gap-4 px-4 py-2.5 first:rounded-t-xl last:rounded-b-xl"
-                >
-                  <span className="font-medium text-[rgb(var(--tc-fg))]">
-                    {SCHEDULE_DAY_LABELS[day]}
-                  </span>
-                  <span className="text-[rgb(var(--tc-muted))]">
-                    {d.isClosed ? t('cafeAdmin.cafeInfo.closed') : `${d.open} – ${d.close}`}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-[rgb(var(--tc-muted))]">
-            {t('cafeAdmin.cafeInfo.noSchedule')}
-          </p>
-        )}
       </Card>
 
       <Card className="p-6">
@@ -261,16 +230,6 @@ export function CafeInfoTab() {
         onClose={() => setIsEditModalOpen(false)}
         onSuccess={() => {
           setIsEditModalOpen(false);
-          loadCafe();
-        }}
-      />
-
-      <EditScheduleModal
-        open={isScheduleModalOpen}
-        cafe={cafe}
-        onClose={() => setIsScheduleModalOpen(false)}
-        onSuccess={() => {
-          setIsScheduleModalOpen(false);
           loadCafe();
         }}
       />

@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 // Activity Logs API Client
 
 export enum ActivityAction {
@@ -148,7 +149,7 @@ export async function getActivityLogs(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch activity logs');
+    throw new Error(t('apiErrors.fetchActivityLogs'));
   }
 
   return response.json();
@@ -173,7 +174,7 @@ export async function getActivityLogsStatistics(
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch activity logs statistics');
+    throw new Error(t('apiErrors.fetchActivityLogsStats'));
   }
 
   return response.json();
@@ -193,7 +194,7 @@ export async function createActivityLog(data: CreateActivityLogDto): Promise<{ m
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create activity log');
+    throw new Error(t('apiErrors.createActivityLog'));
   }
 
   return response.json();

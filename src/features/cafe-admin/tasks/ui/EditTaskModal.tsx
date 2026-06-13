@@ -78,7 +78,7 @@ export function EditTaskModal({ open, onClose, template, onSuccess }: EditTaskMo
       .catch((e) => {
         if (cancelled) return;
         setWorkers([]);
-        setWorkersError(e instanceof Error ? e.message : 'Failed to fetch workers');
+        setWorkersError(e instanceof Error ? e.message : t('workers.errors.fetchFailed'));
       })
       .finally(() => {
         if (cancelled) return;

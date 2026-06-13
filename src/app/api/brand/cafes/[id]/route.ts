@@ -1,6 +1,18 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const url = `${env.backendUrl}/cafes/${id}`;
+    return await fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
+  } catch (error) {
+    console.error('[api/brand/cafes/[id]] GET Error:', error);
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
+  }
+}
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,7 +28,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
   } catch (error) {
     console.error('[api/brand/cafes/[id]] PATCH Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }
 
@@ -32,6 +44,6 @@ export async function DELETE(
     return await fetchWithAuthRefresh(url, { method: 'DELETE', cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/cafes/[id]] DELETE Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

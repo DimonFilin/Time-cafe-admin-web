@@ -70,7 +70,7 @@ export function UsersAdmin() {
       setUsers(data.items);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users');
+      setError(err instanceof Error ? err.message : t('systemAdmin.errors.loadUsers'));
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ export function UsersAdmin() {
       setEditForm(toForm(null));
       await refresh();
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to update user');
+      setEditError(err instanceof Error ? err.message : t('systemAdmin.errors.updateUser'));
     } finally {
       setEditLoading(false);
     }
@@ -128,14 +128,14 @@ export function UsersAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (u) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{u.id}</span>
         ),
       },
       {
         key: 'email',
-        header: 'Email',
+        header: t('common.email'),
         render: (u) => <span className="font-medium">{u.email}</span>,
       },
       {

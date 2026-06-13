@@ -6,6 +6,7 @@ import type {
   TaskStatistics,
   TaskCompletionsResponse,
 } from '../types/tasks.types';
+import { t } from '@/i18n';
 
 export async function getTaskTemplates(params?: {
   includeInactive?: boolean;
@@ -23,7 +24,7 @@ export async function getTaskTemplates(params?: {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to fetch task templates');
+    throw new Error(error.message || t('apiErrors.fetchTaskTemplates'));
   }
 
   return response.json();
@@ -91,7 +92,7 @@ export async function createTaskTemplate(data: CreateTaskTemplateDto): Promise<T
     // Extract error message from array if present
     const errorMessage = Array.isArray(error.message)
       ? error.message.join(', ')
-      : error.message || 'Failed to create task template';
+      : error.message || t('apiErrors.createTaskTemplate');
 
     throw new Error(errorMessage);
   }
@@ -112,7 +113,7 @@ export async function updateTaskTemplate(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to update task template');
+    throw new Error(error.message || t('apiErrors.updateTaskTemplate'));
   }
 
   return response.json();
@@ -126,7 +127,7 @@ export async function deactivateTaskTemplate(id: string): Promise<TaskTemplate> 
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to deactivate task template');
+    throw new Error(error.message || t('apiErrors.deactivateTaskTemplate'));
   }
 
   return response.json();
@@ -148,7 +149,7 @@ export async function getTaskStatistics(params: {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to fetch task statistics');
+    throw new Error(error.message || t('apiErrors.fetchTaskStatistics'));
   }
 
   return response.json();
@@ -178,7 +179,7 @@ export async function getTaskCompletions(params: {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to fetch task completions');
+    throw new Error(error.message || t('apiErrors.fetchTaskCompletions'));
   }
 
   return response.json();

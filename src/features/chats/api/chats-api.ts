@@ -1,4 +1,5 @@
 import { clientFetch } from '@/shared/lib/client-fetch';
+import { t } from '@/i18n';
 
 export interface ChatAttachment {
   id: string;
@@ -8,12 +9,21 @@ export interface ChatAttachment {
   sortOrder: number;
 }
 
+export interface ChatAuthorWorker {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
+  cafeName?: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
   authorType: 'USER' | 'WORKER';
   authorUserId?: string | null;
   authorWorkerId?: string | null;
+  authorWorker?: ChatAuthorWorker | null;
   messageType: 'TEXT' | 'IMAGE' | 'MIXED' | 'SYSTEM';
   text?: string | null;
   attachments: ChatAttachment[];
@@ -118,8 +128,8 @@ export const chatsApi = {
       body: fd,
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Upload failed' }));
-      throw new Error(error.message || 'Upload failed');
+      const error = await response.json().catch(() => ({ message: t('apiErrors.uploadFailed') }));
+      throw new Error(error.message || t('apiErrors.uploadFailed'));
     }
     return response.json();
   },

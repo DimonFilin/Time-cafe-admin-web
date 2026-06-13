@@ -17,6 +17,8 @@ const links = [
   { href: '/system-admin/appointments', label: t('systemAdmin.nav.appointments') },
   { href: '/system-admin/reviews', label: t('systemAdmin.nav.reviews') },
   { href: '/system-admin/regions', label: t('systemAdmin.nav.regions') },
+  { href: '/system-admin/loyalty', label: 'Лояльность' },
+  { href: '/system-admin/guests', label: 'Клиенты' },
   { href: '/system-admin/users', label: t('systemAdmin.nav.users') },
   { href: '/system-admin/transactions', label: t('systemAdmin.nav.transactions') },
 ];

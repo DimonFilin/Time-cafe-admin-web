@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button/Button';
 import { Badge } from '@/shared/ui/badge/Badge';
 import { DocumentUploadModal } from './DocumentUploadModal';
 import { DocumentDeleteModal } from './DocumentDeleteModal';
+import { t } from '@/i18n';
 
 interface Doc {
   id: string;
@@ -15,6 +16,12 @@ interface Doc {
   status: 'PENDING' | 'VERIFIED' | 'REJECTED';
   uploadedAt?: string;
   verifierNote?: string | null;
+}
+
+function docStatusLabel(status: Doc['status']) {
+  if (status === 'VERIFIED') return t('brandAdmin.documents.statusVerified');
+  if (status === 'REJECTED') return t('brandAdmin.documents.statusRejected');
+  return t('brandAdmin.documents.statusPending');
 }
 
 export function DocumentsTab() {
@@ -33,12 +40,11 @@ export function DocumentsTab() {
       setLoading(true);
       setError(null);
       const res = await fetch('/api/brand/documents');
-      if (!res.ok) throw new Error('Failed to fetch documents');
+      if (!res.ok) throw new Error(t('brandAdmin.documents.fetchFailed'));
       const data = await res.json();
-      // Backend returns either array [] or object { items: [...] }
       setDocs(Array.isArray(data) ? data : data.items || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch documents');
+      setError(err instanceof Error ? err.message : t('brandAdmin.documents.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -55,80 +61,105 @@ export function DocumentsTab() {
   };
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Documents</h3>
-        <Button onClick={() => setUploadOpen(true)}>Upload Document</Button>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight">{t('brandAdmin.documents.title')}</h2>
+        <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+          {t('brandAdmin.documents.subtitle')}
+        </p>
       </div>
 
-      {loading && <div>Loading documents...</div>}
-      {error && <div className="text-red-600">{error}</div>}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold">{t('brandAdmin.documents.uploadedFiles')}</h3>
+          <Button onClick={() => setUploadOpen(true)}>
+            {t('brandAdmin.documents.uploadDocument')}
+          </Button>
+        </div>
 
-      {!loading && !error && docs.length === 0 && <div>No documents uploaded yet.</div>}
+        {loading && (
+          <div className="p-8 text-center text-sm text-[rgb(var(--tc-muted))]">
+            {t('brandAdmin.documents.loading')}
+          </div>
+        )}
+        {error && <div className="mb-4 text-sm text-[rgb(var(--tc-danger))]">{error}</div>}
+        {!loading && !error && docs.length === 0 && (
+          <div className="p-8 text-center text-sm text-[rgb(var(--tc-muted))]">
+            {t('brandAdmin.documents.empty')}
+          </div>
+        )}
 
-      {!loading && docs.length > 0 && (
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Type</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Uploaded</th>
-              <th className="px-4 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {docs.map((d) => (
-              <tr key={d.id} className="border-t">
-                <td className="px-4 py-2">{d.name}</td>
-                <td className="px-4 py-2">{d.type}</td>
-                <td className="px-4 py-2">
-                  <Badge
-                    className={
-                      d.status === 'VERIFIED'
-                        ? 'bg-green-100 text-green-800'
-                        : d.status === 'REJECTED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
-                    }
+        {!loading && docs.length > 0 && (
+          <div className="overflow-x-auto rounded-xl border border-[rgb(var(--tc-border))]">
+            <table className="w-full min-w-[640px] text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))]">
+                  <th className="px-6 py-3 font-semibold">{t('common.name')}</th>
+                  <th className="px-6 py-3 font-semibold">{t('common.type')}</th>
+                  <th className="px-6 py-3 font-semibold">{t('common.status')}</th>
+                  <th className="px-6 py-3 font-semibold">{t('common.uploaded')}</th>
+                  <th className="px-6 py-3 font-semibold text-right">{t('common.actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {docs.map((d) => (
+                  <tr
+                    key={d.id}
+                    className="border-b border-[rgb(var(--tc-border))] last:border-b-0"
                   >
-                    {d.status}
-                  </Badge>
-                </td>
-                <td className="px-4 py-2">
-                  {d.uploadedAt ? new Date(d.uploadedAt).toLocaleString() : '—'}
-                </td>
-                <td className="px-4 py-2 text-right space-x-2">
-                  {d.fileUrl && (
-                    <>
-                      <button
-                        className="text-blue-600 hover:underline"
-                        onClick={async () => {
-                          try {
-                            const res = await fetch(`/api/brand/documents/${d.id}/download`);
-                            if (!res.ok) throw new Error('Failed to get download URL');
-                            const { url } = await res.json();
-                            window.open(url, '_blank');
-                          } catch (err) {
-                            alert(
-                              `Failed to download: ${err instanceof Error ? err.message : 'Unknown error'}`,
-                            );
-                          }
-                        }}
+                    <td className="px-6 py-4">{d.name}</td>
+                    <td className="px-6 py-4">{d.type}</td>
+                    <td className="px-6 py-4">
+                      <Badge
+                        className={
+                          d.status === 'VERIFIED'
+                            ? 'bg-green-100 text-green-800'
+                            : d.status === 'REJECTED'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                        }
                       >
-                        Download
-                      </button>
-                    </>
-                  )}
-                  <Button variant="ghost" onClick={() => setDeletingDoc(d)}>
-                    Delete
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                        {docStatusLabel(d.status)}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 text-[rgb(var(--tc-muted))]">
+                      {d.uploadedAt ? new Date(d.uploadedAt).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      {d.fileUrl && (
+                        <button
+                          type="button"
+                          className="text-blue-600 hover:underline text-sm"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`/api/brand/documents/${d.id}/download`);
+                              if (!res.ok)
+                                throw new Error(t('brandAdmin.documents.downloadFailed'));
+                              const { url } = await res.json();
+                              window.open(url, '_blank');
+                            } catch (err) {
+                              alert(
+                                err instanceof Error
+                                  ? err.message
+                                  : t('brandAdmin.documents.downloadFailed'),
+                              );
+                            }
+                          }}
+                        >
+                          {t('common.download')}
+                        </button>
+                      )}
+                      <Button variant="ghost" onClick={() => setDeletingDoc(d)}>
+                        {t('common.delete')}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       <DocumentUploadModal
         open={uploadOpen}
@@ -142,6 +173,6 @@ export function DocumentsTab() {
           onDeleted={handleDelete}
         />
       )}
-    </Card>
+    </div>
   );
 }

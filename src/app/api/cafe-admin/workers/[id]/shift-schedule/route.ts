@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { t } from '@/i18n';
 
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
@@ -10,7 +11,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     return fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[workers shift-schedule GET] Error:', error);
-    return NextResponse.json({ error: 'Failed to load shift schedule' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.loadShiftSchedule') }, { status: 500 });
   }
 }
 
@@ -26,6 +27,6 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     });
   } catch (error) {
     console.error('[workers shift-schedule PUT] Error:', error);
-    return NextResponse.json({ error: 'Failed to save shift schedule' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.saveShiftSchedule') }, { status: 500 });
   }
 }

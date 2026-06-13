@@ -1,18 +1,19 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 async function getWorkerWithAuthRefresh() {
   const workerUrl = `${env.backendUrl}/auth/workers/me`;
   const response = await fetchWithAuthRefresh(workerUrl, { method: 'GET', cache: 'no-store' });
 
   if (!response || typeof response.status !== 'number') {
-    throw new Error('Invalid response fetching worker');
+    throw new Error(t('apiErrors.invalidWorkerResponse'));
   }
 
   if (response.status >= 400) {
     const text = await response.text().catch(() => '');
-    throw new Error(`Failed to fetch worker: ${response.status} ${text}`);
+    throw new Error(t('apiErrors.fetchWorkerAuth'));
   }
 
   const text = await response.text().catch(() => '');
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
     // Get current worker to get brandId
     const worker = await getWorkerWithAuthRefresh();
     if (!worker.brandId) {
-      return NextResponse.json(
-        { message: 'No brand associated with this worker' },
-        { status: 400 },
-      );
+      return NextResponse.json({ message: t('apiErrors.noBrandForWorker') }, { status: 400 });
     }
 
     // Fetch workers for brand
@@ -39,7 +37,7 @@ export async function GET(request: NextRequest) {
     return await fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/workers] GET Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }
 
@@ -50,10 +48,7 @@ export async function POST(request: NextRequest) {
     // Get current worker to get brandId
     const worker = await getWorkerWithAuthRefresh();
     if (!worker.brandId) {
-      return NextResponse.json(
-        { message: 'No brand associated with this worker' },
-        { status: 400 },
-      );
+      return NextResponse.json({ message: t('apiErrors.noBrandForWorker') }, { status: 400 });
     }
 
     // Invite new worker with brandId
@@ -65,6 +60,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[api/brand/workers] POST Error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

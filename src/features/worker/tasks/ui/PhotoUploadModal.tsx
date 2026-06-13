@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 
 interface PhotoUploadModalProps {
   isOpen: boolean;
@@ -72,7 +73,7 @@ export function PhotoUploadModal({ isOpen, onClose, onUpload, taskTitle }: Photo
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to upload photo');
+        throw new Error(errorData.error || t('apiErrors.uploadPhoto'));
       }
 
       const data = await response.json();
@@ -80,14 +81,14 @@ export function PhotoUploadModal({ isOpen, onClose, onUpload, taskTitle }: Photo
       // Return the photo URL from the upload result
       const photoUrl = data.result?.url || data.url;
       if (!photoUrl) {
-        throw new Error('No URL returned from upload');
+        throw new Error(t('apiErrors.uploadNoUrl'));
       }
 
       onUpload(photoUrl);
       handleClose();
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки фото');
+      setError(err instanceof Error ? err.message : t('apiErrors.uploadPhoto'));
     } finally {
       setUploading(false);
     }

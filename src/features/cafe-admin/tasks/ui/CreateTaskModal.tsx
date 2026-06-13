@@ -65,7 +65,7 @@ export function CreateTaskModal({ open, onClose, onSuccess }: CreateTaskModalPro
       .catch((e) => {
         if (cancelled) return;
         setWorkers([]);
-        setWorkersError(e instanceof Error ? e.message : 'Failed to fetch workers');
+        setWorkersError(e instanceof Error ? e.message : t('workers.errors.fetchFailed'));
       })
       .finally(() => {
         if (cancelled) return;

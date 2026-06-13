@@ -29,6 +29,7 @@ import { DataTable } from '@/shared/ui/data-table/DataTable';
 import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
+import { t } from '@/i18n';
 
 type BrandFormState = {
   name: string;
@@ -420,23 +421,27 @@ export function BrandsAdmin() {
   const columns: DataTableColumn<Brand>[] = [
     {
       key: 'id',
-      header: 'ID',
+      header: t('common.id'),
       render: (b) => <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{b.id}</span>,
     },
-    { key: 'name', header: 'Название', render: (b) => <div className="font-medium">{b.name}</div> },
+    {
+      key: 'name',
+      header: t('common.name'),
+      render: (b) => <div className="font-medium">{b.name}</div>,
+    },
     {
       key: 'status',
-      header: 'Статус',
+      header: t('systemAdmin.brands.status'),
       render: (b) => <span className="font-mono text-xs">{b.status}</span>,
     },
     {
       key: 'email',
-      header: 'Email',
+      header: t('common.email'),
       render: (b) => <span className="text-[rgb(var(--tc-muted))]">{b.email ?? '-'}</span>,
     },
     {
       key: 'phone',
-      header: 'Телефон',
+      header: t('common.phone'),
       render: (b) => <span className="text-[rgb(var(--tc-muted))]">{b.phone ?? '-'}</span>,
     },
     {
@@ -446,22 +451,22 @@ export function BrandsAdmin() {
       render: (b) => (
         <div className="flex justify-end gap-2">
           <Button variant="secondary" className="px-3 py-2" onClick={() => openCafes(b)}>
-            Cafes
+            {t('systemAdmin.brands.cafes')}
           </Button>
           <Button variant="secondary" className="px-3 py-2" onClick={() => openWorkers(b)}>
-            Workers
+            {t('systemAdmin.brands.workers')}
           </Button>
           <Button variant="secondary" className="px-3 py-2" onClick={() => openDocuments(b)}>
-            Docs
+            {t('systemAdmin.brands.docs')}
           </Button>
           <Button variant="secondary" className="px-3 py-2" onClick={() => openSettings(b)}>
-            Settings
+            {t('systemAdmin.brands.settings')}
           </Button>
           <Button variant="secondary" className="px-3 py-2" onClick={() => openEdit(b)}>
-            Edit
+            {t('common.edit')}
           </Button>
           <Button variant="secondary" className="px-3 py-2" onClick={() => openDelete(b)}>
-            Delete
+            {t('common.delete')}
           </Button>
         </div>
       ),
@@ -532,7 +537,7 @@ export function BrandsAdmin() {
     try {
       const parsed = JSON.parse(settingsText) as unknown;
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error('Settings должен быть JSON object (например: {"theme":{"mode":"light"}})');
+        throw new Error(t('apiErrors.settingsInvalidJson'));
       }
       // Note: settings field update not supported in current API
       setSettingsOpen(false);
@@ -590,16 +595,18 @@ export function BrandsAdmin() {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-2xl font-semibold tracking-tight">Brands</div>
+          <div className="text-2xl font-semibold tracking-tight">
+            {t('systemAdmin.brands.title')}
+          </div>
           <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            CRUD + пагинация (пока клиентская).
+            {t('systemAdmin.brands.subtitle')}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={refresh} disabled={isLoading}>
-            Refresh
+            {t('common.refresh')}
           </Button>
-          <Button onClick={openCreate}>Add brand</Button>
+          <Button onClick={openCreate}>{t('systemAdmin.brands.addBrand')}</Button>
         </div>
       </div>
 
@@ -623,7 +630,7 @@ export function BrandsAdmin() {
 
       <Modal
         open={editOpen}
-        title={editId ? 'Редактировать бренд' : 'Создать бренд'}
+        title={editId ? t('systemAdmin.brands.editBrand') : t('systemAdmin.brands.createBrand')}
         onClose={() => setEditOpen(false)}
       >
         <div className="grid gap-3">
@@ -631,7 +638,7 @@ export function BrandsAdmin() {
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{saveError}</Card>
           )}
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Name *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.name')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.name}
@@ -639,7 +646,7 @@ export function BrandsAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Email *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.email')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.email}
@@ -647,7 +654,7 @@ export function BrandsAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Phone *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.phone')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.phone}
@@ -655,7 +662,7 @@ export function BrandsAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Address *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.address')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.address}
@@ -663,7 +670,9 @@ export function BrandsAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Website</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">
+              {t('systemAdmin.brands.website')}
+            </div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.website}
@@ -673,19 +682,21 @@ export function BrandsAdmin() {
 
           {editId && editing && (
             <div className="mt-2 grid gap-2 rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-3">
-              <div className="text-sm font-semibold">Статус / верификация</div>
+              <div className="text-sm font-semibold">{t('systemAdmin.brands.verification')}</div>
               <div className="text-xs text-[rgb(var(--tc-muted))]">
                 Текущий статус: <span className="font-mono">{editing.status}</span>, isVerified:{' '}
                 <span className="font-mono">{String(editing.isVerified)}</span>
               </div>
               <div className="grid gap-1">
-                <div className="text-xs text-[rgb(var(--tc-muted))]">Изменить статус</div>
+                <div className="text-xs text-[rgb(var(--tc-muted))]">
+                  {t('systemAdmin.brands.changeStatus')}
+                </div>
                 <select
                   className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
                   value={statusTarget}
                   onChange={(e) => setStatusTarget(e.target.value as Brand['status'] | 'UNCHANGED')}
                 >
-                  <option value="UNCHANGED">Без изменений</option>
+                  <option value="UNCHANGED">{t('systemAdmin.brands.noChange')}</option>
                   <option value="ACTIVE" disabled={editing.status === 'ACTIVE'}>
                     ACTIVE (verify)
                   </option>
@@ -699,7 +710,9 @@ export function BrandsAdmin() {
               </div>
               {(statusTarget === 'SUSPENDED' || statusTarget === 'REJECTED') && (
                 <div className="grid gap-1">
-                  <div className="text-xs text-[rgb(var(--tc-muted))]">Причина (optional)</div>
+                  <div className="text-xs text-[rgb(var(--tc-muted))]">
+                    {t('systemAdmin.brands.reason')}
+                  </div>
                   <textarea
                     className="min-h-[70px] w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
                     value={statusReason}
@@ -708,12 +721,12 @@ export function BrandsAdmin() {
                 </div>
               )}
               <div className="text-xs text-[rgb(var(--tc-muted))]">
-                Примечание: вернуть в PENDING или снять isVerified через API сейчас нельзя.
+                {t('systemAdmin.brands.note')}
               </div>
             </div>
           )}
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Description</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.description')}</div>
             <textarea
               className="min-h-[90px] w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={form.description}
@@ -722,16 +735,20 @@ export function BrandsAdmin() {
           </div>
           <div className="mt-2 flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => setEditOpen(false)} disabled={saveLoading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={onSave} disabled={saveLoading}>
-              {saveLoading ? 'Saving...' : 'Save'}
+              {saveLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={settingsOpen} title="Settings (JSON)" onClose={() => setSettingsOpen(false)}>
+      <Modal
+        open={settingsOpen}
+        title={t('systemAdmin.brands.settingsJson')}
+        onClose={() => setSettingsOpen(false)}
+      >
         <div className="grid gap-3">
           {settingsError && (
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{settingsError}</Card>
@@ -747,10 +764,10 @@ export function BrandsAdmin() {
               onClick={() => setSettingsOpen(false)}
               disabled={settingsLoading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={onSaveSettings} disabled={settingsLoading}>
-              {settingsLoading ? 'Saving...' : 'Save'}
+              {settingsLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </div>
@@ -764,10 +781,10 @@ export function BrandsAdmin() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" onClick={openUploadDoc} disabled={!docsBrandId}>
-                Upload
+                {t('common.upload')}
               </Button>
               <Button variant="secondary" onClick={refreshDocuments} disabled={docsLoading}>
-                Refresh
+                {t('common.refresh')}
               </Button>
             </div>
           </div>
@@ -782,9 +799,9 @@ export function BrandsAdmin() {
                 <tr className="border-b border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] text-left">
                   <th className="px-4 py-3 font-semibold">Тип</th>
                   <th className="px-4 py-3 font-semibold">Название</th>
-                  <th className="px-4 py-3 font-semibold">Verified</th>
-                  <th className="px-4 py-3 font-semibold">Uploaded</th>
-                  <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                  <th className="px-4 py-3 font-semibold">{t('common.status')}</th>
+                  <th className="px-4 py-3 font-semibold">{t('systemAdmin.brands.uploaded')}</th>
+                  <th className="px-4 py-3 font-semibold text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -866,7 +883,7 @@ export function BrandsAdmin() {
 
       <Modal
         open={docUploadOpen}
-        title="Загрузить документ"
+        title={t('brandAdmin.documents.uploadDocument')}
         onClose={() => setDocUploadOpen(false)}
       >
         <div className="grid gap-3">
@@ -895,7 +912,7 @@ export function BrandsAdmin() {
             </select>
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Name *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.name')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={docUploadName}
@@ -919,10 +936,10 @@ export function BrandsAdmin() {
               onClick={() => setDocUploadOpen(false)}
               disabled={docUploadLoading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={onConfirmUploadDoc} disabled={docUploadLoading}>
-              {docUploadLoading ? 'Uploading...' : 'Upload'}
+              {docUploadLoading ? t('common.uploading') : t('common.upload')}
             </Button>
           </div>
         </div>
@@ -930,7 +947,7 @@ export function BrandsAdmin() {
 
       <Modal
         open={cafesOpen}
-        title="Cafes бренда"
+        title={t('systemAdmin.brands.brandCafesModal')}
         onClose={() => setCafesOpen(false)}
         size="2xl"
         bodyClassName="max-h-[calc(100vh-8rem)]"
@@ -946,7 +963,7 @@ export function BrandsAdmin() {
                 onClick={() => cafesBrandId && refreshCafes(cafesBrandId, cafesPage, cafesLimit)}
                 disabled={cafesLoading}
               >
-                Refresh
+                {t('common.refresh')}
               </Button>
               <Button onClick={openCafeCreate} disabled={!cafesBrandId}>
                 Add cafe
@@ -973,7 +990,7 @@ export function BrandsAdmin() {
               },
               {
                 key: 'rating',
-                header: 'Rating',
+                header: t('common.rating'),
                 render: (c) => <span className="font-mono text-xs">{c.rating}</span>,
               },
               {
@@ -1016,7 +1033,9 @@ export function BrandsAdmin() {
 
       <Modal
         open={cafeEditOpen}
-        title={cafeEditId ? 'Редактировать cafe' : 'Создать cafe'}
+        title={
+          cafeEditId ? t('systemAdmin.cafes.editCafeModal') : t('systemAdmin.cafes.createCafeModal')
+        }
         onClose={() => setCafeEditOpen(false)}
       >
         <div className="grid gap-3">
@@ -1024,7 +1043,7 @@ export function BrandsAdmin() {
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{cafeSaveError}</Card>
           )}
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Name *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.name')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={cafeForm.name}
@@ -1032,7 +1051,7 @@ export function BrandsAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Address *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.address')} *</div>
             <input
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={cafeForm.address}
@@ -1090,7 +1109,7 @@ export function BrandsAdmin() {
             />
           </div>
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Description</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.description')}</div>
             <textarea
               className="min-h-[90px] w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={cafeForm.description}
@@ -1104,10 +1123,10 @@ export function BrandsAdmin() {
               onClick={() => setCafeEditOpen(false)}
               disabled={cafeSaveLoading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={onSaveCafe} disabled={cafeSaveLoading}>
-              {cafeSaveLoading ? 'Saving...' : 'Save'}
+              {cafeSaveLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </div>
@@ -1115,7 +1134,7 @@ export function BrandsAdmin() {
 
       <ConfirmModal
         open={cafeDeleteOpen}
-        title="Удалить cafe?"
+        title={t('systemAdmin.cafes.deleteCafe')}
         description="Точно хотите удалить кафе?"
         confirmText="Удалить"
         isDanger
@@ -1126,7 +1145,7 @@ export function BrandsAdmin() {
 
       <Modal
         open={workersOpen}
-        title="Workers бренда (view only)"
+        title={t('systemAdmin.brands.brandWorkersModal')}
         onClose={() => setWorkersOpen(false)}
         size="2xl"
         bodyClassName="max-h-[calc(100vh-8rem)]"
@@ -1143,7 +1162,7 @@ export function BrandsAdmin() {
               }
               disabled={workersLoading}
             >
-              Refresh
+              {t('common.refresh')}
             </Button>
           </div>
 
@@ -1168,12 +1187,12 @@ export function BrandsAdmin() {
               },
               {
                 key: 'role',
-                header: 'Role',
+                header: t('common.role'),
                 render: (w) => <span className="font-mono text-xs">{w.role}</span>,
               },
               {
                 key: 'cafe',
-                header: 'CafeId',
+                header: t('common.cafeId'),
                 render: (w) => (
                   <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">
                     {w.cafeId ?? '-'}
@@ -1182,7 +1201,7 @@ export function BrandsAdmin() {
               },
               {
                 key: 'created',
-                header: 'Created',
+                header: t('common.created'),
                 render: (w) => (
                   <span className="text-xs text-[rgb(var(--tc-muted))]">
                     {new Date(w.createdAt).toLocaleString()}
@@ -1206,7 +1225,7 @@ export function BrandsAdmin() {
 
       <Modal
         open={docVerifyOpen}
-        title="Верифицировать документ"
+        title={t('brandAdmin.documents.verifyTitle')}
         onClose={() => setDocVerifyOpen(false)}
       >
         <div className="grid gap-3">
@@ -1230,10 +1249,10 @@ export function BrandsAdmin() {
               onClick={() => setDocVerifyOpen(false)}
               disabled={docVerifyLoading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button onClick={onConfirmVerifyDoc} disabled={docVerifyLoading}>
-              {docVerifyLoading ? 'Verifying...' : 'Verify'}
+              {docVerifyLoading ? t('common.updating') : t('common.confirm')}
             </Button>
           </div>
         </div>

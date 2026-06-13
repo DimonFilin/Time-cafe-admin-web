@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 import { env } from '@/shared/config/env';
+import { t } from '@/i18n';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ cafeId: string }> }) {
   try {
@@ -14,6 +15,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ caf
     });
   } catch (error) {
     console.error('[admin-cafe-menu-categories] POST failed:', error);
-    return NextResponse.json({ message: 'Failed to create menu category' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.createMenuCategory') }, { status: 500 });
   }
 }

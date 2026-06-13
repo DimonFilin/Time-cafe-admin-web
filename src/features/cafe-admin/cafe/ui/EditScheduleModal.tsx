@@ -13,6 +13,7 @@ import {
 import { Modal } from '@/shared/ui/modal/Modal';
 import { Button } from '@/shared/ui/button/Button';
 import { Input } from '@/shared/ui/input/Input';
+import { t } from '@/i18n';
 
 interface EditScheduleModalProps {
   open: boolean;
@@ -54,7 +55,7 @@ export function EditScheduleModal({ open, cafe, onClose, onSuccess }: EditSchedu
     for (const day of SCHEDULE_DAYS) {
       const daySchedule = schedule[day];
       if (!daySchedule.isClosed && daySchedule.open >= daySchedule.close) {
-        setError(`${SCHEDULE_DAY_LABELS[day]}: Opening time must be before closing time`);
+        setError(`${SCHEDULE_DAY_LABELS[day]}: ${t('cafeAdmin.cafeInfo.openBeforeClose')}`);
         return;
       }
     }
@@ -65,7 +66,7 @@ export function EditScheduleModal({ open, cafe, onClose, onSuccess }: EditSchedu
       await updateCafeSchedule(schedule);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update schedule');
+      setError(err instanceof Error ? err.message : t('cafeAdmin.cafeInfo.updateScheduleFailed'));
     } finally {
       setLoading(false);
     }
@@ -74,17 +75,17 @@ export function EditScheduleModal({ open, cafe, onClose, onSuccess }: EditSchedu
   return (
     <Modal
       open={open}
-      title="Edit cafe schedule"
+      title={t('cafeAdmin.cafeInfo.editScheduleTitle')}
       onClose={onClose}
       size="md"
       bodyClassName="max-h-[min(70vh,480px)] overflow-y-auto pr-1"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="edit-schedule-form" disabled={loading}>
-            {loading ? 'Saving…' : 'Save schedule'}
+            {loading ? t('common.saving') : t('cafeAdmin.cafeInfo.saveSchedule')}
           </Button>
         </div>
       }
@@ -113,7 +114,7 @@ export function EditScheduleModal({ open, cafe, onClose, onSuccess }: EditSchedu
                     checked={schedule[day].isClosed}
                     onChange={(e) => updateDay(day, 'isClosed', e.target.checked)}
                   />
-                  Closed
+                  {t('cafeAdmin.cafeInfo.closed')}
                 </label>
               </div>
 
@@ -121,7 +122,7 @@ export function EditScheduleModal({ open, cafe, onClose, onSuccess }: EditSchedu
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="min-w-[120px] flex-1">
                     <label className={labelClass} htmlFor={`${day}-open`}>
-                      Open
+                      {t('cafeAdmin.cafeInfo.openTime')}
                     </label>
                     <Input
                       id={`${day}-open`}
@@ -134,7 +135,7 @@ export function EditScheduleModal({ open, cafe, onClose, onSuccess }: EditSchedu
                   <span className="hidden pb-2 text-[rgb(var(--tc-muted))] sm:inline">—</span>
                   <div className="min-w-[120px] flex-1">
                     <label className={labelClass} htmlFor={`${day}-close`}>
-                      Close
+                      {t('cafeAdmin.cafeInfo.closeTime')}
                     </label>
                     <Input
                       id={`${day}-close`}

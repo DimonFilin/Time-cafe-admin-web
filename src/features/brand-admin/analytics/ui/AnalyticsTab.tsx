@@ -40,7 +40,7 @@ export function AnalyticsTab() {
       setOrdersAnalytics(ordersData);
       setPopularItems(popularItemsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch analytics data');
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
       console.error('Analytics fetch error:', err);
     } finally {
       setLoading(false);
@@ -171,7 +171,7 @@ export function AnalyticsTab() {
           >
             <span>{item.name}</span>
             <span className="font-medium">
-              {item.count} orders ({item.percentage}%)
+              {item.count} {t('brandAdmin.analytics.ordersCountShort')} ({item.percentage}%)
             </span>
           </div>
         )) || <p className="text-[rgb(var(--tc-muted))]">{t('brandAdmin.analytics.noData')}</p>}
@@ -186,7 +186,9 @@ export function AnalyticsTab() {
             className="flex justify-between py-2 border-b border-[rgb(var(--tc-border))] last:border-0"
           >
             <span>{cafe.cafeName}</span>
-            <span className="font-medium">{cafe.totalOrders} orders</span>
+            <span className="font-medium">
+              {cafe.totalOrders} {t('brandAdmin.analytics.ordersCountShort')}
+            </span>
           </div>
         )) || <p className="text-[rgb(var(--tc-muted))]">{t('brandAdmin.analytics.noData')}</p>}
       </Card>

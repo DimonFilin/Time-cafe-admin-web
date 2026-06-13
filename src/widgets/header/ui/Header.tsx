@@ -11,6 +11,7 @@ import {
   ActivityAction,
   ActivityCategory,
 } from '@/features/brand-admin/activity-logs/api/activity-logs-api';
+import { t } from '@/i18n';
 
 export function Header() {
   const pathname = usePathname();
@@ -69,7 +70,7 @@ export function Header() {
                 className="rounded-lg px-3 py-2 hover:bg-[rgb(var(--tc-surface-2))] hover:text-[rgb(var(--tc-fg))]"
                 href="/login"
               >
-                Login
+                {t('header.login')}
               </Link>
             )}
           </nav>

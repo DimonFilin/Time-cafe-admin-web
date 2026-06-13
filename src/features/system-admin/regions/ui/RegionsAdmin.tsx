@@ -58,7 +58,7 @@ export function RegionsAdmin() {
       setRegions(data.items);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load regions');
+      setError(err instanceof Error ? err.message : t('systemAdmin.errors.loadRegions'));
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export function RegionsAdmin() {
       setCreateForm(toForm(null));
       await refresh();
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create region');
+      setCreateError(err instanceof Error ? err.message : t('systemAdmin.errors.createRegion'));
     } finally {
       setCreateLoading(false);
     }
@@ -103,7 +103,7 @@ export function RegionsAdmin() {
       setEditForm(toForm(null));
       await refresh();
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : 'Failed to update region');
+      setEditError(err instanceof Error ? err.message : t('systemAdmin.errors.updateRegion'));
     } finally {
       setEditLoading(false);
     }
@@ -129,7 +129,7 @@ export function RegionsAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (r) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{r.id}</span>
         ),

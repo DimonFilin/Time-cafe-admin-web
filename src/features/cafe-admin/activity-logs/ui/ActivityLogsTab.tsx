@@ -12,6 +12,7 @@ import { ActivityLogsFiltersComponent } from './ActivityLogsFilters';
 import { ActivityLogDetailsModal } from './ActivityLogDetailsModal';
 import { ActivityLogsStats } from './ActivityLogsStats';
 import { exportLogsToCSV } from '../lib/export-csv';
+import { t } from '@/i18n';
 
 export function ActivityLogsTab() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -55,7 +56,7 @@ export function ActivityLogsTab() {
       setLogs(data.logs);
       setTotal(data.pagination.total);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch activity logs');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.activityLogs.fetchFailed'));
       setLogs([]);
     } finally {
       setLoading(false);
@@ -108,13 +109,13 @@ export function ActivityLogsTab() {
       });
 
       if (data.logs.length === 0) {
-        setError('No logs to export');
+        setError(t('cafeAdmin.activityLogs.noLogsToExport'));
         return;
       }
 
       exportLogsToCSV(data.logs);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to export logs');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.activityLogs.exportFailed'));
     } finally {
       setExporting(false);
     }
@@ -124,9 +125,11 @@ export function ActivityLogsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Activity Logs</h2>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t('cafeAdmin.activityLogs.title')}
+          </h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            View and monitor all activity in your cafe.
+            {t('cafeAdmin.activityLogs.subtitle')}
           </p>
         </div>
         <button
@@ -134,7 +137,9 @@ export function ActivityLogsTab() {
           disabled={exporting || loading}
           className="rounded-md bg-[rgb(var(--tc-accent))] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {exporting ? 'Exporting...' : 'Export CSV'}
+          {exporting
+            ? t('cafeAdmin.activityLogs.exporting')
+            : t('cafeAdmin.activityLogs.exportCsv')}
         </button>
       </div>
 

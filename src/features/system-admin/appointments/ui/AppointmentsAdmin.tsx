@@ -44,6 +44,7 @@ export function AppointmentsAdmin() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const refreshCafes = useCallback(async () => {
     setCafesLoading(true);
@@ -63,10 +64,17 @@ export function AppointmentsAdmin() {
     refreshCafes();
   }, [refreshCafes]);
 
+  useEffect(() => {
+    if (cafes.length > 0 && !filters.cafeId) {
+      setFilters((s) => ({ ...s, cafeId: cafes[0].id }));
+    }
+  }, [cafes, filters.cafeId]);
+
   const refresh = useCallback(async () => {
     if (!filters.cafeId.trim()) {
       setRows([]);
       setTotal(0);
+      setHasFetched(false);
       return;
     }
     setIsLoading(true);
@@ -84,14 +92,22 @@ export function AppointmentsAdmin() {
       setTotal(data.total);
       setPage(data.page);
       setLimit(data.limit);
+      setHasFetched(true);
     } catch (e) {
       setRows([]);
       setTotal(0);
+      setHasFetched(true);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setIsLoading(false);
     }
   }, [filters.cafeId, filters.from, filters.status, filters.to, limit, page]);
+
+  useEffect(() => {
+    if (filters.cafeId.trim()) {
+      void refresh();
+    }
+  }, [filters.cafeId, page, limit, refresh]);
 
   const openDetails = useCallback(
     async (appointmentId: string) => {
@@ -136,7 +152,7 @@ export function AppointmentsAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (a) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{a.id}</span>
         ),
@@ -285,8 +301,11 @@ export function AppointmentsAdmin() {
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.from}
               onChange={(e) => setFilters((s) => ({ ...s, from: e.target.value }))}
-              placeholder={t('systemAdmin.appointmentsManagement.fromPlaceholder')}
+              placeholder="YYYY-MM-DD или ISO"
             />
+            <p className="text-[10px] text-[rgb(var(--tc-muted))]">
+              Оставьте пустым, чтобы показать все даты
+            </p>
           </div>
           <div className="grid gap-1">
             <div className="text-xs text-[rgb(var(--tc-muted))]">
@@ -296,7 +315,7 @@ export function AppointmentsAdmin() {
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.to}
               onChange={(e) => setFilters((s) => ({ ...s, to: e.target.value }))}
-              placeholder={t('systemAdmin.appointmentsManagement.toPlaceholder')}
+              placeholder="YYYY-MM-DD или ISO"
             />
           </div>
         </div>
@@ -318,6 +337,7 @@ export function AppointmentsAdmin() {
               setPage(1);
               setRows([]);
               setTotal(0);
+              setHasFetched(false);
             }}
           >
             {t('systemAdmin.cafes.reset')}
@@ -334,6 +354,13 @@ export function AppointmentsAdmin() {
         page={page}
         pageSize={limit}
         total={total}
+        emptyMessage={
+          !filters.cafeId.trim()
+            ? t('systemAdmin.appointmentsManagement.selectCafe')
+            : hasFetched
+              ? 'Нет записей за выбранный период. Проверьте фильтры дат.'
+              : undefined
+        }
         onPageChange={(p) => setPage(Math.max(1, p))}
         onPageSizeChange={(s) => {
           setPage(1);

@@ -14,6 +14,7 @@ import {
   getBannerSignedUrl,
 } from '../api/settings';
 import { BrandSettingsEditModal } from './BrandSettingsEditModal';
+import { BrandLoyaltySettingsCard } from './BrandLoyaltySettingsCard';
 import { t } from '@/i18n';
 
 export function SettingsTab() {
@@ -85,7 +86,7 @@ export function SettingsTab() {
       const data = await getBrandSettings();
       setBrand(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch brand settings');
+      setError(e instanceof Error ? e.message : t('brandAdmin.modals.fetchSettingsFailed'));
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,7 @@ export function SettingsTab() {
       // Refresh brand data to get updated logo
       await fetchBrandSettings();
     } catch (e) {
-      setLogoError(e instanceof Error ? e.message : 'Failed to upload logo');
+      setLogoError(e instanceof Error ? e.message : t('brandAdmin.modals.uploadLogoFailed'));
     } finally {
       setLogoUploading(false);
     }
@@ -122,7 +123,7 @@ export function SettingsTab() {
       // Refresh brand data to get updated banner
       await fetchBrandSettings();
     } catch (e) {
-      setBannerError(e instanceof Error ? e.message : 'Failed to upload banner');
+      setBannerError(e instanceof Error ? e.message : t('brandAdmin.modals.uploadBannerFailed'));
     } finally {
       setBannerUploading(false);
     }
@@ -246,7 +247,9 @@ export function SettingsTab() {
             <p className="mt-1 text-sm">{brand.phone || '—'}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">Website</p>
+            <p className="text-xs font-semibold text-[rgb(var(--tc-muted))] uppercase">
+              {t('common.website')}
+            </p>
             <p className="mt-1 text-sm">
               {brand.website ? (
                 <a
@@ -289,7 +292,7 @@ export function SettingsTab() {
             {logoSignedUrl && (
               <Image
                 src={logoSignedUrl}
-                alt="Brand Logo"
+                alt={t('brandAdmin.modals.brandLogoAlt')}
                 width={80}
                 height={80}
                 unoptimized
@@ -330,7 +333,7 @@ export function SettingsTab() {
             {bannerSignedUrl && (
               <Image
                 src={bannerSignedUrl}
-                alt="Brand Banner"
+                alt={t('brandAdmin.modals.brandBannerAlt')}
                 width={800}
                 height={80}
                 unoptimized
@@ -446,6 +449,8 @@ export function SettingsTab() {
           </div>
         </Card>
       )}
+
+      <BrandLoyaltySettingsCard />
 
       {/* Metadata */}
       <Card className="p-6 bg-[rgb(var(--tc-bg-alt))]">

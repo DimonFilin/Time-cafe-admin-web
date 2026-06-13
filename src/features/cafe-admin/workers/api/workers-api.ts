@@ -5,6 +5,7 @@ import type {
   UpdateWorkerDto,
   WorkersFilters,
 } from '../types/worker.types';
+import { t } from '@/i18n';
 
 export async function getWorkers(filters?: WorkersFilters): Promise<WorkersResponse> {
   const params = new URLSearchParams();
@@ -21,7 +22,7 @@ export async function getWorkers(filters?: WorkersFilters): Promise<WorkersRespo
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to fetch workers');
+    throw new Error(error.message || t('apiErrors.fetchWorkers'));
   }
 
   const payload = (await response.json()) as
@@ -69,7 +70,7 @@ export async function getWorkerById(id: string): Promise<WorkerResponse> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to fetch worker');
+    throw new Error(error.message || t('apiErrors.fetchWorker'));
   }
 
   return response.json();
@@ -85,7 +86,7 @@ export async function inviteWorker(data: InviteWorkerDto): Promise<WorkerRespons
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to invite worker');
+    throw new Error(error.message || t('apiErrors.inviteWorker'));
   }
 
   return response.json();
@@ -101,7 +102,7 @@ export async function updateWorker(id: string, data: UpdateWorkerDto): Promise<W
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to update worker');
+    throw new Error(error.message || t('apiErrors.updateWorker'));
   }
 
   return response.json();
@@ -115,6 +116,6 @@ export async function deleteWorker(id: string): Promise<void> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Failed to delete worker');
+    throw new Error(error.message || t('apiErrors.deleteWorker'));
   }
 }

@@ -45,6 +45,10 @@ export type CreateCafeInput = {
   regionId: string;
   photos?: string[];
   cafeApiUrl?: string;
+  phone?: string;
+  email?: string;
+  occupancyMode?: string;
+  schedule?: Record<string, { open: string; close: string; closed: boolean }>;
 };
 
 export async function createCafe(input: CreateCafeInput): Promise<Cafe> {

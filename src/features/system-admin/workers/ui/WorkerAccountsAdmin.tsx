@@ -80,7 +80,7 @@ export function WorkerAccountsAdmin() {
       setWorkers(data.items);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load workers');
+      setError(err instanceof Error ? err.message : t('systemAdmin.errors.loadWorkers'));
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ export function WorkerAccountsAdmin() {
       setPage(1);
       await refresh();
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create worker');
+      setCreateError(err instanceof Error ? err.message : t('systemAdmin.errors.createWorker'));
     } finally {
       setCreateLoading(false);
     }
@@ -151,14 +151,14 @@ export function WorkerAccountsAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (w) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{w.id.slice(0, 8)}</span>
         ),
       },
       {
         key: 'email',
-        header: 'Email',
+        header: t('common.email'),
         render: (w) => <span className="font-medium">{w.email}</span>,
       },
       {

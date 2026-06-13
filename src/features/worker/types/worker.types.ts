@@ -3,6 +3,9 @@ export interface WorkerWithRelations {
   email?: string;
   firstName: string;
   lastName: string;
+  avatar?: string | null;
+  avatarUrl?: string | null;
+  birthDate?: string | null;
   cafeId: string | null;
   brandId: string;
   shiftStatus: 'ON_SHIFT' | 'OFF_SHIFT';

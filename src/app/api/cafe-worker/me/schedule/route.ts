@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { t } from '@/i18n';
 
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
@@ -9,6 +10,6 @@ export async function GET() {
     return fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[cafe-worker/me/schedule] Error:', error);
-    return NextResponse.json({ error: 'Failed to load schedule' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.loadSchedule') }, { status: 500 });
   }
 }

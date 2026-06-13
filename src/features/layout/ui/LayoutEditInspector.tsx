@@ -1,5 +1,6 @@
 'use client';
 
+import { BlurNumberInput } from './BlurNumberInput';
 import { DOOR_KINDS, DOOR_SWINGS, type DoorKind, type DoorSwing } from './layout-editor-catalog';
 import type { PlanChair, PlanTable, TableShape } from './layout-furniture';
 import type { PlanDoor } from './layout-doors';
@@ -47,10 +48,12 @@ type Props = {
   onPatchDoor: (patch: Partial<PlanDoor>) => void;
   onPatchStair: (patch: Partial<PlanStair>) => void;
   onPatchWallThickness: (px: number) => void;
+  onOpenRoomPicker?: () => void;
 };
 
 const inputCls =
-  'rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1';
+  'rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-base';
+const labelCls = 'mb-1 block text-sm font-medium text-[rgb(var(--tc-muted))]';
 
 export function LayoutEditInspector({
   focus,
@@ -74,6 +77,7 @@ export function LayoutEditInspector({
   onPatchDoor,
   onPatchStair,
   onPatchWallThickness,
+  onOpenRoomPicker,
 }: Props) {
   const title =
     focus.type === 'zone'
@@ -97,10 +101,10 @@ export function LayoutEditInspector({
 
   return (
     <div
-      className="mb-2 flex flex-wrap items-end gap-3 rounded-lg border border-amber-500/45 bg-amber-500/8 p-3 text-sm"
+      className="mb-2 flex flex-wrap items-end gap-4 rounded-lg border border-amber-500/45 bg-amber-500/8 p-4 text-base"
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="w-full text-xs font-semibold text-amber-900 dark:text-amber-100">
+      <span className="w-full text-base font-semibold text-amber-900 dark:text-amber-100">
         {title}
         <span className="ml-2 font-normal text-[rgb(var(--tc-muted))]">
           (двойной клик — изоляция · Esc — весь план)
@@ -110,9 +114,7 @@ export function LayoutEditInspector({
       {focus.type === 'zone' && (
         <>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
-              Комната на плане
-            </label>
+            <label className={labelCls}>Комната на плане</label>
             <select
               value={zoneRoomId ?? ''}
               onChange={(e) => onPatchZoneRoom(e.target.value || null)}
@@ -126,17 +128,24 @@ export function LayoutEditInspector({
               ))}
             </select>
           </div>
+          {onOpenRoomPicker && (
+            <button
+              type="button"
+              onClick={onOpenRoomPicker}
+              className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-900 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-100"
+            >
+              Комната и зона…
+            </button>
+          )}
           {zoneAreaM2 != null && (
-            <p className="text-xs text-[rgb(var(--tc-muted))]">
+            <p className="text-sm text-[rgb(var(--tc-muted))]">
               Площадь: {zoneAreaM2.toFixed(1)} m²
             </p>
           )}
           {room?.id && (
             <>
               <div>
-                <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
-                  Название комнаты
-                </label>
+                <label className={labelCls}>Название комнаты</label>
                 <input
                   type="text"
                   value={room.name || ''}
@@ -146,9 +155,7 @@ export function LayoutEditInspector({
                 />
               </div>
               <div>
-                <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
-                  Вместимость
-                </label>
+                <label className={labelCls}>Вместимость</label>
                 <input
                   type="number"
                   min={0}
@@ -158,7 +165,7 @@ export function LayoutEditInspector({
                 />
               </div>
               <div>
-                <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Статус</label>
+                <label className={labelCls}>Статус</label>
                 <select
                   value={room.status || 'ACTIVE'}
                   onChange={(e) => onPatchRoom(room.id!, { status: e.target.value })}
@@ -176,16 +183,14 @@ export function LayoutEditInspector({
 
       {focus.type === 'wall' && moveMode && (
         <div>
-          <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
-            Толщина стены (px)
-          </label>
-          <input
-            type="number"
+          <label className={labelCls}>Толщина стены (px)</label>
+          <BlurNumberInput
+            value={wallThicknessPx}
             min={6}
             max={24}
             step={1}
-            value={wallThicknessPx}
-            onChange={(e) => onPatchWallThickness(Number(e.target.value) || 10)}
+            fallback={10}
+            onCommit={onPatchWallThickness}
             className={`w-24 ${inputCls}`}
           />
         </div>
@@ -194,7 +199,7 @@ export function LayoutEditInspector({
       {focus.type === 'table' && table && moveMode && (
         <>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Название</label>
+            <label className={labelCls}>Название</label>
             <input
               type="text"
               value={table.name}
@@ -203,31 +208,31 @@ export function LayoutEditInspector({
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Ширина (м)</label>
-            <input
-              type="number"
-              min={0.2}
-              max={10}
-              step={0.05}
+            <label className={labelCls}>Ширина (м)</label>
+            <BlurNumberInput
               value={table.widthM}
-              onChange={(e) => onPatchTable({ widthM: Number(e.target.value) || 0.2 })}
-              className={`w-24 ${inputCls}`}
-            />
-          </div>
-          <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Глубина (м)</label>
-            <input
-              type="number"
               min={0.2}
               max={10}
               step={0.05}
-              value={table.heightM}
-              onChange={(e) => onPatchTable({ heightM: Number(e.target.value) || 0.2 })}
+              fallback={0.2}
+              onCommit={(widthM) => onPatchTable({ widthM })}
               className={`w-24 ${inputCls}`}
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Форма</label>
+            <label className={labelCls}>Глубина (м)</label>
+            <BlurNumberInput
+              value={table.heightM}
+              min={0.2}
+              max={10}
+              step={0.05}
+              fallback={0.2}
+              onCommit={(heightM) => onPatchTable({ heightM })}
+              className={`w-24 ${inputCls}`}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Форма</label>
             <select
               value={table.shape || 'rect'}
               onChange={(e) => onPatchTable({ shape: e.target.value as TableShape })}
@@ -244,7 +249,7 @@ export function LayoutEditInspector({
       {focus.type === 'chair' && chair && moveMode && (
         <>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Название</label>
+            <label className={labelCls}>Название</label>
             <input
               type="text"
               value={chair.name}
@@ -253,26 +258,26 @@ export function LayoutEditInspector({
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Ширина (м)</label>
-            <input
-              type="number"
+            <label className={labelCls}>Ширина (м)</label>
+            <BlurNumberInput
+              value={chair.widthM}
               min={0.2}
               max={3}
               step={0.05}
-              value={chair.widthM}
-              onChange={(e) => onPatchChair({ widthM: Number(e.target.value) || 0.2 })}
+              fallback={0.2}
+              onCommit={(widthM) => onPatchChair({ widthM })}
               className={`w-24 ${inputCls}`}
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Глубина (м)</label>
-            <input
-              type="number"
+            <label className={labelCls}>Глубина (м)</label>
+            <BlurNumberInput
+              value={chair.heightM}
               min={0.2}
               max={3}
               step={0.05}
-              value={chair.heightM}
-              onChange={(e) => onPatchChair({ heightM: Number(e.target.value) || 0.2 })}
+              fallback={0.2}
+              onCommit={(heightM) => onPatchChair({ heightM })}
               className={`w-24 ${inputCls}`}
             />
           </div>
@@ -282,7 +287,7 @@ export function LayoutEditInspector({
       {focus.type === 'window' && win && moveMode && (
         <>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Название</label>
+            <label className={labelCls}>Название</label>
             <input
               type="text"
               value={win.name}
@@ -291,16 +296,14 @@ export function LayoutEditInspector({
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
-              Ширина проёма (м)
-            </label>
-            <input
-              type="number"
+            <label className={labelCls}>Ширина проёма (м)</label>
+            <BlurNumberInput
+              value={win.widthM}
               min={0.3}
               max={5}
               step={0.05}
-              value={win.widthM}
-              onChange={(e) => onPatchWindow({ widthM: Number(e.target.value) || 0.3 })}
+              fallback={0.3}
+              onCommit={(widthM) => onPatchWindow({ widthM })}
               className={`w-24 ${inputCls}`}
             />
           </div>
@@ -310,7 +313,7 @@ export function LayoutEditInspector({
       {focus.type === 'door' && door && moveMode && (
         <>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Название</label>
+            <label className={labelCls}>Название</label>
             <input
               type="text"
               value={door.name}
@@ -319,19 +322,19 @@ export function LayoutEditInspector({
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Ширина (м)</label>
-            <input
-              type="number"
+            <label className={labelCls}>Ширина (м)</label>
+            <BlurNumberInput
+              value={door.widthM}
               min={0.6}
               max={2.5}
               step={0.05}
-              value={door.widthM}
-              onChange={(e) => onPatchDoor({ widthM: Number(e.target.value) || 0.9 })}
+              fallback={0.9}
+              onCommit={(widthM) => onPatchDoor({ widthM })}
               className={`w-24 ${inputCls}`}
             />
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Тип</label>
+            <label className={labelCls}>Тип</label>
             <select
               value={door.kind}
               onChange={(e) => onPatchDoor({ kind: e.target.value as DoorKind })}
@@ -345,7 +348,7 @@ export function LayoutEditInspector({
             </select>
           </div>
           <div>
-            <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Открывание</label>
+            <label className={labelCls}>Открывание</label>
             <select
               value={door.swing}
               onChange={(e) => onPatchDoor({ swing: e.target.value as DoorSwing })}
@@ -358,26 +361,65 @@ export function LayoutEditInspector({
               ))}
             </select>
           </div>
+          <div>
+            <label className={labelCls}>Петли</label>
+            <select
+              value={door.hingeSide}
+              onChange={(e) => onPatchDoor({ hingeSide: e.target.value as 'left' | 'right' })}
+              className={inputCls}
+            >
+              <option value="left">Слева</option>
+              <option value="right">Справа</option>
+            </select>
+          </div>
         </>
       )}
 
       {focus.type === 'fixture' && fixture && moveMode && (
-        <div>
-          <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
-            Название на плане
-          </label>
-          <input
-            type="text"
-            value={fixture.name}
-            onChange={(e) => onPatchFixture({ name: e.target.value })}
-            className={`w-44 ${inputCls}`}
-          />
-        </div>
+        <>
+          <div>
+            <label className={labelCls}>Название на плане</label>
+            <input
+              type="text"
+              value={fixture.name}
+              onChange={(e) => onPatchFixture({ name: e.target.value })}
+              className={`w-44 ${inputCls}`}
+            />
+          </div>
+          {fixture.kind === 'cabinet' && (
+            <>
+              <div>
+                <label className={labelCls}>Ширина шкафа (м)</label>
+                <BlurNumberInput
+                  value={fixture.widthM}
+                  min={0.4}
+                  max={4}
+                  step={0.05}
+                  fallback={1}
+                  onCommit={(widthM) => onPatchFixture({ widthM })}
+                  className={`w-24 ${inputCls}`}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Глубина шкафа (м)</label>
+                <BlurNumberInput
+                  value={fixture.heightM}
+                  min={0.25}
+                  max={2}
+                  step={0.05}
+                  fallback={0.45}
+                  onCommit={(heightM) => onPatchFixture({ heightM })}
+                  className={`w-24 ${inputCls}`}
+                />
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {focus.type === 'stair' && stair && moveMode && (
         <div>
-          <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">Название</label>
+          <label className={labelCls}>Название</label>
           <input
             type="text"
             value={stair.name}
@@ -391,7 +433,7 @@ export function LayoutEditInspector({
         focus.type !== 'wall' &&
         focus.type !== 'window' &&
         focus.type !== 'door' && (
-          <p className="text-xs text-[rgb(var(--tc-muted))]">
+          <p className="text-sm text-[rgb(var(--tc-muted))]">
             Режим поворота: тяните маркер ↻ на объекте.
           </p>
         )}

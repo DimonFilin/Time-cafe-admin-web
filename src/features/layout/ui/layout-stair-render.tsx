@@ -125,17 +125,20 @@ export function StairShape({
   pxPerMeter,
   active,
   delFlash,
+  conflict,
   partner,
 }: {
   st: PlanStair;
   pxPerMeter: number;
   active?: boolean;
   delFlash?: boolean;
+  conflict?: boolean;
   partner?: PlanStair;
 }) {
   const b = furnitureBoundsPx(st, pxPerMeter);
-  const stroke = delFlash ? '#dc2626' : active ? '#ea580c' : '#374151';
-  const fill = delFlash
+  const highlight = delFlash || conflict;
+  const stroke = highlight ? '#dc2626' : active ? '#ea580c' : '#374151';
+  const fill = highlight
     ? 'rgba(220,38,38,0.25)'
     : active
       ? 'rgba(234,88,12,0.12)'

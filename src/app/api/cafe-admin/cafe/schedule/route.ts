@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 
@@ -15,6 +16,6 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating cafe schedule:', error);
-    return NextResponse.json({ message: 'Failed to update cafe schedule' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.updateCafeSchedule') }, { status: 500 });
   }
 }

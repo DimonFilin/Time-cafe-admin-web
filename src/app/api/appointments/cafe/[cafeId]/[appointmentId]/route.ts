@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 import { env } from '@/shared/config/env';
+import { t } from '@/i18n';
 
 export async function GET(
   req: NextRequest,
@@ -24,6 +25,6 @@ export async function GET(
     return NextResponse.json(data);
   } catch (error) {
     console.error('[appointment-details-proxy] Error:', error);
-    return NextResponse.json({ message: 'Failed to fetch appointment details' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.fetchAppointmentDetails') }, { status: 500 });
   }
 }

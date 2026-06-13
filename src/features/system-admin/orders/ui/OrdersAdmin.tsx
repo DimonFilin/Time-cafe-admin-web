@@ -16,6 +16,13 @@ import { getCafeOrder, listCafeOrders, updateOrderStatus } from '../api/orders';
 
 const statuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
 
+const orderStatusLabelKey: Record<OrderStatus, string> = {
+  PENDING: 'orderStatus.pending',
+  CONFIRMED: 'orderStatus.confirmed',
+  CANCELLED: 'orderStatus.cancelled',
+  COMPLETED: 'orderStatus.completed',
+};
+
 export function OrdersAdmin() {
   const [cafes, setCafes] = useState<CafeListItem[]>([]);
   const [cafesLoading, setCafesLoading] = useState(false);
@@ -46,6 +53,7 @@ export function OrdersAdmin() {
   const [statusReason, setStatusReason] = useState('');
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const refreshCafes = useCallback(async () => {
     setCafesLoading(true);
@@ -65,10 +73,17 @@ export function OrdersAdmin() {
     refreshCafes();
   }, [refreshCafes]);
 
+  useEffect(() => {
+    if (cafes.length > 0 && !filters.cafeId) {
+      setFilters((s) => ({ ...s, cafeId: cafes[0].id }));
+    }
+  }, [cafes, filters.cafeId]);
+
   const refresh = useCallback(async () => {
     if (!filters.cafeId.trim()) {
       setRows([]);
       setTotal(0);
+      setHasFetched(false);
       return;
     }
     setIsLoading(true);
@@ -86,14 +101,22 @@ export function OrdersAdmin() {
       setTotal(data.total);
       setPage(data.page);
       setLimit(data.limit);
+      setHasFetched(true);
     } catch (e) {
       setRows([]);
       setTotal(0);
+      setHasFetched(true);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setIsLoading(false);
     }
   }, [filters.cafeId, filters.from, filters.status, filters.to, limit, page]);
+
+  useEffect(() => {
+    if (filters.cafeId.trim()) {
+      void refresh();
+    }
+  }, [filters.cafeId, page, limit, refresh]);
 
   const openDetails = useCallback(
     async (orderId: string) => {
@@ -145,7 +168,7 @@ export function OrdersAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (o) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{o.id}</span>
         ),
@@ -272,7 +295,7 @@ export function OrdersAdmin() {
               <option value="">{t('common.all')}</option>
               {statuses.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {t(orderStatusLabelKey[s])}
                 </option>
               ))}
             </select>
@@ -285,8 +308,11 @@ export function OrdersAdmin() {
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.from}
               onChange={(e) => setFilters((s) => ({ ...s, from: e.target.value }))}
-              placeholder="2026-01-01"
+              placeholder="YYYY-MM-DD"
             />
+            <p className="text-[10px] text-[rgb(var(--tc-muted))]">
+              Оставьте пустым, чтобы показать все даты
+            </p>
           </div>
           <div className="grid gap-1">
             <div className="text-xs text-[rgb(var(--tc-muted))]">{t('systemAdmin.orders.to')}</div>
@@ -294,7 +320,7 @@ export function OrdersAdmin() {
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm font-mono"
               value={filters.to}
               onChange={(e) => setFilters((s) => ({ ...s, to: e.target.value }))}
-              placeholder="2026-01-31"
+              placeholder="YYYY-MM-DD"
             />
           </div>
         </div>
@@ -316,6 +342,7 @@ export function OrdersAdmin() {
               setPage(1);
               setRows([]);
               setTotal(0);
+              setHasFetched(false);
             }}
           >
             {t('systemAdmin.cafes.reset')}
@@ -332,6 +359,13 @@ export function OrdersAdmin() {
         page={page}
         pageSize={limit}
         total={total}
+        emptyMessage={
+          !filters.cafeId.trim()
+            ? t('systemAdmin.orders.selectCafe')
+            : hasFetched
+              ? 'Нет записей за выбранный период. Проверьте фильтры дат.'
+              : undefined
+        }
         onPageChange={(p) => setPage(Math.max(1, p))}
         onPageSizeChange={(s) => {
           setPage(1);
@@ -341,7 +375,7 @@ export function OrdersAdmin() {
 
       <Modal
         open={detailsOpen}
-        title="Order details"
+        title={t('systemAdmin.orders.orderDetails')}
         onClose={() => setDetailsOpen(false)}
         size="2xl"
       >
@@ -446,13 +480,18 @@ export function OrdersAdmin() {
         </div>
       </Modal>
 
-      <Modal open={statusOpen} title="Update status" onClose={() => setStatusOpen(false)} size="lg">
+      <Modal
+        open={statusOpen}
+        title={t('systemAdmin.orders.updateStatus')}
+        onClose={() => setStatusOpen(false)}
+        size="lg"
+      >
         <div className="grid gap-3">
           {statusError && (
             <Card className="p-3 text-sm text-[rgb(var(--tc-danger))]">{statusError}</Card>
           )}
           <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">Status *</div>
+            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.status')} *</div>
             <select
               className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
               value={statusValue}
@@ -460,14 +499,16 @@ export function OrdersAdmin() {
             >
               {statuses.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {t(orderStatusLabelKey[s])}
                 </option>
               ))}
             </select>
           </div>
           {statusValue === 'CANCELLED' && (
             <div className="grid gap-1">
-              <div className="text-xs text-[rgb(var(--tc-muted))]">Cancellation reason *</div>
+              <div className="text-xs text-[rgb(var(--tc-muted))]">
+                {t('systemAdmin.orders.cancellationReason')} *
+              </div>
               <textarea
                 className="min-h-[90px] w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
                 value={statusReason}
@@ -484,7 +525,7 @@ export function OrdersAdmin() {
               Cancel
             </Button>
             <Button onClick={onSaveStatus} disabled={statusLoading}>
-              {statusLoading ? 'Saving...' : 'Save'}
+              {statusLoading ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </div>

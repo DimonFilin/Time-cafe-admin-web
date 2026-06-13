@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
+import { t } from '@/i18n';
 
 interface Cafe {
   id: string;
@@ -29,7 +30,7 @@ export function CafeDeleteModal({ cafe, isOpen, onClose, onConfirm }: CafeDelete
       setError(null);
       await onConfirm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete cafe');
+      setError(err instanceof Error ? err.message : t('brandAdmin.cafes.deleteFailed'));
       setLoading(false);
     }
   };
@@ -37,11 +38,12 @@ export function CafeDeleteModal({ cafe, isOpen, onClose, onConfirm }: CafeDelete
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <Card className="w-full max-w-md p-6">
-        <h2 className="text-xl font-semibold">Delete Cafe?</h2>
+        <h2 className="text-xl font-semibold">{t('brandAdmin.cafes.deleteTitle')}</h2>
         <p className="mt-2 text-sm text-[rgb(var(--tc-muted))]">
-          Are you sure you want to delete <strong>{cafe.name}</strong> in {cafe.city}?
+          {t('brandAdmin.cafes.deleteConfirmMessage')} <strong>{cafe.name}</strong>{' '}
+          {t('brandAdmin.cafes.inCity')} {cafe.city}?
         </p>
-        <p className="mt-2 text-sm text-red-600">This action cannot be undone.</p>
+        <p className="mt-2 text-sm text-red-600">{t('common.cannotUndo')}</p>
 
         {error && (
           <div className="mt-4 rounded-lg bg-red-50 p-3">
@@ -51,14 +53,14 @@ export function CafeDeleteModal({ cafe, isOpen, onClose, onConfirm }: CafeDelete
 
         <div className="mt-6 flex gap-3">
           <Button onClick={onClose} variant="secondary" disabled={loading}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={loading}
             className="bg-red-600 hover:bg-red-700"
           >
-            {loading ? 'Deleting...' : 'Delete Cafe'}
+            {loading ? t('common.deleting') : t('brandAdmin.cafes.deleteCafe')}
           </Button>
         </div>
       </Card>

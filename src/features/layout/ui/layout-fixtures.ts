@@ -1,4 +1,5 @@
 import type { SofaStyle } from './layout-editor-catalog';
+import { findPlacementCollisionIds } from './layout-collision';
 import { furnitureBoundsPx } from './layout-furniture';
 
 export type Point = { x: number; y: number };
@@ -151,19 +152,5 @@ export function cloneFixtures(list: PlanFixture[]) {
 }
 
 export function findFixtureCollisionIds(fixtures: PlanFixture[], pxPerMeter: number): Set<string> {
-  const ids = new Set<string>();
-  const bounds = fixtures
-    .filter((f) => !f.skipCollision)
-    .map((f) => ({ id: f.id, ...furnitureBoundsPx(f, pxPerMeter) }));
-  for (let i = 0; i < bounds.length; i++) {
-    for (let j = i + 1; j < bounds.length; j++) {
-      const a = bounds[i];
-      const b = bounds[j];
-      if (a.x + a.w > b.x && b.x + b.w > a.x && a.y + a.h > b.y && b.y + b.h > a.y) {
-        ids.add(a.id);
-        ids.add(b.id);
-      }
-    }
-  }
-  return ids;
+  return findPlacementCollisionIds([], [], fixtures, [], pxPerMeter).fixtureIds;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 const env = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:3000',
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Cafe admin workers GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch workers' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.fetchWorkers') }, { status: 500 });
   }
 }
 
@@ -33,6 +34,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Cafe admin workers POST error:', error);
-    return NextResponse.json({ error: 'Failed to invite worker' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.inviteWorker') }, { status: 500 });
   }
 }

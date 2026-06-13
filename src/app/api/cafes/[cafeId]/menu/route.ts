@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/shared/config/env';
+import { t } from '@/i18n';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ cafeId: string }> }) {
   try {
@@ -13,6 +14,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ caf
     return NextResponse.json(data);
   } catch (error) {
     console.error('[cafes-menu] GET failed:', error);
-    return NextResponse.json({ message: 'Failed to fetch menu' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.fetchMenu') }, { status: 500 });
   }
 }

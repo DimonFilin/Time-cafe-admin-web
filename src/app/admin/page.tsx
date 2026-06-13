@@ -9,7 +9,7 @@ export default async function AdminPage() {
     <AppShell>
       <div className="mx-auto max-w-2xl space-y-6">
         <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Backend ping</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Проверка backend</h1>
           <p className="text-sm text-[rgb(var(--tc-muted))]">
             Проверка связи с backend-shared:{' '}
             <span className="rounded-md bg-[rgb(var(--tc-surface-2))] px-2 py-1 font-mono text-[rgb(var(--tc-fg))]">
@@ -28,7 +28,7 @@ export default async function AdminPage() {
             </li>
             <li>
               <Link className="text-[rgb(var(--tc-accent))] hover:underline" href="/login">
-                Login
+                Войти
               </Link>
             </li>
           </ul>

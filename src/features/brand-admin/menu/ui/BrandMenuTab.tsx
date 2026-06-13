@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { getCafes } from '../../cafes/api/cafes';
 import { MenuTab } from '@/features/cafe-admin/menu/ui/MenuTab';
+import { t } from '@/i18n';
 
 export function BrandMenuTab() {
   const [cafes, setCafes] = useState<{ id: string; name: string }[]>([]);
@@ -28,7 +29,7 @@ export function BrandMenuTab() {
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load cafes');
+          setError(e instanceof Error ? e.message : t('brandAdmin.menu.loadFailed'));
           setCafes([]);
         }
       } finally {
@@ -43,7 +44,7 @@ export function BrandMenuTab() {
   if (loading && cafes.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-[rgb(var(--tc-muted))]">Loading cafes...</div>
+        <div className="text-[rgb(var(--tc-muted))]">{t('brandAdmin.menu.loadingCafes')}</div>
       </div>
     );
   }
@@ -59,9 +60,7 @@ export function BrandMenuTab() {
   if (cafes.length === 0) {
     return (
       <Card className="p-6">
-        <p className="text-[rgb(var(--tc-muted))]">
-          Нет кафе в вашем бренде. Сначала создайте кафе.
-        </p>
+        <p className="text-[rgb(var(--tc-muted))]">{t('brandAdmin.menu.noCafes')}</p>
       </Card>
     );
   }
@@ -69,7 +68,7 @@ export function BrandMenuTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium">Cafe</label>
+        <label className="text-sm font-medium">{t('brandAdmin.menu.selectCafe')}</label>
         <select
           className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm min-w-[200px]"
           value={selectedCafeId ?? ''}

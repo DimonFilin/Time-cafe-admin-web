@@ -25,6 +25,7 @@ import type {
   CafeMenuResponse,
 } from '@/features/menu/types/menu.types';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
+import { t } from '@/i18n';
 
 type ImportMode = 'merge' | 'replace';
 
@@ -89,7 +90,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       });
       setMenu(menuData);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load menu');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.menu.loadFailed'));
       setMenu(null);
     } finally {
       setLoading(false);
@@ -147,7 +148,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       setCategoryModalOpen(false);
       await loadMenu();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save category');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.menu.saveCategoryFailed'));
     } finally {
       setLoading(false);
     }
@@ -188,7 +189,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
     try {
       const priceNum = toNumberOr(itemPrice, NaN);
       if (!Number.isFinite(priceNum) || priceNum < 0)
-        throw new Error('Цена должна быть числом ≥ 0');
+        throw new Error(t('cafeAdmin.menu.priceInvalid'));
 
       if (editingItem) {
         await updateMenuItemAdmin({
@@ -220,7 +221,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       setItemModalOpen(false);
       await loadMenu();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save item');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.menu.saveItemFailed'));
     } finally {
       setLoading(false);
     }
@@ -240,7 +241,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to export menu');
+      setError(e instanceof Error ? e.message : t('cafeAdmin.menu.exportFailed'));
     } finally {
       setLoading(false);
     }
@@ -260,7 +261,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
     try {
       parsed = JSON.parse(importRaw);
     } catch {
-      setImportError('Не удалось распарсить JSON');
+      setImportError(t('cafeAdmin.menu.parseJsonFailed'));
       return;
     }
     setLoading(true);
@@ -270,7 +271,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       setMenu(res);
       setImportOpen(false);
     } catch (e) {
-      setImportError(e instanceof Error ? e.message : 'Import failed');
+      setImportError(e instanceof Error ? e.message : t('cafeAdmin.menu.importFailed'));
     } finally {
       setLoading(false);
     }
@@ -279,7 +280,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
   if (loading && !menu) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-[rgb(var(--tc-muted))]">Loading...</div>
+        <div className="text-[rgb(var(--tc-muted))]">{t('common.loading')}</div>
       </div>
     );
   }
@@ -288,34 +289,35 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Menu</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{t('cafeAdmin.menu.title')}</h2>
           <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-            Редактирование меню вашей кофейни. Категорий: {categories.length}
+            {t('cafeAdmin.menu.subtitlePrefix')} {t('cafeAdmin.menu.categoriesCount')}:{' '}
+            {categories.length}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={loadMenu} disabled={loading}>
-            Refresh
+            {t('common.refresh')}
           </Button>
           <Button variant="secondary" onClick={onExport} disabled={loading || !cafeId}>
-            Export JSON
+            {t('cafeAdmin.menu.exportJson')}
           </Button>
           <Button
             variant="secondary"
             onClick={() => setImportOpen(true)}
             disabled={loading || !cafeId}
           >
-            Import JSON
+            {t('cafeAdmin.menu.importJson')}
           </Button>
           <Button variant="primary" onClick={openCreateCategory} disabled={loading || !cafeId}>
-            Add category
+            {t('cafeAdmin.menu.addCategory')}
           </Button>
           <Button
             variant="primary"
             onClick={() => openCreateItem()}
             disabled={loading || !cafeId || categories.length === 0}
           >
-            Add item
+            {t('cafeAdmin.menu.addItem')}
           </Button>
         </div>
       </div>
@@ -328,9 +330,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
 
       {categories.length === 0 ? (
         <Card className="p-6">
-          <div className="text-sm text-[rgb(var(--tc-muted))]">
-            Меню пустое. Добавь категорию или импортируй JSON.
-          </div>
+          <div className="text-sm text-[rgb(var(--tc-muted))]">{t('cafeAdmin.menu.emptyMenu')}</div>
         </Card>
       ) : (
         <div className="space-y-4">
@@ -345,9 +345,11 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
                         c.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
                       }
                     >
-                      {c.isActive ? 'Active' : 'Inactive'}
+                      {c.isActive ? t('common.active') : t('common.inactive')}
                     </Badge>
-                    <span className="text-xs text-[rgb(var(--tc-muted))]">key: {c.key}</span>
+                    <span className="text-xs text-[rgb(var(--tc-muted))]">
+                      {t('cafeAdmin.menu.keyPrefix')}: {c.key}
+                    </span>
                   </div>
                   {c.description && (
                     <div className="mt-1 text-sm text-[rgb(var(--tc-muted))]">{c.description}</div>
@@ -359,37 +361,49 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
                     className="text-xs"
                     onClick={() => openCreateItem(c.id)}
                   >
-                    Add item
+                    {t('cafeAdmin.menu.addItem')}
                   </Button>
                   <Button
                     variant="secondary"
                     className="text-xs"
                     onClick={() => openEditCategory(c)}
                   >
-                    Edit
+                    {t('common.edit')}
                   </Button>
                   <Button
                     className="text-xs bg-[rgb(var(--tc-danger))] hover:bg-[rgb(var(--tc-danger))]/90"
                     onClick={() => setDeleteCategory(c)}
                   >
-                    Deactivate
+                    {t('common.deactivate')}
                   </Button>
                 </div>
               </div>
 
               <div className="mt-4">
                 {c.items.length === 0 ? (
-                  <div className="text-sm text-[rgb(var(--tc-muted))]">Нет позиций</div>
+                  <div className="text-sm text-[rgb(var(--tc-muted))]">
+                    {t('cafeAdmin.menu.noItems')}
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-[rgb(var(--tc-border))]">
-                          <th className="py-2 text-left text-xs font-semibold">Name</th>
-                          <th className="py-2 text-left text-xs font-semibold">Price</th>
-                          <th className="py-2 text-left text-xs font-semibold">Key</th>
-                          <th className="py-2 text-left text-xs font-semibold">Status</th>
-                          <th className="py-2 text-right text-xs font-semibold">Actions</th>
+                          <th className="py-2 text-left text-xs font-semibold">
+                            {t('common.name')}
+                          </th>
+                          <th className="py-2 text-left text-xs font-semibold">
+                            {t('cafeAdmin.menu.price')}
+                          </th>
+                          <th className="py-2 text-left text-xs font-semibold">
+                            {t('cafeAdmin.menu.key')}
+                          </th>
+                          <th className="py-2 text-left text-xs font-semibold">
+                            {t('common.status')}
+                          </th>
+                          <th className="py-2 text-right text-xs font-semibold">
+                            {t('common.actions')}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -417,7 +431,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
                                     : 'bg-gray-100 text-gray-700'
                                 }
                               >
-                                {i.isActive ? 'Active' : 'Inactive'}
+                                {i.isActive ? t('common.active') : t('common.inactive')}
                               </Badge>
                             </td>
                             <td className="py-2 text-right">
@@ -427,13 +441,13 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
                                   className="text-xs"
                                   onClick={() => openEditItem(i)}
                                 >
-                                  Edit
+                                  {t('common.edit')}
                                 </Button>
                                 <Button
                                   className="text-xs bg-[rgb(var(--tc-danger))] hover:bg-[rgb(var(--tc-danger))]/90"
                                   onClick={() => setDeleteItem(i)}
                                 >
-                                  Deactivate
+                                  {t('common.deactivate')}
                                 </Button>
                               </div>
                             </td>
@@ -453,29 +467,29 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       <Modal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        title="Import menu JSON"
+        title={t('cafeAdmin.menu.importTitle')}
         size="lg"
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => setImportOpen(false)} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="primary" onClick={onImport} disabled={loading || !importRaw.trim()}>
-              Import
+              {t('common.import')}
             </Button>
           </div>
         }
       >
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <label className="text-sm font-medium">Mode</label>
+            <label className="text-sm font-medium">{t('cafeAdmin.menu.mode')}</label>
             <select
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={importMode}
               onChange={(e) => setImportMode(e.target.value as ImportMode)}
             >
-              <option value="merge">merge</option>
-              <option value="replace">replace</option>
+              <option value="merge">{t('cafeAdmin.menu.modeMerge')}</option>
+              <option value="replace">{t('cafeAdmin.menu.modeReplace')}</option>
             </select>
             <input
               type="file"
@@ -499,7 +513,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       <Modal
         open={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
-        title={editingCategory ? 'Edit category' : 'Add category'}
+        title={editingCategory ? t('cafeAdmin.menu.editCategory') : t('cafeAdmin.menu.addCategory')}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <Button
@@ -507,7 +521,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
               onClick={() => setCategoryModalOpen(false)}
               disabled={loading}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
@@ -516,42 +530,42 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
                 loading || (!editingCategory && (!categoryKey.trim() || !categoryName.trim()))
               }
             >
-              Save
+              {t('common.save')}
             </Button>
           </div>
         }
       >
         <div className="grid gap-3">
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Key</label>
+            <label className="text-sm font-medium">{t('cafeAdmin.menu.key')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={categoryKey}
               onChange={(e) => setCategoryKey(e.target.value)}
               disabled={!!editingCategory}
-              placeholder="coffee"
+              placeholder={t('cafeAdmin.menu.categoryKeyExample')}
             />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Name</label>
+            <label className="text-sm font-medium">{t('common.name')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
-              placeholder="Coffee"
+              placeholder={t('cafeAdmin.menu.categoryNameExample')}
             />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Description</label>
+            <label className="text-sm font-medium">{t('common.description')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={categoryDescription}
               onChange={(e) => setCategoryDescription(e.target.value)}
-              placeholder="Optional"
+              placeholder={t('common.optional')}
             />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Sort order</label>
+            <label className="text-sm font-medium">{t('cafeAdmin.menu.sortOrder')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={categorySortOrder}
@@ -565,7 +579,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
               checked={categoryIsActive}
               onChange={(e) => setCategoryIsActive(e.target.checked)}
             />
-            Active
+            {t('common.active')}
           </label>
         </div>
       </Modal>
@@ -574,11 +588,11 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
       <Modal
         open={itemModalOpen}
         onClose={() => setItemModalOpen(false)}
-        title={editingItem ? 'Edit item' : 'Add item'}
+        title={editingItem ? t('cafeAdmin.menu.editItem') : t('cafeAdmin.menu.addItem')}
         footer={
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="secondary" onClick={() => setItemModalOpen(false)} disabled={loading}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="primary"
@@ -592,14 +606,14 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
                     !itemPrice.trim()))
               }
             >
-              Save
+              {t('common.save')}
             </Button>
           </div>
         }
       >
         <div className="grid gap-3">
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Category</label>
+            <label className="text-sm font-medium">{t('cafeAdmin.menu.category')}</label>
             <select
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={itemCategoryId}
@@ -613,36 +627,36 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
             </select>
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Key</label>
+            <label className="text-sm font-medium">{t('cafeAdmin.menu.key')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={itemKey}
               onChange={(e) => setItemKey(e.target.value)}
               disabled={!!editingItem}
-              placeholder="latte"
+              placeholder={t('cafeAdmin.menu.itemKeyExample')}
             />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Name</label>
+            <label className="text-sm font-medium">{t('common.name')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              placeholder="Latte"
+              placeholder={t('cafeAdmin.menu.itemNameExample')}
             />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Description</label>
+            <label className="text-sm font-medium">{t('common.description')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={itemDescription}
               onChange={(e) => setItemDescription(e.target.value)}
-              placeholder="Optional"
+              placeholder={t('common.optional')}
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="grid gap-1">
-              <label className="text-sm font-medium">Price</label>
+              <label className="text-sm font-medium">{t('cafeAdmin.menu.price')}</label>
               <input
                 className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
                 value={itemPrice}
@@ -651,7 +665,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
               />
             </div>
             <div className="grid gap-1">
-              <label className="text-sm font-medium">Currency</label>
+              <label className="text-sm font-medium">{t('cafeAdmin.menu.currency')}</label>
               <input
                 className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
                 value={itemCurrency}
@@ -660,7 +674,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
               />
             </div>
             <div className="grid gap-1">
-              <label className="text-sm font-medium">Sort order</label>
+              <label className="text-sm font-medium">{t('cafeAdmin.menu.sortOrder')}</label>
               <input
                 className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
                 value={itemSortOrder}
@@ -670,7 +684,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
             </div>
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Photo URL</label>
+            <label className="text-sm font-medium">{t('cafeAdmin.menu.photoUrl')}</label>
             <input
               className="rounded-lg border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
               value={itemPhotoUrl}
@@ -684,21 +698,21 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
               checked={itemIsActive}
               onChange={(e) => setItemIsActive(e.target.checked)}
             />
-            Active
+            {t('common.active')}
           </label>
         </div>
       </Modal>
 
       <ConfirmModal
         open={!!deleteCategory}
-        title="Deactivate category?"
+        title={t('cafeAdmin.menu.deactivateCategoryTitle')}
         description={
           deleteCategory
-            ? `Категория "${deleteCategory.name}" и все её позиции будут деактивированы.`
+            ? t('cafeAdmin.menu.deactivateCategoryDesc').replace('{name}', deleteCategory.name)
             : undefined
         }
-        confirmText="Deactivate"
-        cancelText="Cancel"
+        confirmText={t('common.deactivate')}
+        cancelText={t('common.cancel')}
         isDanger
         isLoading={loading}
         onCancel={() => setDeleteCategory(null)}
@@ -711,7 +725,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
             setDeleteCategory(null);
             await loadMenu();
           } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to deactivate category');
+            setError(e instanceof Error ? e.message : t('cafeAdmin.menu.deactivateCategoryFailed'));
           } finally {
             setLoading(false);
           }
@@ -720,10 +734,14 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
 
       <ConfirmModal
         open={!!deleteItem}
-        title="Deactivate item?"
-        description={deleteItem ? `Позиция "${deleteItem.name}" будет деактивирована.` : undefined}
-        confirmText="Deactivate"
-        cancelText="Cancel"
+        title={t('cafeAdmin.menu.deactivateItemTitle')}
+        description={
+          deleteItem
+            ? t('cafeAdmin.menu.deactivateItemDesc').replace('{name}', deleteItem.name)
+            : undefined
+        }
+        confirmText={t('common.deactivate')}
+        cancelText={t('common.cancel')}
         isDanger
         isLoading={loading}
         onCancel={() => setDeleteItem(null)}
@@ -736,7 +754,7 @@ export function MenuTab({ cafeId: cafeIdProp }: { cafeId?: string } = {}) {
             setDeleteItem(null);
             await loadMenu();
           } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to deactivate item');
+            setError(e instanceof Error ? e.message : t('cafeAdmin.menu.deactivateItemFailed'));
           } finally {
             setLoading(false);
           }

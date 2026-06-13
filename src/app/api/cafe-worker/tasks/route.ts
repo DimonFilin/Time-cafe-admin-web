@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { t } from '@/i18n';
 
 import { env } from '@/shared/config/env';
 
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Failed to fetch tasks' }));
+      const error = await response.json().catch(() => ({ message: t('apiErrors.fetchTasks') }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -27,6 +28,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching worker tasks:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: t('apiErrors.internalServer') }, { status: 500 });
   }
 }

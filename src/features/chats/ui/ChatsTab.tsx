@@ -4,10 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { MediaImage } from '@/shared/ui/media/MediaImage';
 import { proxiedMediaUrl } from '@/shared/lib/proxied-media-url';
-import { chatsApi, ChatMessage, ChatSummary } from '../api/chats-api';
+import { chatsApi, ChatAuthorWorker, ChatMessage, ChatSummary } from '../api/chats-api';
+import { t } from '@/i18n';
 
 const wsUrl = process.env.NEXT_PUBLIC_SHARED_API_URL || 'http://localhost:3000';
 type ChatStatusFilter = 'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+
+function workerNameFrom(worker: ChatAuthorWorker): string {
+  return `${worker.firstName} ${worker.lastName}`.trim() || t('chats.workerProfileTitle');
+}
 
 export function ChatsTab() {
   const [search, setSearch] = useState('');
@@ -24,6 +29,7 @@ export function ChatsTab() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [userInfoOpen, setUserInfoOpen] = useState(false);
+  const [workerProfile, setWorkerProfile] = useState<ChatAuthorWorker | null>(null);
   const [appointmentOrdersOpen, setAppointmentOrdersOpen] = useState(false);
   const activeChatIdRef = useRef<string | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
@@ -155,7 +161,7 @@ export function ChatsTab() {
         <div className="space-y-2 border-b border-[rgb(var(--tc-border))] p-3">
           <input
             className="w-full rounded-md border border-[rgb(var(--tc-border))] bg-transparent px-3 py-2 text-sm"
-            placeholder="Поиск по сообщениям"
+            placeholder={t('chats.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -165,7 +171,7 @@ export function ChatsTab() {
               checked={unreadOnly}
               onChange={(e) => setUnreadOnly(e.target.checked)}
             />
-            Только непрочитанные
+            {t('chats.unreadOnly')}
           </label>
           <div className="grid grid-cols-3 gap-2">
             <select
@@ -173,11 +179,11 @@ export function ChatsTab() {
               onChange={(e) => setStatusFilter(e.target.value as ChatStatusFilter)}
               className="rounded-md border border-[rgb(var(--tc-border))] bg-transparent px-2 py-1 text-xs"
             >
-              <option value="ALL">Все статусы</option>
-              <option value="PENDING">PENDING</option>
-              <option value="CONFIRMED">CONFIRMED</option>
-              <option value="COMPLETED">COMPLETED</option>
-              <option value="CANCELLED">CANCELLED</option>
+              <option value="ALL">{t('orderStatus.all')}</option>
+              <option value="PENDING">{t('orderStatus.pending')}</option>
+              <option value="CONFIRMED">{t('orderStatus.confirmed')}</option>
+              <option value="COMPLETED">{t('orderStatus.completed')}</option>
+              <option value="CANCELLED">{t('orderStatus.cancelled')}</option>
             </select>
             <input
               type="date"
@@ -203,7 +209,10 @@ export function ChatsTab() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="font-medium">Order #{chat.orderId.slice(0, 8)}</div>
+                <div className="font-medium">
+                  {t('chats.orderPrefix')}
+                  {chat.orderId.slice(0, 8)}
+                </div>
                 {chat.unreadCount > 0 && (
                   <span className="rounded-full bg-[rgb(var(--tc-accent))] px-2 py-0.5 text-xs text-white">
                     {chat.unreadCount}
@@ -211,7 +220,7 @@ export function ChatsTab() {
                 )}
               </div>
               <div className="mt-1 line-clamp-2 text-xs text-[rgb(var(--tc-muted))]">
-                {chat.lastMessage?.text || 'Фото/вложение'}
+                {chat.lastMessage?.text || t('chats.photoAttachment')}
               </div>
             </button>
           ))}
@@ -262,8 +271,16 @@ export function ChatsTab() {
         >
           {messages.map((m) => {
             const isWorker = m.authorType === 'WORKER';
+            const workerAuthor = m.authorWorker;
+            const workerName = workerAuthor
+              ? `${workerAuthor.firstName} ${workerAuthor.lastName}`.trim()
+              : t('chats.workerProfileTitle');
+            const workerInitial = workerName.slice(0, 1).toUpperCase() || '?';
             return (
-              <div key={m.id} className={`flex ${isWorker ? 'justify-end' : 'justify-start'}`}>
+              <div
+                key={m.id}
+                className={`flex items-end gap-2 ${isWorker ? 'justify-end' : 'justify-start'}`}
+              >
                 {!isWorker ? (
                   <button
                     type="button"
@@ -271,7 +288,7 @@ export function ChatsTab() {
                       setAppointmentOrdersOpen(false);
                       setUserInfoOpen(true);
                     }}
-                    className="mr-2 mt-1 h-8 w-8 shrink-0"
+                    className="mb-1 h-8 w-8 shrink-0"
                     title={activeCustomerName}
                   >
                     {activeChat?.user?.avatarUrl ? (
@@ -286,6 +303,25 @@ export function ChatsTab() {
                       </div>
                     )}
                   </button>
+                ) : workerAuthor ? (
+                  <button
+                    type="button"
+                    onClick={() => setWorkerProfile(workerAuthor)}
+                    className="mb-1 h-8 w-8 shrink-0"
+                    title={workerName}
+                  >
+                    {workerAuthor.avatarUrl ? (
+                      <MediaImage
+                        src={workerAuthor.avatarUrl}
+                        alt={workerName}
+                        variant="avatarSm"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgb(var(--tc-accent))] text-xs font-semibold text-white">
+                        {workerInitial}
+                      </div>
+                    )}
+                  </button>
                 ) : null}
                 <div
                   className={`max-w-[85%] rounded-xl p-3 ${isWorker ? 'bg-[rgb(var(--tc-accent))] text-white' : 'bg-[rgb(var(--tc-bg-soft))]'}`}
@@ -293,7 +329,7 @@ export function ChatsTab() {
                   <div
                     className={`mb-1 text-[11px] ${isWorker ? 'text-white/80' : 'text-[rgb(var(--tc-muted))]'}`}
                   >
-                    {isWorker ? 'Вы' : activeCustomerName}
+                    {isWorker ? workerName : activeCustomerName}
                   </div>
                   {m.text && <div className="text-sm">{m.text}</div>}
                   {!!m.attachments.length && (
@@ -358,6 +394,39 @@ export function ChatsTab() {
             </a>
           </div>
         </button>
+      ) : null}
+      {workerProfile ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-5">
+            <div className="flex flex-col items-center gap-3 text-center">
+              {workerProfile.avatarUrl ? (
+                <MediaImage
+                  src={workerProfile.avatarUrl}
+                  alt={workerNameFrom(workerProfile)}
+                  variant="avatarMd"
+                  className="!h-20 !w-20"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[rgb(var(--tc-accent))] text-2xl font-semibold text-white">
+                  {workerNameFrom(workerProfile).slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <div className="text-lg font-semibold">{workerNameFrom(workerProfile)}</div>
+              {workerProfile.cafeName ? (
+                <div className="text-sm text-[rgb(var(--tc-muted))]">
+                  {t('chats.workerCafe')}: {workerProfile.cafeName}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="mt-2 rounded-md border border-[rgb(var(--tc-border))] px-4 py-2 text-sm"
+                onClick={() => setWorkerProfile(null)}
+              >
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
       {userInfoOpen && activeChat?.user ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 p-4">

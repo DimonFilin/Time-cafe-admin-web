@@ -60,7 +60,7 @@ export function BrandOverviewTab() {
     if (!brand) return;
     (async () => {
       try {
-        const r = await fetch('/api/brand/cafes?page=1&limit=200', { credentials: 'include' });
+        const r = await fetch('/api/brand/cafes?page=1&limit=100', { credentials: 'include' });
         if (!r.ok) return;
         const j = await r.json();
         const items = (j.items || []) as Array<{ id: string; name?: string }>;
@@ -132,17 +132,17 @@ export function BrandOverviewTab() {
 
       // Fetch brand info from API proxy
       const brandRes = await fetch('/api/brand');
-      if (!brandRes.ok) throw new Error('Failed to fetch brand data');
+      if (!brandRes.ok) throw new Error(t('brandAdmin.modals.fetchBrandFailed'));
       const brandData = await brandRes.json();
       setBrand(brandData);
 
       // Fetch stats from API proxy
       const statsRes = await fetch('/api/brand/stats');
-      if (!statsRes.ok) throw new Error('Failed to fetch brand stats');
+      if (!statsRes.ok) throw new Error(t('brandAdmin.modals.fetchStatsFailed'));
       const statsData = await statsRes.json();
       setStats(statsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.unknown'));
     } finally {
       setLoading(false);
     }
@@ -162,7 +162,9 @@ export function BrandOverviewTab() {
           status: response.status,
           error: errorData,
         });
-        throw new Error(errorData.message || errorData.details || 'Failed to update brand');
+        throw new Error(
+          errorData.message || errorData.details || t('brandAdmin.modals.updateBrandFailed'),
+        );
       }
 
       const updatedBrand = await response.json();
@@ -305,7 +307,9 @@ export function BrandOverviewTab() {
             )}
             {brand.website && (
               <div>
-                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">Website</h4>
+                <h4 className="text-sm font-medium text-[rgb(var(--tc-muted))]">
+                  {t('common.website')}
+                </h4>
                 <p className="mt-1 text-sm">
                   <a
                     href={brand.website}

@@ -62,7 +62,7 @@ export function WorkersTab({
       setWorkers(data.workers || []);
       setTotal(data.pagination?.total || 0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch workers');
+      setError(e instanceof Error ? e.message : t('workers.errors.fetchFailed'));
       setWorkers([]);
       setTotal(0);
     } finally {
@@ -82,7 +82,7 @@ export function WorkersTab({
       setDeleteOpen(false);
       await fetchWorkers();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete worker');
+      setError(e instanceof Error ? e.message : t('workers.errors.deleteFailed'));
     } finally {
       setDeleteLoading(false);
     }

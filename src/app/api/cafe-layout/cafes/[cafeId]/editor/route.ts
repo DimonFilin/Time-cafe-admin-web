@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { t } from '@/i18n';
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ cafeId: string }> }) {
   try {
@@ -9,7 +10,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ ca
     return fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[cafe-layout editor GET] Error:', error);
-    return NextResponse.json({ error: 'Failed to load cafe layout editor data' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.loadLayoutEditor') }, { status: 500 });
   }
 }
 
@@ -25,6 +26,6 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ caf
     });
   } catch (error) {
     console.error('[cafe-layout editor PUT] Error:', error);
-    return NextResponse.json({ error: 'Failed to save cafe layout editor data' }, { status: 500 });
+    return NextResponse.json({ error: t('apiErrors.saveLayoutEditor') }, { status: 500 });
   }
 }

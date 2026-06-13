@@ -151,7 +151,7 @@ export function WorkersAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (w) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{w.id}</span>
         ),

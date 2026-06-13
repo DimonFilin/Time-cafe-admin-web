@@ -60,7 +60,7 @@ export function TransactionsAdmin() {
       setTransactions(data.items);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load transactions');
+      setError(err instanceof Error ? err.message : t('systemAdmin.errors.loadTransactions'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function TransactionsAdmin() {
       const data = await getTransaction(id);
       setDetails(data);
     } catch (err) {
-      setDetailsError(err instanceof Error ? err.message : 'Failed to load transaction');
+      setDetailsError(err instanceof Error ? err.message : t('systemAdmin.errors.loadTransaction'));
     } finally {
       setDetailsLoading(false);
     }
@@ -102,7 +102,7 @@ export function TransactionsAdmin() {
       setRefundDescription('');
       await refresh();
     } catch (err) {
-      setRefundError(err instanceof Error ? err.message : 'Failed to create refund');
+      setRefundError(err instanceof Error ? err.message : t('systemAdmin.errors.createRefund'));
     } finally {
       setRefundLoading(false);
     }
@@ -112,7 +112,7 @@ export function TransactionsAdmin() {
     () => [
       {
         key: 'id',
-        header: 'ID',
+        header: t('common.id'),
         render: (row) => (
           <span className="font-mono text-xs text-[rgb(var(--tc-muted))]">{row.id}</span>
         ),
@@ -302,7 +302,7 @@ export function TransactionsAdmin() {
       {/* Details Modal */}
       <Modal
         open={detailsOpen}
-        title="Transaction Details"
+        title={t('systemAdmin.transactions.transactionDetails')}
         onClose={() => setDetailsOpen(false)}
         size="2xl"
       >
@@ -396,7 +396,7 @@ export function TransactionsAdmin() {
       {/* Refund Modal */}
       <Modal
         open={refundOpen}
-        title="Create Refund"
+        title={t('systemAdmin.transactions.createRefund')}
         onClose={() => setRefundOpen(false)}
         footer={
           <div className="flex gap-2 justify-end">
@@ -404,7 +404,7 @@ export function TransactionsAdmin() {
               Cancel
             </Button>
             <Button onClick={handleRefund} disabled={refundLoading}>
-              {refundLoading ? 'Creating...' : 'Create Refund'}
+              {refundLoading ? t('common.creating') : t('systemAdmin.transactions.createRefund')}
             </Button>
           </div>
         }
