@@ -87,6 +87,71 @@ export function furnitureOrientedCorners(
   }));
 }
 
+function rectsOverlap(
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+  gap = 2,
+): boolean {
+  return !(
+    a.x + a.w + gap <= b.x ||
+    b.x + b.w + gap <= a.x ||
+    a.y + a.h + gap <= b.y ||
+    b.y + b.h + gap <= a.y
+  );
+}
+
+export function findFurnitureCollisionIds(
+  tables: PlanTable[],
+  chairs: PlanChair[],
+  pxPerMeter: number,
+): { tableIds: Set<string>; chairIds: Set<string> } {
+  const tableIds = new Set<string>();
+  const chairIds = new Set<string>();
+  const tBounds = tables.map((t) => ({
+    id: t.id,
+    ...furnitureBoundsPx(t, pxPerMeter),
+  }));
+  const cBounds = chairs.map((c) => ({
+    id: c.id,
+    ...furnitureBoundsPx(c, pxPerMeter),
+  }));
+
+  for (let i = 0; i < tBounds.length; i++) {
+    for (let j = i + 1; j < tBounds.length; j++) {
+      if (rectsOverlap(tBounds[i], tBounds[j])) {
+        tableIds.add(tBounds[i].id);
+        tableIds.add(tBounds[j].id);
+      }
+    }
+  }
+  for (let i = 0; i < cBounds.length; i++) {
+    for (let j = i + 1; j < cBounds.length; j++) {
+      if (rectsOverlap(cBounds[i], cBounds[j])) {
+        chairIds.add(cBounds[i].id);
+        chairIds.add(cBounds[j].id);
+      }
+    }
+  }
+  for (const tb of tBounds) {
+    for (const cb of cBounds) {
+      if (rectsOverlap(tb, cb)) {
+        tableIds.add(tb.id);
+        chairIds.add(cb.id);
+      }
+    }
+  }
+  return { tableIds, chairIds };
+}
+
+export function furnitureIntersectsNormRect(
+  item: { x: number; y: number; widthM: number; heightM: number },
+  r: { x: number; y: number; w: number; h: number },
+  pxPerMeter: number,
+): boolean {
+  const b = furnitureBoundsPx(item, pxPerMeter);
+  return !(b.x + b.w < r.x || r.x + r.w < b.x || b.y + b.h < r.y || r.y + r.h < b.y);
+}
+
 export function hitTestTable(tables: PlanTable[], p: Point, pxPerMeter: number): PlanTable | null {
   for (let i = tables.length - 1; i >= 0; i--) {
     const t = tables[i];

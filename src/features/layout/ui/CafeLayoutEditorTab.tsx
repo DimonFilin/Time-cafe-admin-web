@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type PlanChair,
   type PlanTable,
@@ -11,8 +11,9 @@ import {
   cloneTables,
   extractChairs,
   extractTables,
+  findFurnitureCollisionIds,
   furnitureBoundsPx,
-  furnitureOrientedCorners,
+  furnitureIntersectsNormRect,
   hitTestChair,
   hitTestTable,
   readChairPresets,
@@ -21,8 +22,6 @@ import {
   visitFurniturePoints,
 } from './layout-furniture';
 import { CurrencyUnitLabel } from '@/shared/ui/currency/CurrencyUnitLabel';
-import { t } from '@/i18n';
-import { BlurNumberInput } from './BlurNumberInput';
 import { LayoutEditInspector, type LayoutEditFocus } from './LayoutEditInspector';
 import { LayoutPlacementPanel } from './LayoutPlacementPanel';
 import {
@@ -79,7 +78,6 @@ import {
   type StairKind,
   type StructureTool,
 } from './layout-editor-catalog';
-import { findPlacementCollisionIds, orientedItemIntersectsNormRect } from './layout-collision';
 import { ChairShape } from './layout-chair-render';
 import {
   cloneDoors,
@@ -98,6 +96,7 @@ import {
   cloneFixtures,
   defaultFixture,
   extractFixtures,
+  findFixtureCollisionIds,
   hitTestFixture,
   fixtureToElement,
   type FixtureKind,
@@ -114,9 +113,6 @@ import {
 import { StairShape } from './layout-stair-render';
 import { readPlanBackground, type PlanBackgroundImage } from './layout-plan-background';
 import { billingModesAvailable, parseRoomBilling, patchRoomBilling } from './room-billing';
-import { LayoutPlanPreviewModal } from './LayoutPlanPreviewModal';
-import { Modal } from '@/shared/ui/modal/Modal';
-import { Button } from '@/shared/ui/button/Button';
 import type {
   EditorRoomRecord,
   EditorStatePayload,
@@ -134,37 +130,16 @@ const MIN_CANVAS_WIDTH = 1200;
 const MIN_CANVAS_HEIGHT = 700;
 const MAX_CANVAS_DIM = 4000;
 const CANVAS_GEOM_PADDING = 120;
-const GRID_STEP = 24;
-/** One grid step (24 px) = 10 cm in real space */
+const GRID_STEP = 20;
+/** One grid step (20 px) = 10 cm in real space */
 const METERS_PER_PX = 0.1 / GRID_STEP;
 /** Pixels per one meter in plan coordinates (inverse of METERS_PER_PX) */
 const PX_PER_METER = GRID_STEP / 0.1;
-const GRID_MAJOR_STEP = GRID_STEP * 5;
 const DELETE_MARQUEE_PX = 6;
 const SNAP_DISTANCE = 14;
 const HISTORY_LIMIT = 50;
 /** Default zoom: ~10% more plan visible; UI «100%» = this value */
 const CANVAS_BASE_ZOOM = 0.9;
-const CANVAS_ZOOM_MAX = 2.5;
-/** At 11×11 m field, minimum zoom factor (shown as ~50% in UI) */
-const ZOOM_MIN_AT_REF_FIELD_M = 0.5;
-const ZOOM_REF_FIELD_M = 11;
-const ZOOM_VIEWPORT_REF_W = 1200;
-const ZOOM_VIEWPORT_REF_H = 720;
-const ZOOM_ABSOLUTE_MIN = 0.12;
-/** Base multiplier for labels drawn on the SVG plan (rooms, furniture, dimensions) */
-const PLAN_SVG_LABEL_SCALE = 1.7;
-const PLAN_LABEL_FONT = {
-  wallLength: 13,
-  zoneName: 18,
-  zonePercent: 16,
-  zoneArea: 15,
-  zoneEditIcon: 15,
-  table: 14,
-  chair: 13,
-  fixture: 12,
-  stair: 13,
-} as const;
 const EDIT_STACK_CYCLE_MS = 4000;
 const DEFAULT_WALL_THICKNESS_PX = 10;
 
@@ -336,23 +311,6 @@ function planFieldMinPx(field: { widthM: number; heightM: number }) {
   };
 }
 
-/** Smaller min zoom for larger fields so the full plan can fit on screen */
-function computeCanvasZoomMin(
-  contentW: number,
-  contentH: number,
-  fieldWM: number,
-  fieldHM: number,
-): number {
-  const spanM = Math.max(fieldWM, fieldHM, 4);
-  const byFieldSize = ZOOM_MIN_AT_REF_FIELD_M * (ZOOM_REF_FIELD_M / spanM);
-  const fitW = ZOOM_VIEWPORT_REF_W / Math.max(contentW, 1);
-  const fitH = ZOOM_VIEWPORT_REF_H / Math.max(contentH, 1);
-  const fitViewport = Math.min(fitW, fitH) * 0.96;
-  return round2(
-    Math.max(ZOOM_ABSOLUTE_MIN, Math.min(CANVAS_BASE_ZOOM, byFieldSize, fitViewport)),
-  );
-}
-
 function computeCanvasContentSize(
   walls: WallSegment[],
   roomZones: RoomZone[],
@@ -382,8 +340,8 @@ function computeCanvasContentSize(
   }
   if (draftWallStart) visit(draftWallStart);
   for (const p of draftRoomPoints) visit(p);
-  void wallPreviewEnd;
-  void roomPreviewEnd;
+  if (wallPreviewEnd) visit(wallPreviewEnd);
+  if (roomPreviewEnd) visit(roomPreviewEnd);
   visitFurniturePoints(tables, chairs, visit);
   visitWindowPoints(windows, walls, visit);
 
@@ -1129,8 +1087,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
   const [occupancy, setOccupancy] = useState<OccupancyPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveSuccessOpen, setSaveSuccessOpen] = useState(false);
-  const [planPreviewOpen, setPlanPreviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drawMode, setDrawMode] = useState<DrawMode>('WALL');
   const [shiftPressed, setShiftPressed] = useState(false);
@@ -1148,7 +1104,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
   const [chairVariant, setChairVariant] = useState<ChairVariant>('standard');
   const [doorKind, setDoorKind] = useState<DoorKind>('plain');
   const [doorSwing, setDoorSwing] = useState<DoorSwing>('out');
-  const [doorHingeSide, setDoorHingeSide] = useState<'left' | 'right'>('left');
   const [stairKind, setStairKind] = useState<StairKind>('rect');
   const [sofaStyle, setSofaStyle] = useState<SofaStyle>('standard');
   const [fixtureDraft, setFixtureDraft] = useState<PlanFixture>(defaultFixture('sofa'));
@@ -1158,6 +1113,8 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     widthM: 0.9,
   });
   const [stairDraft, setStairDraft] = useState<PlanStair>(defaultStair('rect'));
+  const [editPanelHover, setEditPanelHover] = useState(false);
+  const [editStickyTableId, setEditStickyTableId] = useState<string | null>(null);
   const [layoutFullscreen, setLayoutFullscreen] = useState(false);
   const [halfStairPending, setHalfStairPending] = useState<{ pairId: string } | null>(null);
   const [tableDraft, setTableDraft] = useState<PlacementDraft>({ ...DEFAULT_TABLE_DRAFT });
@@ -1171,6 +1128,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
   const [editPickIndex, setEditPickIndex] = useState(0);
   const [editStackBlinkOn, setEditStackBlinkOn] = useState(true);
   const [editSubMode, setEditSubMode] = useState<'move' | 'rotate'>('move');
+  const [editLockedPick, setEditLockedPick] = useState<PickTarget | null>(null);
   const [tableShapeDraft, setTableShapeDraft] = useState<TableShape>('rect');
   const [wallThicknessPx, setWallThicknessPx] = useState(DEFAULT_WALL_THICKNESS_PX);
   const editPickStackKeyRef = useRef('');
@@ -1179,12 +1137,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
   const [roomPickerZoneId, setRoomPickerZoneId] = useState<string | null>(null);
   const [roomPickerValue, setRoomPickerValue] = useState<string>('');
-  const [roomPickerDraft, setRoomPickerDraft] = useState({
-    name: '',
-    capacity: 4,
-    status: 'ACTIVE',
-    description: '',
-  });
   const [editHover, setEditHover] = useState<EditHover | null>(null);
   const [editDraggingUi, setEditDraggingUi] = useState(false);
   const [editFocus, setEditFocus] = useState<EditFocus>(null);
@@ -1227,7 +1179,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     tableIds: Set<string>;
     chairIds: Set<string>;
     fixtureIds: Set<string>;
-    stairIds: Set<string>;
   } | null>(null);
 
   const bumpHistoryUi = () => {
@@ -1517,8 +1468,8 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
         windows,
         draftWallStart,
         draftRoomPoints,
-        null,
-        null,
+        drawMode === 'WALL' && draftWallStart && snappedCursor ? snappedCursor : null,
+        drawMode === 'ROOM' && draftRoomPoints.length > 0 && snappedCursor ? snappedCursor : null,
         fieldMinPx,
       ),
     [
@@ -1537,16 +1488,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
   const contentWidth = canvasContentSize.w;
   const contentHeight = canvasContentSize.h;
 
-  const canvasZoomMin = useMemo(
-    () => computeCanvasZoomMin(contentWidth, contentHeight, planFieldM.widthM, planFieldM.heightM),
-    [contentWidth, contentHeight, planFieldM.widthM, planFieldM.heightM],
-  );
-
-  const clampCanvasZoom = useCallback(
-    (z: number) => Math.min(CANVAS_ZOOM_MAX, Math.max(canvasZoomMin, round2(z))),
-    [canvasZoomMin],
-  );
-
   const wallJointsMap = useMemo(() => buildWallJointsMap(walls, WELD_EPS), [walls]);
 
   const selectedCafe = useMemo(() => cafes.find((c) => c.id === cafeId) ?? null, [cafes, cafeId]);
@@ -1557,13 +1498,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
         if (scope === 'cafe-admin') {
           const res = await fetch('/api/cafe-admin/cafe', { credentials: 'include' });
           const json = await res.json();
-          if (!res.ok) {
-            throw new Error(
-              typeof json?.message === 'string'
-                ? json.message
-                : `Не удалось загрузить кафе (${res.status})`,
-            );
-          }
           const c = json?.cafe ?? json;
           if (c?.id) {
             const option = { id: c.id, name: c.name || 'Cafe' };
@@ -1575,13 +1509,6 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
         if (scope === 'worker') {
           const res = await fetch('/api/cafe-worker/me', { credentials: 'include' });
           const json = await res.json();
-          if (!res.ok) {
-            throw new Error(
-              typeof json?.message === 'string'
-                ? json.message
-                : `Не удалось загрузить кафе (${res.status})`,
-            );
-          }
           if (json?.cafe?.id) {
             const option = { id: json.cafe.id, name: json.cafe.name || 'Cafe' };
             setCafes([option]);
@@ -1589,26 +1516,16 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
           }
           return;
         }
-        const res = await fetch('/api/brand/cafes?page=1&limit=100', {
-          credentials: 'include',
-        });
+        const res = await fetch('/api/brand/cafes', { credentials: 'include' });
         const json = await res.json();
-        if (!res.ok) {
-          const msg =
-            typeof json?.message === 'string'
-              ? json.message
-              : `Не удалось загрузить кафе (${res.status})`;
-          throw new Error(msg);
-        }
-        const raw = json?.items ?? json?.cafes ?? (Array.isArray(json) ? json : []);
-        const list = raw.map((c: { id: string; name?: string }) => ({
+        const list = (json?.cafes ?? json ?? []).map((c: { id: string; name?: string }) => ({
           id: c.id,
-          name: c.name || 'Без названия',
+          name: c.name,
         }));
         setCafes(list);
         if (list[0]?.id) setCafeId(list[0].id);
       } catch (e) {
-        setError(e instanceof Error ? e.message : t('apiErrors.loadCafes'));
+        setError(e instanceof Error ? e.message : 'Failed to load cafes');
       }
     };
     void loadCafes();
@@ -1632,7 +1549,9 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     return () => clearInterval(id);
   }, [drawMode, editPickStack.length]);
 
-  const editTableFocused = drawMode === 'EDIT' && editFocus?.type === 'table';
+  const editTableFocused =
+    drawMode === 'EDIT' &&
+    (editPanelHover || editStickyTableId !== null || editHover?.kind === 'table');
 
   useEffect(() => {
     if (drawMode !== 'EDIT' || editPickStack.length <= 1 || editTableFocused) return;
@@ -1654,10 +1573,40 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     setEditHover(t ? pickTargetToEditHover(t) : null);
   }, [drawMode, editPickStack, editPickIndex]);
 
+  const selectedTableId =
+    drawMode === 'EDIT'
+      ? editLockedPick?.kind === 'table'
+        ? editLockedPick.id
+        : editStickyTableId
+          ? editStickyTableId
+          : editHover?.kind === 'table'
+            ? editHover.id
+            : null
+      : null;
+
+  useEffect(() => {
+    if (drawMode !== 'EDIT') {
+      setEditStickyTableId(null);
+      return;
+    }
+    if (editPanelHover && selectedTableId) {
+      setEditStickyTableId(selectedTableId);
+    } else if (editHover?.kind === 'table') {
+      setEditStickyTableId(editHover.id);
+    } else if (!editPanelHover) {
+      setEditStickyTableId(null);
+    }
+  }, [drawMode, editPanelHover, editHover?.kind, editHover?.id, selectedTableId]);
+
   const patchTableById = (id: string, patch: Partial<PlanTable>) => {
     const next = tables.map((t) => (t.id === id ? { ...t, ...patch } : t));
     setTables(next);
     geomRef.current = { ...geomRef.current, tables: next };
+  };
+
+  const patchSelectedTable = (patch: Partial<PlanTable>) => {
+    if (!selectedTableId) return;
+    patchTableById(selectedTableId, patch);
   };
 
   const patchChairById = (id: string, patch: Partial<PlanChair>) => {
@@ -1708,8 +1657,10 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
 
   const activeEditFocus = useMemo((): LayoutEditFocus | null => {
     if (drawMode !== 'EDIT') return null;
-    return editFocus;
-  }, [drawMode, editFocus]);
+    if (editFocus) return editFocus;
+    if (selectedTableId) return { type: 'table', id: selectedTableId };
+    return null;
+  }, [drawMode, editFocus, selectedTableId]);
 
   const activeEditZone = useMemo(() => {
     if (activeEditFocus?.type !== 'zone') return null;
@@ -1866,7 +1817,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
         setOccupancy(occupancyJson);
         initGeometryHistory(ew, rz, et, ec, sanitizeWindows(ewin, ew), efix, edoor, est);
       } catch (e) {
-        setError(e instanceof Error ? e.message : t('apiErrors.loadLayoutData'));
+        setError(e instanceof Error ? e.message : 'Failed to load layout data');
       } finally {
         setLoading(false);
       }
@@ -1895,14 +1846,11 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       const step = e.deltaY > 0 ? -0.09 : 0.09;
-      setCanvasZoom((prev) => {
-        const next = clampCanvasZoom(prev + step);
-        return next === prev ? prev : next;
-      });
+      setCanvasZoom((prev) => clampCanvasZoom(prev + step));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [clampCanvasZoom]);
+  }, []);
 
   useEffect(() => {
     if (!historyMenuOpen) return;
@@ -1949,23 +1897,22 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json?.message || json?.error || t('apiErrors.saveLayout'));
+        throw new Error(json?.message || json?.error || 'Failed to save layout');
       }
-      const savedElements = Array.isArray(json?.elements) ? json.elements : [];
-      const ew = extractWalls(savedElements);
-      const rz = extractRoomZones(savedElements);
-      const et = extractTables(savedElements);
-      const ec = extractChairs(savedElements);
-      const ewin = extractWindows(savedElements);
+      const ew = extractWalls(json?.elements || []);
+      const rz = extractRoomZones(json?.elements || []);
+      const et = extractTables(json?.elements || []);
+      const ec = extractChairs(json?.elements || []);
+      const ewin = extractWindows(json?.elements || []);
       setState(json);
       setWalls(ew);
       setRoomZones(rz);
       setTables(et);
       setChairs(ec);
       setWindows(sanitizeWindows(ewin, ew));
-      const efix = extractFixtures(savedElements);
-      const edoor = extractDoors(savedElements);
-      const est = extractStairs(savedElements);
+      const efix = extractFixtures(json?.elements || []);
+      const edoor = extractDoors(json?.elements || []);
+      const est = extractStairs(json?.elements || []);
       setFixtures(efix);
       setDoors(edoor);
       setStairs(est);
@@ -1979,9 +1926,8 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       } catch {
         /* keep previous occupancy */
       }
-      setSaveSuccessOpen(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t('apiErrors.saveLayout'));
+      setError(e instanceof Error ? e.message : 'Failed to save layout');
     } finally {
       setSaving(false);
     }
@@ -1990,28 +1936,21 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
   const requestSave = () => {
     const wallIds = findIntersectingWallIds(walls);
     const zoneIds = findOverlappingRoomZoneIds(roomZones);
-    const placementHits = findPlacementCollisionIds(
-      tables,
-      chairs,
-      fixtures,
-      stairs,
-      PX_PER_METER,
-    );
+    const furnitureHits = findFurnitureCollisionIds(tables, chairs, PX_PER_METER);
+    const fixtureIds = findFixtureCollisionIds(fixtures, PX_PER_METER);
     if (
       wallIds.size > 0 ||
       zoneIds.size > 0 ||
-      placementHits.tableIds.size > 0 ||
-      placementHits.chairIds.size > 0 ||
-      placementHits.fixtureIds.size > 0 ||
-      placementHits.stairIds.size > 0
+      furnitureHits.tableIds.size > 0 ||
+      furnitureHits.chairIds.size > 0 ||
+      fixtureIds.size > 0
     ) {
       setSaveGeometryIssues({
         wallIds,
         zoneIds,
-        tableIds: placementHits.tableIds,
-        chairIds: placementHits.chairIds,
-        fixtureIds: placementHits.fixtureIds,
-        stairIds: placementHits.stairIds,
+        tableIds: furnitureHits.tableIds,
+        chairIds: furnitureHits.chairIds,
+        fixtureIds,
       });
       return;
     }
@@ -2214,3 +2153,3107 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
         }
         const tableHit = new Set<string>();
         for (const t of g.tables) {
+          if (furnitureIntersectsNormRect(t, r, PX_PER_METER)) tableHit.add(t.id);
+        }
+        const chairHit = new Set<string>();
+        for (const c of g.chairs) {
+          if (furnitureIntersectsNormRect(c, r, PX_PER_METER)) chairHit.add(c.id);
+        }
+        const windowHit = new Set<string>();
+        for (const win of g.windows) {
+          if (windowIntersectsNormRect(win, g.walls, r)) windowHit.add(win.id);
+        }
+        const doorHit = new Set<string>();
+        for (const dr of g.doors) {
+          if (doorIntersectsNormRect(dr, g.walls, r)) doorHit.add(dr.id);
+        }
+        const fixtureHit = new Set<string>();
+        for (const fx of g.fixtures) {
+          if (furnitureIntersectsNormRect(fx, r, PX_PER_METER)) fixtureHit.add(fx.id);
+        }
+        const stairHit = new Set<string>();
+        for (const st of g.stairs) {
+          if (furnitureIntersectsNormRect(st, r, PX_PER_METER)) stairHit.add(st.id);
+        }
+        if (
+          wallHit.size === 0 &&
+          zoneHit.size === 0 &&
+          tableHit.size === 0 &&
+          chairHit.size === 0 &&
+          windowHit.size === 0 &&
+          doorHit.size === 0 &&
+          fixtureHit.size === 0 &&
+          stairHit.size === 0
+        ) {
+          return;
+        }
+        const nextWalls = g.walls.filter((w) => !wallHit.has(w.id));
+        commitLayout(
+          {
+            walls: nextWalls,
+            roomZones: g.roomZones.filter((z) => !zoneHit.has(z.id)),
+            tables: g.tables.filter((t) => !tableHit.has(t.id)),
+            chairs: g.chairs.filter((c) => !chairHit.has(c.id)),
+            windows: removeWindowsOnWalls(
+              g.windows.filter((w) => !windowHit.has(w.id)),
+              wallHit,
+            ),
+            doors: g.doors.filter((d) => !doorHit.has(d.id)),
+            fixtures: g.fixtures.filter((f) => !fixtureHit.has(f.id)),
+            stairs: g.stairs.filter((s) => !stairHit.has(s.id)),
+          },
+          { label: 'Удаление рамкой', kind: 'delete' },
+        );
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      return;
+    }
+    if (drawMode !== 'EDIT') return;
+    event.preventDefault();
+    const svg = event.currentTarget;
+    const raw = toCanvasPoint(svg, event.clientX, event.clientY);
+    const g0 = geomRef.current;
+    const wHit = filterWallsForEdit(g0.walls, editFocus);
+    const zHit = filterZonesForEdit(g0.roomZones, editFocus);
+    const tHit = filterTablesForEdit(g0.tables, editFocus);
+    const cHit = filterChairsForEdit(g0.chairs, editFocus);
+    const winHit = filterWindowsForEdit(g0.windows, editFocus);
+    const fHit = filterFixturesForEdit(g0.fixtures, editFocus);
+    const sHit = filterStairsForEdit(g0.stairs, editFocus);
+    const dHit = filterDoorsForEdit(g0.doors, editFocus);
+    const snapped = snapToGrid(raw);
+    const stack =
+      editPickStack.length > 0
+        ? editPickStack
+        : collectPickTargets(
+            snapped,
+            wHit,
+            zHit,
+            tHit,
+            cHit,
+            winHit,
+            PX_PER_METER,
+            fHit,
+            dHit,
+            sHit,
+          );
+    const pick =
+      editSubMode === 'rotate'
+        ? resolveRotatePick(stack, editPickIndex)
+        : (stack[editPickIndex] ?? pickTopTarget(stack));
+    if (!pick) return;
+
+    if (pick.kind === 'window') {
+      const wn = winHit.find((w) => w.id === pick.id);
+      if (wn) {
+        editDragRef.current = {
+          kind: 'window-body',
+          windowId: wn.id,
+          window0: { ...wn, spans: wn.spans.map((s) => ({ ...s })) },
+        };
+      }
+    } else if (pick.kind === 'table') {
+      const th = tHit.find((t) => t.id === pick.id);
+      if (th) {
+        editDragRef.current = {
+          kind: 'table-body',
+          tableId: th.id,
+          grab: { ...snapped },
+          table0: { ...th },
+        };
+      }
+    } else if (pick.kind === 'chair') {
+      const ch = cHit.find((c) => c.id === pick.id);
+      if (ch) {
+        editDragRef.current = {
+          kind: 'chair-body',
+          chairId: ch.id,
+          grab: { ...snapped },
+          chair0: { ...ch },
+        };
+      }
+    } else if (pick.kind === 'fixture') {
+      const fx = fHit.find((f) => f.id === pick.id);
+      if (fx) {
+        editDragRef.current = {
+          kind: 'fixture-body',
+          fixtureId: fx.id,
+          grab: { ...snapped },
+          fixture0: { ...fx },
+        };
+      }
+    } else if (pick.kind === 'stair') {
+      const st = sHit.find((s) => s.id === pick.id);
+      if (st) {
+        editDragRef.current = {
+          kind: 'stair-body',
+          stairId: st.id,
+          grab: { ...snapped },
+          stair0: { ...st },
+        };
+      }
+    } else if (pick.kind === 'wall') {
+      const wall = wHit.find((w) => w.id === pick.id);
+      if (wall) {
+        const part = pick.wallPart || 'body';
+        if (part === 'body') {
+          editDragRef.current = {
+            kind: 'wall-body',
+            wallId: wall.id,
+            grab: { ...snapped },
+            wall0: { ...wall },
+            weldStartRefs: collectEndpointsAt(g0.walls, wall.start),
+            weldEndRefs: collectEndpointsAt(g0.walls, wall.end),
+          };
+        } else {
+          const fixed = part === 'start' ? { ...wall.end } : { ...wall.start };
+          const M0 = part === 'start' ? { ...wall.start } : { ...wall.end };
+          const selfRef: WallEndpointRef = { wallId: wall.id, end: part };
+          let noWeld = event.altKey;
+          const pendingDetach = detachWallVertexNextRef.current;
+          if (
+            !noWeld &&
+            pendingDetach &&
+            pendingDetach.wallId === wall.id &&
+            pendingDetach.end === part
+          ) {
+            noWeld = true;
+            detachWallVertexNextRef.current = null;
+          }
+          const weldRefs = noWeld ? [selfRef] : collectEndpointsAt(g0.walls, M0);
+          editDragRef.current = {
+            kind: 'wall-end',
+            wallId: wall.id,
+            end: part,
+            fixed,
+            wall0: { ...wall },
+            weldRefs,
+          };
+        }
+      }
+    } else if (pick.kind === 'zone-vertex' || pick.kind === 'zone-body') {
+      const zone = zHit.find((z) => z.id === pick.id);
+      if (!zone) return;
+      if (pick.kind === 'zone-vertex' && pick.zoneVertexIndex != null) {
+        const vi = pick.zoneVertexIndex;
+        const n = zone.points.length;
+        const anchor = { ...zone.points[(vi - 1 + n) % n] };
+        editDragRef.current = {
+          kind: 'zone-vertex',
+          zoneId: zone.id,
+          vertexIndex: vi,
+          anchor,
+          points0: zone.points.map((q) => ({ ...q })),
+        };
+      } else if (editSubMode === 'rotate') {
+        const center = polygonCentroid(zone.points);
+        editDragRef.current = {
+          kind: 'zone-rotate',
+          zoneId: zone.id,
+          center,
+          points0: zone.points.map((q) => ({ ...q })),
+          startAngle: Math.atan2(snapped.y - center.y, snapped.x - center.x),
+        };
+      } else {
+        editDragRef.current = {
+          kind: 'zone-body',
+          zoneId: zone.id,
+          grab: { ...snapped },
+          points0: zone.points.map((q) => ({ ...q })),
+        };
+      }
+    }
+
+    setEditLockedPick(pick);
+    setEditDraggingUi(true);
+    if (!editDragRef.current) return;
+
+    const onMove = (ev: MouseEvent) => {
+      const d = editDragRef.current;
+      if (!d || !svgRef.current) return;
+      const r = toCanvasPoint(svgRef.current, ev.clientX, ev.clientY);
+      const g = geomRef.current;
+      const sn = snapToGrid(r);
+      const vb = svgRef.current.viewBox.baseVal;
+      const clampPt = (pt: Point): Point => ({
+        x: Math.min(vb.width, Math.max(0, round2(pt.x))),
+        y: Math.min(vb.height, Math.max(0, round2(pt.y))),
+      });
+
+      if (d.kind === 'table-body') {
+        if (editSubMode === 'rotate') {
+          const deg = (Math.atan2(sn.y - d.table0.y, sn.x - d.table0.x) * 180) / Math.PI;
+          const nextTables = g.tables.map((t) =>
+            t.id === d.tableId ? { ...t, rotationDeg: Math.round(deg) } : t,
+          );
+          geomRef.current = { ...g, tables: nextTables };
+          setTables(nextTables);
+          return;
+        }
+        let dx = sn.x - d.grab.x;
+        let dy = sn.y - d.grab.y;
+        if (ev.shiftKey) {
+          const od = orthoDelta(d.grab, sn);
+          dx = od.x;
+          dy = od.y;
+        }
+        const moved = clampPt({ x: d.table0.x + dx, y: d.table0.y + dy });
+        const nextTables = g.tables.map((t) =>
+          t.id === d.tableId ? { ...t, x: moved.x, y: moved.y } : t,
+        );
+        geomRef.current = { ...g, tables: nextTables };
+        setTables(nextTables);
+        return;
+      }
+      if (d.kind === 'zone-rotate') {
+        const angle = Math.atan2(sn.y - d.center.y, sn.x - d.center.x);
+        const deltaDeg = ((angle - d.startAngle) * 180) / Math.PI;
+        const newPoints = rotatePointsAround(d.points0, d.center, deltaDeg);
+        const nextZones = g.roomZones.map((z) =>
+          z.id === d.zoneId ? { ...z, points: newPoints } : z,
+        );
+        geomRef.current = { ...g, roomZones: nextZones };
+        setRoomZones(nextZones);
+        return;
+      }
+      if (d.kind === 'chair-body') {
+        if (editSubMode === 'rotate') {
+          const deg = (Math.atan2(sn.y - d.chair0.y, sn.x - d.chair0.x) * 180) / Math.PI + 90;
+          const nextChairs = g.chairs.map((c) =>
+            c.id === d.chairId ? { ...c, rotationDeg: Math.round(deg) } : c,
+          );
+          geomRef.current = { ...g, chairs: nextChairs };
+          setChairs(nextChairs);
+          return;
+        }
+        let dx = sn.x - d.grab.x;
+        let dy = sn.y - d.grab.y;
+        if (ev.shiftKey) {
+          const od = orthoDelta(d.grab, sn);
+          dx = od.x;
+          dy = od.y;
+        }
+        const moved = clampPt({ x: d.chair0.x + dx, y: d.chair0.y + dy });
+        const nextChairs = g.chairs.map((c) =>
+          c.id === d.chairId ? { ...c, x: moved.x, y: moved.y } : c,
+        );
+        geomRef.current = { ...g, chairs: nextChairs };
+        setChairs(nextChairs);
+        return;
+      }
+      if (d.kind === 'window-body') {
+        const moved = slideWindowAlongWall(g.walls, d.window0, sn, PX_PER_METER);
+        const nextWindows = g.windows.map((w) =>
+          w.id === d.windowId
+            ? { ...moved, id: d.windowId, name: w.name, presetId: w.presetId }
+            : w,
+        );
+        geomRef.current = { ...g, windows: nextWindows };
+        setWindows(nextWindows);
+        return;
+      }
+      if (d.kind === 'fixture-body') {
+        if (editSubMode === 'rotate') {
+          const deg = (Math.atan2(sn.y - d.fixture0.y, sn.x - d.fixture0.x) * 180) / Math.PI;
+          const nextFixtures = g.fixtures.map((f) =>
+            f.id === d.fixtureId ? { ...f, rotationDeg: Math.round(deg) } : f,
+          );
+          geomRef.current = { ...g, fixtures: nextFixtures };
+          setFixtures(nextFixtures);
+          return;
+        }
+        let dx = sn.x - d.grab.x;
+        let dy = sn.y - d.grab.y;
+        if (ev.shiftKey) {
+          const od = orthoDelta(d.grab, sn);
+          dx = od.x;
+          dy = od.y;
+        }
+        const moved = clampPt({ x: d.fixture0.x + dx, y: d.fixture0.y + dy });
+        const nextFixtures = g.fixtures.map((f) =>
+          f.id === d.fixtureId ? { ...f, x: moved.x, y: moved.y } : f,
+        );
+        geomRef.current = { ...g, fixtures: nextFixtures };
+        setFixtures(nextFixtures);
+        return;
+      }
+      if (d.kind === 'stair-body') {
+        if (editSubMode === 'rotate') {
+          const deg = (Math.atan2(sn.y - d.stair0.y, sn.x - d.stair0.x) * 180) / Math.PI;
+          const nextStairs = g.stairs.map((s) =>
+            s.id === d.stairId ? { ...s, rotationDeg: Math.round(deg) } : s,
+          );
+          geomRef.current = { ...g, stairs: nextStairs };
+          setStairs(nextStairs);
+          return;
+        }
+        let dx = sn.x - d.grab.x;
+        let dy = sn.y - d.grab.y;
+        if (ev.shiftKey) {
+          const od = orthoDelta(d.grab, sn);
+          dx = od.x;
+          dy = od.y;
+        }
+        const moved = clampPt({ x: d.stair0.x + dx, y: d.stair0.y + dy });
+        const nextStairs = g.stairs.map((s) =>
+          s.id === d.stairId ? { ...s, x: moved.x, y: moved.y } : s,
+        );
+        geomRef.current = { ...g, stairs: nextStairs };
+        setStairs(nextStairs);
+        return;
+      }
+
+      const nodes: Point[] = [
+        ...g.walls.flatMap((w) => [w.start, w.end]),
+        ...g.roomZones.flatMap((z) => z.points),
+      ];
+      const snWeld = nearestPoint(nodes, r) ?? sn;
+      const next = applyEditGeometry(
+        g.walls,
+        g.roomZones,
+        d,
+        snWeld,
+        ev.shiftKey,
+        vb.width,
+        vb.height,
+      );
+      geomRef.current = { ...g, walls: next.walls, roomZones: next.roomZones };
+      setWalls(next.walls);
+      setRoomZones(next.roomZones);
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      editDragRef.current = null;
+      setEditDraggingUi(false);
+      setEditLockedPick(null);
+      const fin = geomRef.current;
+      commitLayout(
+        {
+          walls: fin.walls,
+          roomZones: fin.roomZones,
+          tables: fin.tables,
+          chairs: fin.chairs,
+          windows: sanitizeWindows(fin.windows, fin.walls),
+          fixtures: fin.fixtures,
+          doors: fin.doors,
+          stairs: fin.stairs,
+        },
+        { label: 'Корректор', kind: 'edit' },
+      );
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const handleSvgDoubleClick = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (drawMode !== 'EDIT' || !svgRef.current) return;
+    event.preventDefault();
+    const raw = toCanvasPoint(svgRef.current, event.clientX, event.clientY);
+    const { walls: wL, roomZones: zL, tables: tL, chairs: cL } = geomRef.current;
+    const snapped = snapToGrid(raw);
+    const whAll = hitTestWall(wL, snapped);
+    const zhAll = hitTestZone(zL, snapped);
+
+    if (editFocus?.type === 'wall') {
+      const keepBody = whAll?.part === 'body' && whAll.wall.id === editFocus.id;
+      if (keepBody) return;
+      if (whAll && (whAll.part === 'start' || whAll.part === 'end')) {
+        detachWallVertexNextRef.current = { wallId: whAll.wall.id, end: whAll.part };
+        return;
+      }
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'zone') {
+      const keepBody = zhAll?.part === 'body' && zhAll.zone.id === editFocus.id;
+      if (keepBody) return;
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'table') {
+      const th = hitTestTable(tL, snapped, PX_PER_METER);
+      if (th?.id === editFocus.id) return;
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'chair') {
+      const ch = hitTestChair(cL, snapped, PX_PER_METER);
+      if (ch?.id === editFocus.id) return;
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'window') {
+      const wn = hitTestWindow(geomRef.current.windows, wL, snapped);
+      if (wn?.id === editFocus.id) return;
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'door') {
+      const dr = hitTestDoor(geomRef.current.doors, wL, snapped);
+      if (dr?.id === editFocus.id) return;
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'fixture') {
+      const fx = hitTestFixture(geomRef.current.fixtures, snapped, PX_PER_METER);
+      if (fx?.id === editFocus.id) return;
+      setEditFocus(null);
+      return;
+    }
+    if (editFocus?.type === 'stair') {
+      const st = hitTestStair(geomRef.current.stairs, snapped, PX_PER_METER);
+      if (st?.id === editFocus.id) return;
+      setEditFocus(null);
+      return;
+    }
+
+    const fxAll = hitTestFixture(geomRef.current.fixtures, snapped, PX_PER_METER);
+    if (fxAll) {
+      setEditFocus({ type: 'fixture', id: fxAll.id });
+      return;
+    }
+    const chAll = hitTestChair(cL, snapped, PX_PER_METER);
+    if (chAll) {
+      setEditFocus({ type: 'chair', id: chAll.id });
+      return;
+    }
+    const thAll = hitTestTable(tL, snapped, PX_PER_METER);
+    if (thAll) {
+      setEditFocus({ type: 'table', id: thAll.id });
+      return;
+    }
+    const drAll = hitTestDoor(geomRef.current.doors, wL, snapped);
+    if (drAll) {
+      setEditFocus({ type: 'door', id: drAll.id });
+      return;
+    }
+    const stAll = hitTestStair(geomRef.current.stairs, snapped, PX_PER_METER);
+    if (stAll) {
+      setEditFocus({ type: 'stair', id: stAll.id });
+      return;
+    }
+    const wnAll = hitTestWindow(geomRef.current.windows, wL, snapped);
+    if (wnAll) {
+      setEditFocus({ type: 'window', id: wnAll.id });
+      return;
+    }
+
+    const wHit = filterWallsForEdit(wL, editFocus);
+    const zHit = filterZonesForEdit(zL, editFocus);
+    const allNodes: Point[] = [
+      ...wHit.flatMap((w) => [w.start, w.end]),
+      ...zHit.flatMap((z) => z.points),
+    ];
+    const nearest = nearestPoint(allNodes, raw);
+    const snappedIso = nearest ?? snapToGrid(raw);
+    const wh = hitTestWall(wHit, snappedIso);
+    if (wh?.part === 'body') {
+      setEditFocus({ type: 'wall', id: wh.wall.id });
+      return;
+    }
+    const zh = hitTestZone(zHit, snappedIso);
+    if (zh?.part === 'body') {
+      setEditFocus({ type: 'zone', id: zh.zone.id });
+      return;
+    }
+    if (wh && (wh.part === 'start' || wh.part === 'end')) {
+      detachWallVertexNextRef.current = { wallId: wh.wall.id, end: wh.part };
+    }
+  };
+
+  const handleCanvasClick = (event: React.MouseEvent<SVGSVGElement>) => {
+    if (drawMode === 'DELETE') {
+      if (deleteClickSuppressRef.current) {
+        deleteClickSuppressRef.current = false;
+        return;
+      }
+      if (!snappedCursor) return;
+      const top = pickTopTarget(
+        collectPickTargets(
+          snappedCursor,
+          walls,
+          roomZones,
+          tables,
+          chairs,
+          windows,
+          PX_PER_METER,
+          fixtures,
+          doors,
+          stairs,
+        ),
+      );
+      if (!top) return;
+      if (top.kind === 'fixture') {
+        commitLayout(
+          {
+            walls,
+            roomZones,
+            tables,
+            chairs,
+            windows,
+            fixtures: fixtures.filter((f) => f.id !== top.id),
+          },
+          { label: 'Удалён объект', kind: 'delete' },
+        );
+      } else if (top.kind === 'chair') {
+        commitLayout(
+          { walls, roomZones, tables, chairs: chairs.filter((c) => c.id !== top.id), windows },
+          { label: 'Удалён стул', kind: 'delete' },
+        );
+      } else if (top.kind === 'table') {
+        commitLayout(
+          { walls, roomZones, tables: tables.filter((t) => t.id !== top.id), chairs, windows },
+          { label: 'Удалён стол', kind: 'delete' },
+        );
+      } else if (top.kind === 'door') {
+        commitLayout(
+          {
+            walls,
+            roomZones,
+            tables,
+            chairs,
+            windows,
+            doors: doors.filter((d) => d.id !== top.id),
+          },
+          { label: 'Удалена дверь', kind: 'delete' },
+        );
+      } else if (top.kind === 'stair') {
+        commitLayout(
+          {
+            walls,
+            roomZones,
+            tables,
+            chairs,
+            windows,
+            stairs: stairs.filter((s) => s.id !== top.id),
+          },
+          { label: 'Удалена лестница', kind: 'delete' },
+        );
+      } else if (top.kind === 'window') {
+        commitLayout(
+          {
+            walls,
+            roomZones,
+            tables,
+            chairs,
+            windows: windows.filter((w) => w.id !== top.id),
+          },
+          { label: 'Удалено окно', kind: 'delete' },
+        );
+      } else if (top.kind === 'wall') {
+        commitLayout(
+          {
+            walls: walls.filter((w) => w.id !== top.id),
+            roomZones,
+            tables,
+            chairs,
+            windows: removeWindowsOnWalls(windows, new Set([top.id])),
+          },
+          { label: 'Удалена стена', kind: 'delete' },
+        );
+      } else if (top.kind === 'zone-vertex') {
+        const zone = roomZones.find((z) => z.id === top.id);
+        if (!zone) return;
+        if (zone.points.length <= 3) {
+          commitGeometry(
+            walls,
+            roomZones.filter((z) => z.id !== top.id),
+            { label: 'Удалена зона', kind: 'delete' },
+          );
+        } else {
+          const newPts = zone.points.filter((_, i) => i !== top.zoneVertexIndex);
+          commitGeometry(
+            walls,
+            roomZones.map((z) => (z.id === top.id ? { ...z, points: newPts } : z)),
+            { label: 'Вершина зоны', kind: 'edit' },
+          );
+        }
+      } else if (top.kind === 'zone-body') {
+        commitGeometry(
+          walls,
+          roomZones.filter((z) => z.id !== top.id),
+          { label: 'Удалена зона', kind: 'delete' },
+        );
+      }
+      setDeleteHover(null);
+      return;
+    }
+    if (drawMode === 'EDIT') return;
+    if (!snappedCursor) return;
+    const point = snappedCursor;
+
+    if (drawMode === 'TABLE') {
+      const presetId = tablePresetPick !== '__new__' ? tablePresetPick : crypto.randomUUID();
+      const item: PlanTable = {
+        id: crypto.randomUUID(),
+        name: tableDraft.name.trim() || 'Стол',
+        x: point.x,
+        y: point.y,
+        widthM: tableDraft.widthM,
+        heightM: tableDraft.depthM,
+        shape: tableShapeDraft,
+        rotationDeg: 0,
+        presetId,
+      };
+      const preset: PlacementPreset = {
+        id: presetId,
+        name: item.name,
+        widthM: item.widthM,
+        depthM: item.heightM,
+      };
+      persistPlacementMeta('table', tableDraft, preset);
+      commitLayout(
+        { walls, roomZones, tables: [...tables, item], chairs, windows },
+        { label: `Стол: ${item.name}`, kind: 'draw' },
+      );
+      setPlaceArmed(true);
+      return;
+    }
+
+    if (drawMode === 'CHAIR') {
+      const presetId = chairPresetPick !== '__new__' ? chairPresetPick : crypto.randomUUID();
+      const item: PlanChair = {
+        id: crypto.randomUUID(),
+        name: chairDraft.name.trim() || 'Стул',
+        x: point.x,
+        y: point.y,
+        widthM: chairDraft.widthM,
+        heightM: chairDraft.depthM,
+        rotationDeg: 0,
+        variant: chairVariant,
+        presetId,
+      };
+      const preset: PlacementPreset = {
+        id: presetId,
+        name: item.name,
+        widthM: item.widthM,
+        depthM: item.heightM,
+      };
+      persistPlacementMeta('chair', chairDraft, preset);
+      commitLayout(
+        { walls, roomZones, tables, chairs: [...chairs, item], windows },
+        { label: `Стул: ${item.name}`, kind: 'draw' },
+      );
+      setPlaceArmed(true);
+      return;
+    }
+
+    if (drawMode === 'WINDOW') {
+      const proposal = proposeWindowPlacement(walls, point, windowDraft.widthM, PX_PER_METER);
+      if (!proposal) return;
+      const presetId = windowPresetPick !== '__new__' ? windowPresetPick : crypto.randomUUID();
+      const item: PlanWindow = {
+        id: crypto.randomUUID(),
+        name: windowDraft.name.trim() || 'Окно',
+        widthM: proposal.widthM,
+        spans: proposal.spans,
+        presetId,
+      };
+      persistPlacementMeta('window', windowDraft, {
+        id: presetId,
+        name: item.name,
+        widthM: item.widthM,
+      });
+      commitLayout(
+        { walls, roomZones, tables, chairs, windows: [...windows, item] },
+        { label: `Окно: ${item.name}`, kind: 'draw' },
+      );
+      setPlaceArmed(true);
+      return;
+    }
+
+    if (drawMode === 'DOOR') {
+      const proposal = proposeDoorPlacement(walls, point, doorDraft.widthM, PX_PER_METER);
+      if (!proposal) return;
+      const item: PlanDoor = {
+        id: crypto.randomUUID(),
+        name: doorDraft.name.trim() || 'Дверь',
+        widthM: proposal.widthM,
+        spans: proposal.spans,
+        kind: doorKind,
+        swing: doorSwing,
+        hingeSide: 'left',
+      };
+      commitLayout(
+        { walls, roomZones, tables, chairs, windows, doors: [...doors, item] },
+        { label: `Дверь: ${item.name}`, kind: 'draw' },
+      );
+      return;
+    }
+
+    if (drawMode === 'STAIR') {
+      if (stairKind === 'half_room') {
+        const pairId = halfStairPending?.pairId ?? crypto.randomUUID();
+        const pairRole = halfStairPending ? 'down' : 'up';
+        const item: PlanStair = {
+          ...stairDraft,
+          id: crypto.randomUUID(),
+          x: point.x,
+          y: point.y,
+          kind: 'half_room',
+          pairId,
+          pairRole,
+          widthM: stairDraft.widthM * 0.55,
+        };
+        commitLayout(
+          { walls, roomZones, tables, chairs, windows, stairs: [...stairs, item] },
+          { label: `Лестница: ${item.name}`, kind: 'draw' },
+        );
+        setHalfStairPending(halfStairPending ? null : { pairId });
+        return;
+      }
+      const item: PlanStair = {
+        ...stairDraft,
+        id: crypto.randomUUID(),
+        x: point.x,
+        y: point.y,
+        kind: stairKind,
+      };
+      commitLayout(
+        { walls, roomZones, tables, chairs, windows, stairs: [...stairs, item] },
+        { label: `Лестница: ${item.name}`, kind: 'draw' },
+      );
+      return;
+    }
+
+    if (drawMode === 'FIXTURE') {
+      const kind = interiorTool as FixtureKind;
+      const item: PlanFixture = {
+        ...fixtureDraft,
+        id: crypto.randomUUID(),
+        x: point.x,
+        y: point.y,
+        kind,
+        name: fixtureDraft.name.trim() || defaultFixture(kind).name,
+        sofaStyle: interiorTool === 'sofa' ? sofaStyle : fixtureDraft.sofaStyle,
+        skipCollision: interiorTool === 'tv_stand' || interiorTool === 'whiteboard',
+      };
+      commitLayout(
+        { walls, roomZones, tables, chairs, windows, fixtures: [...fixtures, item] },
+        { label: `${item.name}`, kind: 'draw' },
+      );
+      return;
+    }
+
+    if (drawMode === 'WALL') {
+      if (!draftWallStart) {
+        setDraftWallStart(point);
+        return;
+      }
+      if (distance(draftWallStart, point) < 1) return;
+      commitGeometry(
+        [...walls, { id: crypto.randomUUID(), start: draftWallStart, end: point }],
+        roomZones,
+        { label: 'Добавлена стена', kind: 'draw' },
+      );
+      setDraftWallStart(point);
+      return;
+    }
+    setDraftRoomPoints((prev) => [...prev, point]);
+  };
+
+  const handleFinishWall = () => {
+    if (drawMode === 'EDIT' || drawMode === 'DELETE') return;
+    if (drawMode === 'WALL') {
+      setDraftWallStart(null);
+      return;
+    }
+    if (draftRoomPoints.length < 3) return;
+    const zoneId = crypto.randomUUID();
+    const points = draftRoomPoints.map((p) => ({ ...p }));
+    const nextZones = [...roomZones, { id: zoneId, points, roomId: null }];
+    commitGeometry(walls, nextZones, { label: 'Новая зона', kind: 'draw' });
+    setDraftRoomPoints([]);
+    setRoomPickerZoneId(zoneId);
+    setRoomPickerValue('');
+  };
+
+  const handleUndoWall = () => {
+    if (drawMode === 'EDIT' || drawMode === 'DELETE') return;
+    if (drawMode === 'WALL') {
+      if (!walls.length) return;
+      commitGeometry(walls.slice(0, -1), roomZones, {
+        label: 'Отмена сегмента стены',
+        kind: 'draw',
+      });
+      setDraftWallStart(null);
+      return;
+    }
+    if (draftRoomPoints.length > 0) {
+      setDraftRoomPoints((prev) => prev.slice(0, -1));
+      return;
+    }
+    if (!roomZones.length) return;
+    commitGeometry(walls, roomZones.slice(0, -1), {
+      label: 'Отмена зоны (черновик)',
+      kind: 'draw',
+    });
+  };
+
+  const handleClearWalls = () => {
+    if (drawMode === 'EDIT' || drawMode === 'DELETE') return;
+    if (drawMode === 'WALL') {
+      commitGeometry([], roomZones, { label: 'Очистка стен', kind: 'clear' });
+      setDraftWallStart(null);
+      return;
+    }
+    commitGeometry(walls, [], { label: 'Очистка зон', kind: 'clear' });
+    setDraftRoomPoints([]);
+  };
+
+  const getRoomNameById = (roomId: string | null) => {
+    if (!roomId) return 'Комната не назначена';
+    const room = state.rooms.find((r) => r?.id === roomId);
+    return room?.name || 'Комната не назначена';
+  };
+
+  const polygonCenter = (points: Point[]) => {
+    const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+    return { x: sum.x / points.length, y: sum.y / points.length };
+  };
+
+  const openRoomPicker = (zoneId: string) => {
+    const zone = roomZones.find((z) => z.id === zoneId);
+    setRoomPickerZoneId(zoneId);
+    setRoomPickerValue(zone?.roomId ?? '');
+  };
+
+  const clampCanvasZoom = (z: number) => Math.min(2.5, Math.max(0.4, round2(z)));
+
+  const svgCursorStyle = useMemo(() => {
+    if (drawMode === 'DELETE') {
+      if (deleteMarquee) return 'crosshair';
+      return deleteHover ? 'pointer' : 'crosshair';
+    }
+    if (drawMode === 'TABLE' || drawMode === 'CHAIR' || drawMode === 'WINDOW') {
+      return 'crosshair';
+    }
+    if (drawMode !== 'EDIT') return 'crosshair';
+    if (editDraggingUi) return 'grabbing';
+    if (!editHover) return 'crosshair';
+    if (editHover.kind === 'wall') {
+      return editHover.part === 'body' ? 'grab' : 'move';
+    }
+    if (
+      editHover.kind === 'table' ||
+      editHover.kind === 'chair' ||
+      editHover.kind === 'window' ||
+      editHover.kind === 'fixture' ||
+      editHover.kind === 'stair'
+    ) {
+      return 'grab';
+    }
+    if (editHover.kind === 'zone') {
+      return editHover.part === 'body' ? 'grab' : 'move';
+    }
+    return 'crosshair';
+  }, [drawMode, editHover, editDraggingUi, deleteHover, deleteMarquee, placeArmed]);
+
+  const svgTextScale = useMemo(() => Math.max(0.38, canvasZoom) / CANVAS_BASE_ZOOM, [canvasZoom]);
+
+  const occupancyDisplay = useMemo(() => {
+    const occRooms = Array.isArray(occupancy?.rooms) ? occupancy.rooms : [];
+    const byId = new Map<string, OccupancyRoomRow>(occRooms.map((r) => [r.roomId, r]));
+    const rows = state.rooms.map((room: EditorRoomRecord, idx: number) => {
+      const id = room?.id;
+      const o = id ? byId.get(id) : undefined;
+      const cap = Number(room?.capacity) || 0;
+      const appointmentsCount = o?.appointmentsCount ?? 0;
+      const occPct =
+        cap > 0
+          ? Math.min(100, Math.round((appointmentsCount / cap) * 100))
+          : (o?.occupancyPercent ?? 0);
+      const z = id ? roomZones.find((rz) => rz.roomId === id) : undefined;
+      const areaM2 = z ? polygonAreaSqM(z.points) : null;
+      return {
+        roomId: id || `local-${idx}`,
+        roomName: String(room?.name || 'Комната'),
+        capacity: cap,
+        appointmentsCount,
+        occupancyPercent: occPct,
+        areaM2,
+      };
+    });
+    const totalCapacity = rows.reduce((s, r) => s + Math.max(0, r.capacity), 0);
+    const totalAppointments = rows.reduce((s, r) => s + r.appointmentsCount, 0);
+    return {
+      rows,
+      roomCount: rows.length,
+      totalCapacity,
+      totalAppointments,
+    };
+  }, [occupancy, state.rooms, roomZones]);
+
+  const applyRoomPicker = (skip: boolean) => {
+    if (!roomPickerZoneId) return;
+    const nextZones = roomZones.map((z) =>
+      z.id === roomPickerZoneId
+        ? { ...z, roomId: skip || !roomPickerValue ? null : roomPickerValue }
+        : z,
+    );
+    commitGeometry(walls, nextZones, { label: 'Комната в зоне', kind: 'picker' });
+    setRoomPickerZoneId(null);
+    setRoomPickerValue('');
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Планировка и комнаты</h2>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <div>
+          <label className="mb-1 block text-sm font-medium">Кафе</label>
+          <select
+            value={cafeId}
+            onChange={(e) => setCafeId(e.target.value)}
+            className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2"
+          >
+            {cafes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Дата для сводки загруженности</label>
+          <input
+            type="date"
+            value={occupancyDate}
+            onChange={(e) => setOccupancyDate(e.target.value)}
+            className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2"
+          />
+          <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
+            Влияет на блок «Загруженность» ниже и на данные с сервера для выбранной даты.
+          </p>
+        </div>
+        <div className="flex flex-col justify-end">
+          <span className="mb-1 block text-sm font-medium opacity-0">Сохранить</span>
+          <button
+            onClick={requestSave}
+            disabled={saving || !cafeId}
+            className="w-full rounded-lg bg-[rgb(var(--tc-accent))] px-3 py-2 text-white disabled:opacity-60"
+          >
+            {saving ? 'Сохранение...' : 'Сохранить планировку'}
+          </button>
+          <p className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
+            Сохраняет планировку, комнаты и разметку на сервер.
+          </p>
+        </div>
+      </div>
+
+      {selectedCafe && (
+        <p className="text-sm text-[rgb(var(--tc-muted))]">Активное кафе: {selectedCafe.name}</p>
+      )}
+      {loading && <p className="text-sm text-[rgb(var(--tc-muted))]">Загрузка...</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {(occupancy != null || (state.rooms?.length ?? 0) > 0) && (
+        <div className="rounded-xl border border-[rgb(var(--tc-border))] p-3">
+          <h3 className="mb-2 font-semibold">Загруженность (на дату)</h3>
+          <p className="mb-2 text-sm text-[rgb(var(--tc-muted))]">
+            Комнат в расчёте: {occupancyDisplay.roomCount}. Суммарная вместимость:{' '}
+            {occupancyDisplay.totalCapacity} чел. Записей на дату:{' '}
+            {occupancyDisplay.totalAppointments}.
+          </p>
+          {occupancyDisplay.rows.length > 0 && (
+            <ul className="space-y-1 text-sm">
+              {occupancyDisplay.rows.map((row, idx) => (
+                <li
+                  key={`${row.roomId}-${idx}`}
+                  className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-[rgb(var(--tc-border))]/60 pt-1 first:border-t-0 first:pt-0"
+                >
+                  <span className="font-medium">{row.roomName}</span>
+                  <span className="text-[rgb(var(--tc-muted))]">до {row.capacity} чел.</span>
+                  <span className="text-[rgb(var(--tc-muted))]">
+                    площадь: {row.areaM2 != null ? `${row.areaM2.toFixed(1)} m²` : '—'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div
+        className={
+          layoutFullscreen
+            ? 'fixed inset-0 z-[200] flex min-h-0 flex-col overflow-hidden bg-[rgb(var(--tc-bg))] p-2 md:p-3'
+            : 'rounded-xl border border-[rgb(var(--tc-border))] p-3'
+        }
+      >
+        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
+          <h3 className="font-semibold">
+            Визуальная разметка
+            {layoutFullscreen && (
+              <span className="ml-2 text-xs font-normal text-[rgb(var(--tc-muted))]">
+                полный экран · Esc
+              </span>
+            )}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleFinishWall}
+              disabled={
+                drawMode === 'EDIT' ||
+                drawMode === 'DELETE' ||
+                drawMode === 'TABLE' ||
+                drawMode === 'CHAIR' ||
+                drawMode === 'WINDOW'
+              }
+              className="rounded-lg border border-[rgb(var(--tc-border))] px-2 py-1 text-sm disabled:pointer-events-none disabled:opacity-40"
+            >
+              {drawMode === 'WALL'
+                ? 'Завершить стену'
+                : drawMode === 'ROOM'
+                  ? 'Завершить зону'
+                  : '—'}
+            </button>
+            <button
+              type="button"
+              onClick={applyGeometryUndo}
+              disabled={undoAvailable === 0}
+              title="Отмена изменения геометрии (Ctrl+Z)"
+              className="rounded-lg border border-[rgb(var(--tc-border))] px-2 py-1 text-sm disabled:pointer-events-none disabled:opacity-40"
+            >
+              Назад
+            </button>
+            <div className="relative" ref={historyMenuRef}>
+              <button
+                type="button"
+                onClick={() => setHistoryMenuOpen((o) => !o)}
+                className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1 text-sm"
+              >
+                Шаг чертежа ▾
+              </button>
+              {historyMenuOpen && (
+                <div className="absolute left-0 top-full z-50 mt-1 max-h-[min(70vh,420px)] min-w-[260px] overflow-y-auto rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] py-1 text-left text-sm shadow-lg">
+                  <div className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[rgb(var(--tc-muted))]">
+                    История геометрии
+                  </div>
+                  {geometryHistoryRef.current.map((entry, idx) => {
+                    const cur = historyCursorRef.current;
+                    const textCls =
+                      idx < cur
+                        ? 'text-gray-400'
+                        : idx > cur
+                          ? 'text-slate-500'
+                          : 'font-medium text-[rgb(var(--tc-fg))]';
+                    return (
+                      <button
+                        key={`${historyUiTick}-hist-${idx}`}
+                        type="button"
+                        onClick={() => jumpToHistoryIndex(idx)}
+                        className={`flex w-full items-center gap-2 border-l-2 px-2 py-1.5 text-left ${historyKindRowClass(entry.kind)} ${textCls}`}
+                      >
+                        <span className="min-w-[1.25rem] text-[10px] text-[rgb(var(--tc-muted))]">
+                          {idx + 1}.
+                        </span>
+                        <span className="flex-1">{entry.label}</span>
+                      </button>
+                    );
+                  })}
+                  <div className="mt-1 border-t border-[rgb(var(--tc-border))] px-2 py-1 text-xs font-semibold uppercase tracking-wide text-[rgb(var(--tc-muted))]">
+                    Действия в режиме рисования
+                  </div>
+                  {drawMode === 'WALL' && walls.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUndoWall();
+                        setHistoryMenuOpen(false);
+                      }}
+                      className="w-full px-2 py-1.5 text-left text-sm hover:bg-[rgb(var(--tc-border))]/25"
+                    >
+                      Удалить последний сегмент стены
+                    </button>
+                  )}
+                  {drawMode === 'ROOM' && draftRoomPoints.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftRoomPoints((prev) => prev.slice(0, -1));
+                        setHistoryMenuOpen(false);
+                      }}
+                      className="w-full px-2 py-1.5 text-left text-sm hover:bg-[rgb(var(--tc-border))]/25"
+                    >
+                      Убрать последнюю вершину черновика
+                    </button>
+                  )}
+                  {drawMode === 'ROOM' && draftRoomPoints.length === 0 && roomZones.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUndoWall();
+                        setHistoryMenuOpen(false);
+                      }}
+                      className="w-full px-2 py-1.5 text-left text-sm hover:bg-[rgb(var(--tc-border))]/25"
+                    >
+                      Удалить последнюю зону
+                    </button>
+                  )}
+                  {drawMode === 'ROOM' &&
+                    draftRoomPoints.length === 0 &&
+                    roomZones.length === 0 && (
+                      <p className="px-2 py-1 text-xs text-[rgb(var(--tc-muted))]">
+                        Нет шагов черновика
+                      </p>
+                    )}
+                </div>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={applyGeometryRedo}
+              disabled={redoAvailable === 0}
+              title="Повтор (Ctrl+Y)"
+              className="rounded-lg border border-[rgb(var(--tc-border))] px-2 py-1 text-sm disabled:pointer-events-none disabled:opacity-40"
+            >
+              Повтор
+            </button>
+            <button
+              onClick={handleClearWalls}
+              disabled={drawMode === 'EDIT' || drawMode === 'DELETE'}
+              className="rounded-lg border border-red-300 px-2 py-1 text-sm text-red-700 disabled:pointer-events-none disabled:opacity-40"
+            >
+              {drawMode === 'WALL' ? 'Очистить стены' : drawMode === 'ROOM' ? 'Очистить зоны' : '—'}
+            </button>
+          </div>
+        </div>
+
+        {planGroup === 'interior' && drawMode === 'TABLE' && (
+          <LayoutPlacementPanel
+            draft={tableDraft}
+            onDraftChange={(patch) => setTableDraft((d) => ({ ...d, ...patch }))}
+            placeArmed={placeArmed}
+            onArmPlace={() => setPlaceArmed(true)}
+            presets={tablePresetOptions}
+            presetPick={tablePresetPick}
+            onPresetPick={(v) => {
+              setTablePresetPick(v);
+              if (v === '__new__') {
+                setTableDraft(
+                  readPlacementDefaults(
+                    state.layout?.schema,
+                    'lastTableDefaults',
+                    DEFAULT_TABLE_DRAFT,
+                  ),
+                );
+                return;
+              }
+              const p = tablePresetOptions.find((x) => x.id === v);
+              if (p) setTableDraft({ name: p.name, widthM: p.widthM, depthM: p.depthM });
+            }}
+            presetLabel="Тип стола"
+            hidePlaceButton
+            hint="Размеры и форма применяются к следующему клику на план."
+          />
+        )}
+        {planGroup === 'interior' && drawMode === 'TABLE' && (
+          <div className="mb-2 flex flex-wrap items-end gap-3 text-sm">
+            <div>
+              <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                Форма стола
+              </label>
+              <select
+                value={tableShapeDraft}
+                onChange={(e) => setTableShapeDraft(e.target.value as TableShape)}
+                className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+              >
+                <option value="rect">Прямоугольник</option>
+                <option value="rounded">Скруглённые углы</option>
+                <option value="oval">Овал</option>
+              </select>
+            </div>
+          </div>
+        )}
+        {planGroup === 'interior' && drawMode === 'CHAIR' && (
+          <LayoutPlacementPanel
+            draft={chairDraft}
+            onDraftChange={(patch) => setChairDraft((d) => ({ ...d, ...patch }))}
+            placeArmed={placeArmed}
+            onArmPlace={() => setPlaceArmed(true)}
+            hidePlaceButton
+            presets={chairPresetOptions}
+            presetPick={chairPresetPick}
+            onPresetPick={(v) => {
+              setChairPresetPick(v);
+              if (v === '__new__') {
+                setChairDraft(
+                  readPlacementDefaults(
+                    state.layout?.schema,
+                    'lastChairDefaults',
+                    DEFAULT_CHAIR_DRAFT,
+                  ),
+                );
+                return;
+              }
+              const p = chairPresetOptions.find((x) => x.id === v);
+              if (p) setChairDraft({ name: p.name, widthM: p.widthM, depthM: p.depthM });
+            }}
+            presetLabel="Тип стула"
+          />
+        )}
+        {planGroup === 'structure' && drawMode === 'WINDOW' && (
+          <LayoutPlacementPanel
+            draft={windowDraft}
+            onDraftChange={(patch) => setWindowDraft((d) => ({ ...d, ...patch }))}
+            placeArmed={placeArmed}
+            onArmPlace={() => setPlaceArmed(true)}
+            presets={windowPresetOptions.map((p) => ({ ...p, depthM: 0 }))}
+            presetPick={windowPresetPick}
+            onPresetPick={(v) => {
+              setWindowPresetPick(v);
+              if (v === '__new__') {
+                const d = readWindowDefaults(state.layout?.schema);
+                setWindowDraft({ name: d.name, widthM: d.widthM, depthM: 0 });
+                return;
+              }
+              const p = windowPresetOptions.find((x) => x.id === v);
+              if (p) setWindowDraft({ name: p.name, widthM: p.widthM, depthM: 0 });
+            }}
+            showDepth={false}
+            widthLabel="Ширина проёма (м)"
+            presetLabel="Тип окна"
+            hidePlaceButton
+            hint="Кликните по стене — окно примагнитится к стене."
+          />
+        )}
+
+        <div className={layoutFullscreen ? 'flex min-h-0 flex-1 flex-col gap-2' : ''}>
+          <div
+            className={
+              layoutFullscreen
+                ? 'shrink-0 space-y-2 rounded-lg border border-[rgb(var(--tc-border))]/70 bg-[rgb(var(--tc-bg))]/90 p-3'
+                : ''
+            }
+          >
+            <div className="mb-3 flex flex-wrap items-end gap-3 text-sm">
+              <div>
+                <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                  Поле плана, ширина (м)
+                </label>
+                <input
+                  type="number"
+                  min={2}
+                  max={120}
+                  step={0.5}
+                  value={planFieldM.widthM}
+                  onChange={(e) =>
+                    setPlanFieldMeters(Number(e.target.value) || 2, planFieldM.heightM)
+                  }
+                  className="w-28 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                />
+              </div>
+              <div>
+                <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                  Высота (м)
+                </label>
+                <input
+                  type="number"
+                  min={2}
+                  max={120}
+                  step={0.5}
+                  value={planFieldM.heightM}
+                  onChange={(e) =>
+                    setPlanFieldMeters(planFieldM.widthM, Number(e.target.value) || 2)
+                  }
+                  className="w-28 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                />
+              </div>
+              <p className="max-w-xl flex-1 text-xs text-[rgb(var(--tc-muted))]">
+                Минимальный размер рабочего поля в метрах (20 px сетки = 0,1 м). Увеличьте поле,
+                чтобы расставить комнаты с запасом; при большом масштабе полоса прокрутки ведёт по
+                всей области.
+              </p>
+              <div className="flex w-full flex-wrap items-end gap-2">
+                <label className="cursor-pointer rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-1.5 text-xs font-semibold hover:bg-[rgb(var(--tc-border))]/30">
+                  {planBackground ? 'Заменить фон' : 'Загрузить фон (PNG)'}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      if (file.size > 4 * 1024 * 1024) {
+                        setError('Фон: файл больше 4 МБ');
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const dataUrl = String(reader.result || '');
+                        if (!dataUrl.startsWith('data:image/')) return;
+                        const wPx = planFieldM.widthM * PX_PER_METER;
+                        const hPx = planFieldM.heightM * PX_PER_METER;
+                        setPlanBackground({
+                          dataUrl,
+                          x: wPx / 2,
+                          y: hPx / 2,
+                          widthM: planFieldM.widthM,
+                          heightM: planFieldM.heightM,
+                          opacity: 0.92,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+                {planBackground && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setPlanBackground(null)}
+                      className="rounded-lg border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
+                    >
+                      Убрать фон
+                    </button>
+                    <div>
+                      <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                        Прозрачность
+                      </label>
+                      <input
+                        type="range"
+                        min={0.2}
+                        max={1}
+                        step={0.05}
+                        value={planBackground.opacity ?? 1}
+                        onChange={(e) =>
+                          setPlanBackground({
+                            ...planBackground,
+                            opacity: Number(e.target.value),
+                          })
+                        }
+                        className="w-28"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <p className="mb-2 text-sm text-[rgb(var(--tc-muted))]">
+              {drawMode === 'WALL'
+                ? 'Клик: начало/конец сегмента стены. Без Shift — любой угол (30°, 45°, 60° и т.д.). Зажатый Shift — только горизонталь или вертикаль от точки старта.'
+                : drawMode === 'ROOM'
+                  ? 'Клик: вершины контура комнаты. Пунктир — замыкание к первой точке. «Завершить зону» — только по поставленным точкам (позиция мыши не добавляется). Shift — ортогональ от последней вершины.'
+                  : drawMode === 'DELETE'
+                    ? 'Удаление: клик — стена, зона, стол, стул или окно. Рамкой (зажать ЛКМ) — всё пересекающееся. Удаление стены удаляет окна на ней.'
+                    : drawMode === 'TABLE'
+                      ? 'Задайте размеры и форму стола, затем кликните на план — стол поставится сразу. Параметры сохраняются для следующих столов.'
+                      : drawMode === 'CHAIR'
+                        ? 'Выберите тип стула или задайте новый, затем кликните на план. Параметры последнего стула подставляются автоматически.'
+                        : drawMode === 'WINDOW'
+                          ? 'Задайте ширину проёма и кликните по стене. Окно двигается вдоль стены; у угла — угловое. Удаление стены удаляет её окна.'
+                          : `Корректор: узлы стен в радиусе ${WELD_EPS}px склеиваются — перетаскивание угла двигает все совпавшие концы. При перекрытии объектов верхний моргает 4 с, затем следующий. Двойной клик — изоляция объекта и панель свойств ниже. Esc — выйти. Масштаб: Ctrl + колёсико или панель на плане.`}
+            </p>
+
+            {activeEditFocus && (
+              <LayoutEditInspector
+                focus={activeEditFocus}
+                editSubMode={editSubMode}
+                rooms={state.rooms}
+                zoneRoomId={activeEditZone?.roomId ?? null}
+                zoneAreaM2={activeEditZone ? polygonAreaSqM(activeEditZone.points) : null}
+                table={
+                  activeEditFocus.type === 'table'
+                    ? tables.find((t) => t.id === activeEditFocus.id)
+                    : undefined
+                }
+                chair={
+                  activeEditFocus.type === 'chair'
+                    ? chairs.find((c) => c.id === activeEditFocus.id)
+                    : undefined
+                }
+                window={
+                  activeEditFocus.type === 'window'
+                    ? windows.find((w) => w.id === activeEditFocus.id)
+                    : undefined
+                }
+                fixture={
+                  activeEditFocus.type === 'fixture'
+                    ? fixtures.find((f) => f.id === activeEditFocus.id)
+                    : undefined
+                }
+                door={
+                  activeEditFocus.type === 'door'
+                    ? doors.find((d) => d.id === activeEditFocus.id)
+                    : undefined
+                }
+                stair={
+                  activeEditFocus.type === 'stair'
+                    ? stairs.find((s) => s.id === activeEditFocus.id)
+                    : undefined
+                }
+                wallThicknessPx={wallThicknessPx}
+                onPatchZoneRoom={(roomId) => {
+                  if (activeEditFocus.type === 'zone') patchZoneRoomId(activeEditFocus.id, roomId);
+                }}
+                onPatchRoom={updateRoomById}
+                onPatchTable={(patch) => {
+                  if (activeEditFocus.type === 'table') patchTableById(activeEditFocus.id, patch);
+                }}
+                onPatchChair={(patch) => {
+                  if (activeEditFocus.type === 'chair') patchChairById(activeEditFocus.id, patch);
+                }}
+                onPatchWindow={(patch) => {
+                  if (activeEditFocus.type === 'window') patchWindowById(activeEditFocus.id, patch);
+                }}
+                onPatchFixture={(patch) => {
+                  if (activeEditFocus.type === 'fixture')
+                    patchFixtureById(activeEditFocus.id, patch);
+                }}
+                onPatchDoor={(patch) => {
+                  if (activeEditFocus.type === 'door') patchDoorById(activeEditFocus.id, patch);
+                }}
+                onPatchStair={(patch) => {
+                  if (activeEditFocus.type === 'stair') patchStairById(activeEditFocus.id, patch);
+                }}
+                onPatchWallThickness={(px) => setWallThicknessPx(Math.min(24, Math.max(6, px)))}
+              />
+            )}
+
+            {planGroup === 'interior' && interiorTool === 'chair' && (
+              <div className="mb-2 flex flex-wrap items-end gap-3 text-sm">
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Тип стула
+                  </label>
+                  <select
+                    value={chairVariant}
+                    onChange={(e) => setChairVariant(e.target.value as ChairVariant)}
+                    className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  >
+                    {CHAIR_VARIANTS.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {planGroup === 'structure' && structureTool === 'door' && drawMode === 'DOOR' && (
+              <div className="mb-2 flex flex-wrap items-end gap-3 text-sm">
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Название
+                  </label>
+                  <input
+                    type="text"
+                    value={doorDraft.name}
+                    onChange={(e) => setDoorDraft((d) => ({ ...d, name: e.target.value }))}
+                    placeholder="Дверь"
+                    className="w-36 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  />
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Ширина (м)
+                  </label>
+                  <input
+                    type="number"
+                    min={0.6}
+                    max={2.5}
+                    step={0.05}
+                    value={doorDraft.widthM}
+                    onChange={(e) =>
+                      setDoorDraft((d) => ({ ...d, widthM: Number(e.target.value) || 0.9 }))
+                    }
+                    className="w-24 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  />
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Тип двери
+                  </label>
+                  <select
+                    value={doorKind}
+                    onChange={(e) => setDoorKind(e.target.value as DoorKind)}
+                    className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  >
+                    {DOOR_KINDS.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Открывание
+                  </label>
+                  <select
+                    value={doorSwing}
+                    onChange={(e) => setDoorSwing(e.target.value as DoorSwing)}
+                    className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  >
+                    {DOOR_SWINGS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {planGroup === 'structure' && structureTool === 'stair' && drawMode === 'STAIR' && (
+              <div className="mb-2 flex flex-wrap items-end gap-3 text-sm">
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Название
+                  </label>
+                  <input
+                    type="text"
+                    value={stairDraft.name}
+                    onChange={(e) => setStairDraft((s) => ({ ...s, name: e.target.value }))}
+                    className="w-36 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  />
+                </div>
+                {stairKind === 'half_room' && halfStairPending && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Кликните второй сегмент лестницы (вниз) — пунктиром соединится с первым.
+                  </p>
+                )}
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Тип лестницы
+                  </label>
+                  <select
+                    value={stairKind}
+                    onChange={(e) => {
+                      const k = e.target.value as StairKind;
+                      setStairKind(k);
+                      setStairDraft(defaultStair(k));
+                    }}
+                    className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  >
+                    {STAIR_KINDS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {planGroup === 'interior' && drawMode === 'FIXTURE' && (
+              <div className="mb-2 flex flex-wrap items-end gap-3 text-sm">
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Название на плане
+                  </label>
+                  <input
+                    type="text"
+                    value={fixtureDraft.name}
+                    onChange={(e) => setFixtureDraft((f) => ({ ...f, name: e.target.value }))}
+                    placeholder={defaultFixture(interiorTool as FixtureKind).name}
+                    className="w-44 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  />
+                </div>
+                {interiorTool === 'sofa' && (
+                  <div>
+                    <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                      Стиль дивана
+                    </label>
+                    <select
+                      value={sofaStyle}
+                      onChange={(e) => setSofaStyle(e.target.value as SofaStyle)}
+                      className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                    >
+                      {SOFA_STYLES.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {planGroup === 'structure' && drawMode === 'WALL' && (
+              <div className="mb-2 flex flex-wrap items-end gap-3 text-sm">
+                <div>
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Толщина стены (px)
+                  </label>
+                  <input
+                    type="number"
+                    min={6}
+                    max={24}
+                    step={1}
+                    value={wallThicknessPx}
+                    onChange={(e) =>
+                      setWallThicknessPx(
+                        Math.min(
+                          24,
+                          Math.max(6, Number(e.target.value) || DEFAULT_WALL_THICKNESS_PX),
+                        ),
+                      )
+                    }
+                    className="w-24 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={layoutFullscreen ? 'flex min-h-0 flex-1 gap-2' : ''}>
+            <div
+              className={
+                layoutFullscreen
+                  ? 'flex w-40 shrink-0 flex-col gap-2 overflow-y-auto rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))]/95 p-2 shadow-sm'
+                  : 'mb-3 flex flex-wrap items-center gap-2'
+              }
+            >
+              <span className="text-xs font-medium text-[rgb(var(--tc-muted))]">Группа:</span>
+              <button
+                type="button"
+                onClick={() => applyStructureTool(structureTool)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                  planGroup === 'structure'
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-[rgb(var(--tc-border))] hover:bg-[rgb(var(--tc-border))]/30'
+                }`}
+              >
+                Конструкция
+              </button>
+              <button
+                type="button"
+                onClick={() => applyInteriorTool(interiorTool)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+                  planGroup === 'interior'
+                    ? 'bg-amber-800 text-white'
+                    : 'border border-[rgb(var(--tc-border))] hover:bg-[rgb(var(--tc-border))]/30'
+                }`}
+              >
+                Интерьер
+              </button>
+
+              {planGroup === 'structure' && (
+                <div
+                  className={
+                    layoutFullscreen ? 'flex flex-col gap-1' : 'mb-2 flex w-full flex-wrap gap-1'
+                  }
+                >
+                  {STRUCTURE_TOOLS.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => applyStructureTool(t.id)}
+                      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+                        structureTool === t.id && drawMode !== 'EDIT' && drawMode !== 'DELETE'
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-[rgb(var(--tc-border))] hover:bg-[rgb(var(--tc-border))]/30'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {planGroup === 'interior' && (
+                <div
+                  className={
+                    layoutFullscreen ? 'flex flex-col gap-1' : 'mb-2 flex w-full flex-wrap gap-1'
+                  }
+                >
+                  {INTERIOR_TOOLS.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => applyInteriorTool(t.id)}
+                      className={`rounded-md px-2.5 py-1 text-xs font-semibold ${
+                        interiorTool === t.id && drawMode !== 'EDIT' && drawMode !== 'DELETE'
+                          ? 'bg-amber-800 text-white'
+                          : 'border border-[rgb(var(--tc-border))] hover:bg-[rgb(var(--tc-border))]/30'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={layoutFullscreen ? 'flex min-h-0 min-w-0 flex-1 flex-col' : ''}>
+              <div
+                className={`relative overflow-hidden rounded-xl border border-[rgb(var(--tc-border))] ${layoutFullscreen ? 'flex min-h-0 min-w-0 flex-1 flex-col' : 'max-h-[80vh]'}`}
+              >
+                <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2">
+                  <div className="pointer-events-auto shrink-0">
+                    <div className="pointer-events-auto flex flex-col gap-1 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))]/95 p-1 shadow-sm backdrop-blur-sm">
+                      {editFocus && drawMode === 'EDIT' && (
+                        <button
+                          type="button"
+                          title="Показать весь план"
+                          onClick={() => setEditFocus(null)}
+                          className="rounded-md border border-amber-500/60 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold text-amber-800 dark:text-amber-200"
+                        >
+                          Весь план
+                        </button>
+                      )}
+                      {drawMode === 'EDIT' && (
+                        <>
+                          <button
+                            type="button"
+                            title="Перемещение"
+                            onClick={() => setEditSubMode('move')}
+                            className={`rounded-md px-2 py-1 text-[10px] font-semibold ${
+                              editSubMode === 'move'
+                                ? 'bg-amber-600 text-white'
+                                : 'hover:bg-[rgb(var(--tc-border))]/30'
+                            }`}
+                          >
+                            ↔
+                          </button>
+                          <button
+                            type="button"
+                            title="Поворот (стол, стул, зона, интерьер, лестница)"
+                            onClick={() => setEditSubMode('rotate')}
+                            className={`rounded-md px-2 py-1 text-[10px] font-semibold ${
+                              editSubMode === 'rotate'
+                                ? 'bg-amber-600 text-white'
+                                : 'hover:bg-[rgb(var(--tc-border))]/30'
+                            }`}
+                          >
+                            ↻
+                          </button>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        title="Корректор: перемещение стен и зон"
+                        onClick={() => {
+                          setDrawMode('EDIT');
+                          setDraftWallStart(null);
+                          setDraftRoomPoints([]);
+                          setEditHover(null);
+                          setDeleteHover(null);
+                        }}
+                        className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+                          drawMode === 'EDIT'
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-[rgb(var(--tc-bg))] text-[rgb(var(--tc-fg))] hover:bg-[rgb(var(--tc-border))]/40'
+                        }`}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        title="Удаление стены или зоны"
+                        onClick={() => {
+                          setDrawMode('DELETE');
+                          setDraftWallStart(null);
+                          setDraftRoomPoints([]);
+                          setEditHover(null);
+                          setEditFocus(null);
+                        }}
+                        className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+                          drawMode === 'DELETE'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-[rgb(var(--tc-bg))] text-[rgb(var(--tc-fg))] hover:bg-[rgb(var(--tc-border))]/40'
+                        }`}
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </div>
+                  <div className="pointer-events-auto shrink-0">
+                    <div className="pointer-events-auto flex items-center gap-1 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))]/95 px-1 py-0.5 text-xs text-[rgb(var(--tc-fg))] shadow-sm backdrop-blur-sm">
+                      <button
+                        type="button"
+                        className="rounded px-1.5 py-0.5 hover:bg-[rgb(var(--tc-border))]/30"
+                        onClick={() => setCanvasZoom((z) => clampCanvasZoom(z - 0.1))}
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[3.25rem] text-center text-[13px] font-medium tabular-nums text-[rgb(var(--tc-fg))]">
+                        {Math.round((canvasZoom / CANVAS_BASE_ZOOM) * 100)}%
+                      </span>
+                      <button
+                        type="button"
+                        className="rounded px-1.5 py-0.5 hover:bg-[rgb(var(--tc-border))]/30"
+                        onClick={() => setCanvasZoom((z) => clampCanvasZoom(z + 0.1))}
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded px-1.5 py-0.5 hover:bg-[rgb(var(--tc-border))]/30"
+                        title="Сброс масштаба"
+                        onClick={() => setCanvasZoom(CANVAS_BASE_ZOOM)}
+                      >
+                        ⟲
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded px-1.5 py-0.5 hover:bg-[rgb(var(--tc-border))]/30"
+                        title={
+                          layoutFullscreen
+                            ? 'Выйти из полноэкранного режима (Esc)'
+                            : 'Полноэкранный режим'
+                        }
+                        onClick={() => setLayoutFullscreen((v) => !v)}
+                      >
+                        {layoutFullscreen ? '⤢' : '⛶'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  ref={canvasScrollRef}
+                  className={
+                    layoutFullscreen
+                      ? 'min-h-0 flex-1 overflow-auto p-2 pt-14'
+                      : 'max-h-[80vh] overflow-auto p-2 pt-14'
+                  }
+                >
+                  <div
+                    className="relative min-w-full rounded-xl bg-[#fafafa] shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                    style={{
+                      width: contentWidth * canvasZoom,
+                      minHeight: contentHeight * canvasZoom,
+                    }}
+                  >
+                    <svg
+                      ref={svgRef}
+                      viewBox={`0 0 ${contentWidth} ${contentHeight}`}
+                      preserveAspectRatio="none"
+                      width={contentWidth}
+                      height={contentHeight}
+                      className="block h-full w-full min-h-[400px]"
+                      style={{ cursor: svgCursorStyle }}
+                      onMouseMove={handleCanvasMove}
+                      onMouseDown={handleCanvasMouseDown}
+                      onDoubleClick={handleSvgDoubleClick}
+                      onClick={handleCanvasClick}
+                    >
+                      <defs>
+                        <pattern
+                          id="layout-grid"
+                          width={GRID_STEP}
+                          height={GRID_STEP}
+                          patternUnits="userSpaceOnUse"
+                        >
+                          <path
+                            d={`M ${GRID_STEP} 0 L 0 0 0 ${GRID_STEP}`}
+                            fill="none"
+                            stroke="#eef2f7"
+                            strokeWidth="1"
+                          />
+                        </pattern>
+                        <pattern
+                          id="wall-hatch"
+                          width={8}
+                          height={8}
+                          patternUnits="userSpaceOnUse"
+                          patternTransform="rotate(45)"
+                        >
+                          <line x1={0} y1={0} x2={0} y2={8} stroke="#9ca3af" strokeWidth={1} />
+                        </pattern>
+                        <pattern id="stair-half" width={8} height={8} patternUnits="userSpaceOnUse">
+                          <rect width={4} height={8} fill="#e5e7eb" />
+                          <rect x={4} width={4} height={8} fill="#f8fafc" />
+                        </pattern>
+                      </defs>
+                      <rect
+                        x="0"
+                        y="0"
+                        width={contentWidth}
+                        height={contentHeight}
+                        fill="#fafafa"
+                      />
+                      <rect
+                        x="0"
+                        y="0"
+                        width={contentWidth}
+                        height={contentHeight}
+                        fill="url(#layout-grid)"
+                      />
+                      {planBackground &&
+                        (() => {
+                          const bw = planBackground.widthM * PX_PER_METER;
+                          const bh = planBackground.heightM * PX_PER_METER;
+                          return (
+                            <image
+                              href={planBackground.dataUrl}
+                              x={planBackground.x - bw / 2}
+                              y={planBackground.y - bh / 2}
+                              width={bw}
+                              height={bh}
+                              opacity={planBackground.opacity ?? 1}
+                              preserveAspectRatio="xMidYMid meet"
+                            />
+                          );
+                        })()}
+                      {deleteMarquee &&
+                        drawMode === 'DELETE' &&
+                        (() => {
+                          const mr = rectFromTwoPoints(
+                            { x: deleteMarquee.x1, y: deleteMarquee.y1 },
+                            { x: deleteMarquee.x2, y: deleteMarquee.y2 },
+                          );
+                          return (
+                            <rect
+                              x={mr.x}
+                              y={mr.y}
+                              width={mr.w}
+                              height={mr.h}
+                              fill="rgba(220,38,38,0.1)"
+                              stroke="#dc2626"
+                              strokeWidth={2}
+                              strokeDasharray="7 5"
+                              pointerEvents="none"
+                            />
+                          );
+                        })()}
+
+                      {(() => {
+                        const jointCircles = collectWallJointCircles(
+                          walls,
+                          wallThicknessPx,
+                          WELD_EPS,
+                        );
+                        const endCaps = collectWallEndCaps(walls, wallThicknessPx, WELD_EPS);
+                        const capFill = (del: boolean, active: boolean) =>
+                          del ? 'rgba(220,38,38,0.35)' : 'url(#wall-hatch)';
+                        const capStroke = (del: boolean, active: boolean) =>
+                          del ? '#dc2626' : active ? '#ea580c' : '#1f2937';
+                        return (
+                          <>
+                            {walls.map((wall) => {
+                              const d = editDragRef.current;
+                              const wallActive =
+                                (editHover?.kind === 'wall' && editHover.id === wall.id) ||
+                                (d &&
+                                  (d.kind === 'wall-body' || d.kind === 'wall-end') &&
+                                  d.wallId === wall.id);
+                              const dimW =
+                                drawMode === 'EDIT' &&
+                                (editFocus?.type === 'zone' ||
+                                  (editFocus?.type === 'wall' && editFocus.id !== wall.id))
+                                  ? 0.28
+                                  : 1;
+                              const delFlash =
+                                drawMode === 'DELETE' &&
+                                deleteHover?.kind === 'wall' &&
+                                deleteHover.id === wall.id &&
+                                deleteBlinkOn;
+                              const thick = delFlash
+                                ? 12
+                                : wallActive
+                                  ? wallThicknessPx + 2
+                                  : wallThicknessPx;
+                              const trimmed = trimWallSegment(wall, thick, wallJointsMap, WELD_EPS);
+                              const band = wallBandPoints(trimmed, thick);
+                              return (
+                                <g key={wall.id} style={{ opacity: dimW }}>
+                                  <polygon
+                                    points={band.map((p) => `${p.x},${p.y}`).join(' ')}
+                                    fill={capFill(delFlash, Boolean(wallActive))}
+                                    stroke={capStroke(delFlash, Boolean(wallActive))}
+                                    strokeWidth={delFlash ? 2 : 1.2}
+                                    strokeLinejoin="round"
+                                  />
+                                  <circle
+                                    cx={wall.start.x}
+                                    cy={wall.start.y}
+                                    r={
+                                      wallActive &&
+                                      editHover?.kind === 'wall' &&
+                                      editHover.part === 'start'
+                                        ? 6
+                                        : 4.5
+                                    }
+                                    fill={wallActive ? '#c2410c' : '#1d4ed8'}
+                                  />
+                                  <circle
+                                    cx={wall.end.x}
+                                    cy={wall.end.y}
+                                    r={
+                                      wallActive &&
+                                      editHover?.kind === 'wall' &&
+                                      editHover.part === 'end'
+                                        ? 6
+                                        : 4.5
+                                    }
+                                    fill={wallActive ? '#c2410c' : '#1d4ed8'}
+                                  />
+                                </g>
+                              );
+                            })}
+                            {jointCircles.map((c, i) => (
+                              <circle
+                                key={`wj-${i}`}
+                                cx={c.x}
+                                cy={c.y}
+                                r={c.r}
+                                fill="url(#wall-hatch)"
+                                stroke="#1f2937"
+                                strokeWidth={1.2}
+                              />
+                            ))}
+                            {endCaps.map((c, i) => (
+                              <circle
+                                key={`wc-${i}`}
+                                cx={c.x}
+                                cy={c.y}
+                                r={c.r}
+                                fill="url(#wall-hatch)"
+                                stroke="#1f2937"
+                                strokeWidth={1.2}
+                              />
+                            ))}
+                          </>
+                        );
+                      })()}
+
+                      {walls.map((wall) => {
+                        const lenM = distance(wall.start, wall.end) * METERS_PER_PX;
+                        const mid = {
+                          x: (wall.start.x + wall.end.x) / 2,
+                          y: (wall.start.y + wall.end.y) / 2,
+                        };
+                        const dx = wall.end.x - wall.start.x;
+                        const dy = wall.end.y - wall.start.y;
+                        const L = Math.hypot(dx, dy) || 1;
+                        const ox = (-dy / L) * 14 * svgTextScale;
+                        const oy = (dx / L) * 14 * svgTextScale;
+                        return (
+                          <text
+                            key={`wlen-${wall.id}`}
+                            x={mid.x + ox}
+                            y={mid.y + oy + 3 * svgTextScale}
+                            fontSize={11 * svgTextScale}
+                            fill="#4b5563"
+                            textAnchor="middle"
+                            pointerEvents="none"
+                          >
+                            {lenM.toFixed(2)} m
+                          </text>
+                        );
+                      })}
+
+                      {windows.map((win) => {
+                        const active = editHover?.kind === 'window' && editHover.id === win.id;
+                        const delFlash =
+                          drawMode === 'DELETE' &&
+                          deleteHover?.kind === 'window' &&
+                          deleteHover.id === win.id &&
+                          deleteBlinkOn;
+                        const dimW =
+                          drawMode === 'EDIT' &&
+                          editFocus &&
+                          (editFocus.type === 'wall' ||
+                            editFocus.type === 'zone' ||
+                            editFocus.type === 'table' ||
+                            editFocus.type === 'chair' ||
+                            (editFocus.type === 'window' && editFocus.id !== win.id));
+                        const parts = windowDrawParts(win, walls, wallThicknessPx);
+                        return (
+                          <g key={win.id} style={{ opacity: dimW ? 0.28 : 1 }} pointerEvents="none">
+                            {parts.map((part, pi) => (
+                              <g key={`${win.id}-${pi}`}>
+                                <path d={windowWallCutPath(part)} fill="#fafafa" stroke="none" />
+                                <path
+                                  d={windowOpeningPath(part)}
+                                  fill={
+                                    delFlash
+                                      ? 'rgba(220,38,38,0.45)'
+                                      : active
+                                        ? 'rgba(241,245,249,0.95)'
+                                        : '#f1f5f9'
+                                  }
+                                  stroke={delFlash ? '#dc2626' : active ? '#ea580c' : '#374151'}
+                                  strokeWidth={delFlash ? 2 : 1.4}
+                                />
+                              </g>
+                            ))}
+                          </g>
+                        );
+                      })}
+
+                      {doors.map((door) => {
+                        const parts = doorDrawParts(door, walls, wallThicknessPx);
+                        return (
+                          <g key={door.id} pointerEvents="none">
+                            {parts.map((part, pi) => (
+                              <g key={`${door.id}-${pi}`}>
+                                <path d={doorWallCutPath(part)} fill="#fafafa" stroke="none" />
+                                <DoorSymbol part={part} />
+                              </g>
+                            ))}
+                          </g>
+                        );
+                      })}
+
+                      {roomZones.map((zone) => {
+                        const center = polygonCenter(zone.points);
+                        const d = editDragRef.current;
+                        const zoneActive =
+                          (editHover?.kind === 'zone' && editHover.id === zone.id) ||
+                          (d &&
+                            (d.kind === 'zone-body' || d.kind === 'zone-vertex') &&
+                            d.zoneId === zone.id);
+                        const dimZ =
+                          drawMode === 'EDIT' &&
+                          (editFocus?.type === 'wall' ||
+                            (editFocus?.type === 'zone' && editFocus.id !== zone.id))
+                            ? 0.28
+                            : 1;
+                        const stackFlash =
+                          drawMode === 'EDIT' &&
+                          isStackTargetActive(editPickStack, editPickIndex, editStackBlinkOn, {
+                            kind: 'zone-body',
+                            id: zone.id,
+                            priority: 60,
+                          });
+                        const delZoneBody = Boolean(
+                          (drawMode === 'DELETE' &&
+                            deleteHover?.kind === 'zone' &&
+                            deleteHover.id === zone.id &&
+                            deleteHover.part === 'body' &&
+                            deleteBlinkOn) ||
+                          stackFlash,
+                        );
+                        const zoneAreaM2 = polygonAreaSqM(zone.points);
+                        const zlw = 156 * svgTextScale;
+                        const zlh = 44 * svgTextScale;
+                        const rStatus = roomStatusForZone(state.rooms, zone.roomId);
+                        const zp = zonePolygonStyle(
+                          zone.roomId,
+                          rStatus,
+                          Boolean(zoneActive),
+                          delZoneBody,
+                        );
+                        return (
+                          <g key={zone.id} style={{ opacity: dimZ }}>
+                            <polygon
+                              points={zone.points.map((p) => `${p.x},${p.y}`).join(' ')}
+                              fill={zp.fill}
+                              stroke={zp.stroke}
+                              strokeWidth={delZoneBody ? 4 : zoneActive ? 3.5 : 2.5}
+                              pointerEvents="none"
+                            />
+                            {(drawMode === 'EDIT' || drawMode === 'DELETE') &&
+                              zone.points.map((p, vi) => {
+                                const vHi =
+                                  editHover?.kind === 'zone' &&
+                                  editHover.id === zone.id &&
+                                  editHover.part === 'vertex' &&
+                                  editHover.vertexIndex === vi;
+                                const delV =
+                                  drawMode === 'DELETE' &&
+                                  deleteHover?.kind === 'zone' &&
+                                  deleteHover.id === zone.id &&
+                                  deleteHover.part === 'vertex' &&
+                                  deleteHover.vertexIndex === vi &&
+                                  deleteBlinkOn;
+                                return (
+                                  <circle
+                                    key={`${zone.id}-v-${vi}`}
+                                    cx={p.x}
+                                    cy={p.y}
+                                    r={delV ? 9 : vHi ? 7 : 4}
+                                    fill={
+                                      delV ? '#fecaca' : vHi ? '#ea580c' : 'rgba(37,99,235,0.5)'
+                                    }
+                                    stroke={delV ? '#dc2626' : '#1d4ed8'}
+                                    strokeWidth={delV ? 2 : 1}
+                                    pointerEvents="none"
+                                  />
+                                );
+                              })}
+                            <g pointerEvents="none">
+                              <rect
+                                x={center.x - zlw / 2}
+                                y={center.y - zlh / 2 + 2}
+                                width={zlw}
+                                height={zlh}
+                                rx={7 * svgTextScale}
+                                fill="white"
+                                stroke="#93c5fd"
+                                strokeWidth="1"
+                              />
+                              <text
+                                x={center.x}
+                                y={center.y - 6 * svgTextScale}
+                                textAnchor="middle"
+                                fontSize={12 * svgTextScale}
+                                fill="#1e3a8a"
+                              >
+                                {getRoomNameById(zone.roomId)}
+                              </text>
+                              <text
+                                x={center.x}
+                                y={center.y + 10 * svgTextScale}
+                                textAnchor="middle"
+                                fontSize={11 * svgTextScale}
+                                fill="#64748b"
+                              >
+                                {zoneAreaM2 != null ? `${zoneAreaM2.toFixed(1)} m²` : '—'}
+                              </text>
+                            </g>
+                            <g
+                              pointerEvents="all"
+                              cursor={drawMode === 'EDIT' ? 'inherit' : 'pointer'}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (drawMode === 'EDIT' || drawMode === 'DELETE') return;
+                                openRoomPicker(zone.id);
+                              }}
+                            >
+                              <circle
+                                cx={center.x + 82}
+                                cy={center.y}
+                                r="10"
+                                fill="#dbeafe"
+                                stroke="#60a5fa"
+                                strokeWidth="1"
+                              />
+                              <text
+                                x={center.x + 82}
+                                y={center.y + 4}
+                                textAnchor="middle"
+                                fontSize="11"
+                                fill="#1d4ed8"
+                                pointerEvents="none"
+                              >
+                                ✎
+                              </text>
+                            </g>
+                          </g>
+                        );
+                      })}
+
+                      {tables.map((table) => {
+                        const b = furnitureBoundsPx(table, PX_PER_METER);
+                        const active = editHover?.kind === 'table' && editHover.id === table.id;
+                        const stackFlash =
+                          drawMode === 'EDIT' &&
+                          isStackTargetActive(editPickStack, editPickIndex, editStackBlinkOn, {
+                            kind: 'table',
+                            id: table.id,
+                            priority: 20,
+                          });
+                        const delFlash =
+                          (drawMode === 'DELETE' &&
+                            deleteHover?.kind === 'table' &&
+                            deleteHover.id === table.id &&
+                            deleteBlinkOn) ||
+                          stackFlash;
+                        const conflict = saveGeometryIssues?.tableIds.has(table.id);
+                        const dimF =
+                          drawMode === 'EDIT' &&
+                          editFocus &&
+                          (editFocus.type === 'wall' ||
+                            editFocus.type === 'zone' ||
+                            (editFocus.type === 'table' && editFocus.id !== table.id) ||
+                            editFocus.type === 'chair');
+                        const fill =
+                          delFlash || conflict
+                            ? 'rgba(220,38,38,0.35)'
+                            : active
+                              ? 'rgba(234,88,12,0.2)'
+                              : 'rgba(255,255,255,0.95)';
+                        const stroke =
+                          delFlash || conflict ? '#dc2626' : active ? '#ea580c' : '#374151';
+                        const shape = table.shape || 'rect';
+                        const tf = furnitureTransform(table);
+                        return (
+                          <g
+                            key={table.id}
+                            style={{ opacity: dimF ? 0.28 : 1 }}
+                            pointerEvents="none"
+                            transform={tf}
+                          >
+                            {shape === 'oval' ? (
+                              <ellipse
+                                cx={table.x}
+                                cy={table.y}
+                                rx={b.w / 2}
+                                ry={b.h / 2}
+                                fill={fill}
+                                stroke={stroke}
+                                strokeWidth={delFlash || conflict ? 2.5 : 1.5}
+                              />
+                            ) : (
+                              <rect
+                                x={b.x}
+                                y={b.y}
+                                width={b.w}
+                                height={b.h}
+                                rx={shape === 'rounded' ? Math.min(b.w, b.h) * 0.18 : 2}
+                                fill={fill}
+                                stroke={stroke}
+                                strokeWidth={delFlash || conflict ? 2.5 : 1.5}
+                              />
+                            )}
+                            <text
+                              x={table.x}
+                              y={table.y}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize={9 * svgTextScale}
+                              fill="#374151"
+                            >
+                              {table.name}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {chairs.map((chair) => {
+                        const b = furnitureBoundsPx(chair, PX_PER_METER);
+                        const active = editHover?.kind === 'chair' && editHover.id === chair.id;
+                        const stackFlash =
+                          drawMode === 'EDIT' &&
+                          isStackTargetActive(editPickStack, editPickIndex, editStackBlinkOn, {
+                            kind: 'chair',
+                            id: chair.id,
+                            priority: 10,
+                          });
+                        const delFlash =
+                          (drawMode === 'DELETE' &&
+                            deleteHover?.kind === 'chair' &&
+                            deleteHover.id === chair.id &&
+                            deleteBlinkOn) ||
+                          stackFlash;
+                        const conflict = saveGeometryIssues?.chairIds.has(chair.id);
+                        const dimF =
+                          drawMode === 'EDIT' &&
+                          editFocus &&
+                          (editFocus.type === 'wall' ||
+                            editFocus.type === 'zone' ||
+                            editFocus.type === 'table' ||
+                            (editFocus.type === 'chair' && editFocus.id !== chair.id));
+                        return (
+                          <g
+                            key={chair.id}
+                            style={{ opacity: dimF ? 0.28 : 1 }}
+                            pointerEvents="none"
+                          >
+                            <ChairShape
+                              chair={chair}
+                              pxPerMeter={PX_PER_METER}
+                              active={active}
+                              delFlash={delFlash}
+                              conflict={conflict}
+                            />
+                            <text
+                              x={b.x + b.w / 2}
+                              y={b.y + b.h * 0.62}
+                              textAnchor="middle"
+                              fontSize={9 * svgTextScale}
+                              fill="#44403c"
+                            >
+                              {chair.name}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {fixtures.map((fx) => {
+                        const active = editHover?.kind === 'fixture' && editHover.id === fx.id;
+                        const stackFlash =
+                          drawMode === 'EDIT' &&
+                          isStackTargetActive(editPickStack, editPickIndex, editStackBlinkOn, {
+                            kind: 'fixture',
+                            id: fx.id,
+                            priority: 8,
+                          });
+                        const delFlash =
+                          (drawMode === 'DELETE' &&
+                            deleteHover?.kind === 'fixture' &&
+                            deleteHover.id === fx.id &&
+                            deleteBlinkOn) ||
+                          stackFlash;
+                        const dimF =
+                          drawMode === 'EDIT' &&
+                          editFocus?.type === 'fixture' &&
+                          editFocus.id !== fx.id;
+                        return (
+                          <g key={fx.id} style={{ opacity: dimF ? 0.28 : 1 }} pointerEvents="none">
+                            <FixtureShape
+                              f={fx}
+                              pxPerMeter={PX_PER_METER}
+                              active={active}
+                              delFlash={delFlash}
+                            />
+                            <text
+                              x={fx.x}
+                              y={fx.y}
+                              textAnchor="middle"
+                              fontSize={8 * svgTextScale}
+                              fill="#374151"
+                            >
+                              {fx.name}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {stairs.map((st) => {
+                        const b = furnitureBoundsPx(st, PX_PER_METER);
+                        const partner = st.pairId
+                          ? stairs.find((o) => o.id !== st.id && o.pairId === st.pairId)
+                          : undefined;
+                        const active = editHover?.kind === 'stair' && editHover.id === st.id;
+                        const stackFlash =
+                          drawMode === 'EDIT' &&
+                          isStackTargetActive(editPickStack, editPickIndex, editStackBlinkOn, {
+                            kind: 'stair',
+                            id: st.id,
+                            priority: 28,
+                          });
+                        const delFlash =
+                          (drawMode === 'DELETE' &&
+                            deleteHover?.kind === 'stair' &&
+                            deleteHover.id === st.id &&
+                            deleteBlinkOn) ||
+                          stackFlash;
+                        const dimF =
+                          drawMode === 'EDIT' &&
+                          editFocus?.type === 'stair' &&
+                          editFocus.id !== st.id;
+                        return (
+                          <g key={st.id} style={{ opacity: dimF ? 0.28 : 1 }} pointerEvents="none">
+                            <StairShape
+                              st={st}
+                              pxPerMeter={PX_PER_METER}
+                              active={active}
+                              delFlash={delFlash}
+                              partner={partner}
+                            />
+                            <text
+                              x={st.x}
+                              y={b.y - 4 * svgTextScale}
+                              textAnchor="middle"
+                              fontSize={9 * svgTextScale}
+                              fill="#374151"
+                            >
+                              {st.name}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {(drawMode === 'TABLE' || drawMode === 'CHAIR') &&
+                        snappedCursor &&
+                        (() => {
+                          const draft = drawMode === 'TABLE' ? tableDraft : chairDraft;
+                          const ghost = {
+                            x: snappedCursor.x,
+                            y: snappedCursor.y,
+                            widthM: draft.widthM,
+                            heightM: draft.depthM,
+                          };
+                          const b = furnitureBoundsPx(ghost, PX_PER_METER);
+                          if (drawMode === 'TABLE') {
+                            const shape = tableShapeDraft;
+                            if (shape === 'oval') {
+                              return (
+                                <ellipse
+                                  cx={ghost.x}
+                                  cy={ghost.y}
+                                  rx={b.w / 2}
+                                  ry={b.h / 2}
+                                  fill="rgba(255,255,255,0.9)"
+                                  stroke="#374151"
+                                  strokeWidth={1.5}
+                                  strokeDasharray="6 4"
+                                  pointerEvents="none"
+                                />
+                              );
+                            }
+                            return (
+                              <rect
+                                x={b.x}
+                                y={b.y}
+                                width={b.w}
+                                height={b.h}
+                                rx={shape === 'rounded' ? Math.min(b.w, b.h) * 0.18 : 2}
+                                fill="rgba(255,255,255,0.9)"
+                                stroke="#374151"
+                                strokeWidth={1.5}
+                                strokeDasharray="6 4"
+                                pointerEvents="none"
+                              />
+                            );
+                          }
+                          return (
+                            <rect
+                              x={b.x}
+                              y={b.y}
+                              width={b.w}
+                              height={b.h}
+                              rx={6}
+                              fill="rgba(87,83,78,0.12)"
+                              stroke="#57534e"
+                              strokeWidth={2}
+                              strokeDasharray="6 4"
+                              pointerEvents="none"
+                            />
+                          );
+                        })()}
+
+                      {drawMode === 'WINDOW' &&
+                        snappedCursor &&
+                        (() => {
+                          const proposal = proposeWindowPlacement(
+                            walls,
+                            snappedCursor,
+                            windowDraft.widthM,
+                            PX_PER_METER,
+                          );
+                          if (!proposal) return null;
+                          const ghostWin: PlanWindow = {
+                            id: '__ghost__',
+                            name: '',
+                            widthM: proposal.widthM,
+                            spans: proposal.spans,
+                          };
+                          return windowDrawParts(ghostWin, walls, wallThicknessPx).map(
+                            (part, pi) => (
+                              <g key={`ghost-w-${pi}`} pointerEvents="none">
+                                <path
+                                  d={windowWallCutPath(part)}
+                                  fill="rgba(250,250,250,0.85)"
+                                  stroke="none"
+                                />
+                                <path
+                                  d={windowOpeningPath(part)}
+                                  fill="rgba(209,213,219,0.4)"
+                                  stroke="#6b7280"
+                                  strokeWidth={1.5}
+                                  strokeDasharray="5 4"
+                                />
+                              </g>
+                            ),
+                          );
+                        })()}
+
+                      {drawMode === 'DOOR' &&
+                        snappedCursor &&
+                        (() => {
+                          const proposal = proposeDoorPlacement(
+                            walls,
+                            snappedCursor,
+                            doorDraft.widthM,
+                            PX_PER_METER,
+                          );
+                          if (!proposal) return null;
+                          const ghostDoor: PlanDoor = {
+                            id: '__ghost__',
+                            name: '',
+                            widthM: proposal.widthM,
+                            spans: proposal.spans,
+                            kind: doorKind,
+                            swing: doorSwing,
+                            hingeSide: 'left',
+                          };
+                          return doorDrawParts(ghostDoor, walls, wallThicknessPx).map(
+                            (part, pi) => (
+                              <g key={`ghost-d-${pi}`} pointerEvents="none" opacity={0.85}>
+                                <path
+                                  d={doorWallCutPath(part)}
+                                  fill="rgba(250,250,250,0.9)"
+                                  stroke="none"
+                                />
+                                <DoorSymbol part={part} />
+                              </g>
+                            ),
+                          );
+                        })()}
+
+                      {drawMode === 'STAIR' &&
+                        snappedCursor &&
+                        (() => {
+                          const ghost: PlanStair = {
+                            ...stairDraft,
+                            x: snappedCursor.x,
+                            y: snappedCursor.y,
+                            kind: stairKind,
+                            pairRole:
+                              stairKind === 'half_room'
+                                ? halfStairPending
+                                  ? 'down'
+                                  : 'up'
+                                : undefined,
+                          };
+                          return (
+                            <g opacity={0.8} pointerEvents="none">
+                              <StairShape st={ghost} pxPerMeter={PX_PER_METER} />
+                            </g>
+                          );
+                        })()}
+
+                      {drawMode === 'FIXTURE' &&
+                        snappedCursor &&
+                        (() => {
+                          const ghost: PlanFixture = {
+                            ...fixtureDraft,
+                            x: snappedCursor.x,
+                            y: snappedCursor.y,
+                            kind: interiorTool as FixtureKind,
+                            sofaStyle: interiorTool === 'sofa' ? sofaStyle : fixtureDraft.sofaStyle,
+                          };
+                          const b = furnitureBoundsPx(ghost, PX_PER_METER);
+                          return (
+                            <g pointerEvents="none" opacity={0.75}>
+                              <FixtureShape f={ghost} pxPerMeter={PX_PER_METER} />
+                              <rect
+                                x={b.x}
+                                y={b.y}
+                                width={b.w}
+                                height={b.h}
+                                fill="none"
+                                stroke="#6b7280"
+                                strokeWidth={1.5}
+                                strokeDasharray="6 4"
+                              />
+                            </g>
+                          );
+                        })()}
+
+                      {drawMode === 'ROOM' && draftRoomPoints.length > 1 && (
+                        <polyline
+                          points={draftRoomPoints.map((p) => `${p.x},${p.y}`).join(' ')}
+                          fill="none"
+                          stroke="#2563eb"
+                          strokeWidth="3"
+                        />
+                      )}
+
+                      {drawMode === 'ROOM' &&
+                        draftRoomPoints.map((p, idx) => (
+                          <circle
+                            key={`draft-room-point-${idx}`}
+                            cx={p.x}
+                            cy={p.y}
+                            r="4.5"
+                            fill="#0284c7"
+                          />
+                        ))}
+
+                      {drawMode === 'ROOM' && draftRoomPoints.length > 0 && snappedCursor && (
+                        <line
+                          x1={draftRoomPoints[draftRoomPoints.length - 1].x}
+                          y1={draftRoomPoints[draftRoomPoints.length - 1].y}
+                          x2={snappedCursor.x}
+                          y2={snappedCursor.y}
+                          stroke="#0891b2"
+                          strokeDasharray="8 6"
+                          strokeWidth="2.5"
+                        />
+                      )}
+
+                      {drawMode === 'ROOM' && draftRoomPoints.length > 1 && snappedCursor && (
+                        <line
+                          x1={draftRoomPoints[0].x}
+                          y1={draftRoomPoints[0].y}
+                          x2={snappedCursor.x}
+                          y2={snappedCursor.y}
+                          stroke="#0ea5e9"
+                          strokeDasharray="4 5"
+                          strokeWidth="2"
+                        />
+                      )}
+
+                      {drawMode === 'WALL' && draftWallStart && snappedCursor && (
+                        <line
+                          x1={draftWallStart.x}
+                          y1={draftWallStart.y}
+                          x2={snappedCursor.x}
+                          y2={snappedCursor.y}
+                          stroke="#2563eb"
+                          strokeDasharray="8 6"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                        />
+                      )}
+
+                      {drawMode === 'WALL' && draftWallStart && (
+                        <circle cx={draftWallStart.x} cy={draftWallStart.y} r="6" fill="#dc2626" />
+                      )}
+                      {snappedCursor &&
+                        drawMode !== 'EDIT' &&
+                        drawMode !== 'DELETE' &&
+                        drawMode !== 'TABLE' &&
+                        drawMode !== 'CHAIR' &&
+                        drawMode !== 'WINDOW' && (
+                          <circle cx={snappedCursor.x} cy={snappedCursor.y} r="4" fill="#16a34a" />
+                        )}
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 grid gap-2 text-sm text-[rgb(var(--tc-muted))] md:grid-cols-4">
+            <div>Сегментов стен: {walls.length}</div>
+            <div>Контуров комнат: {roomZones.length}</div>
+            <div>Столов: {tables.length}</div>
+            <div>Стульев: {chairs.length}</div>
+            <div>Окон: {windows.length}</div>
+            <div>Дверей: {doors.length}</div>
+            <div>Объектов: {fixtures.length}</div>
+            <div>Лестниц: {stairs.length}</div>
+            <div className="md:col-span-4">
+              Активная точка:{' '}
+              {snappedCursor
+                ? `${Math.round(snappedCursor.x)}:${Math.round(snappedCursor.y)}`
+                : 'нет'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[rgb(var(--tc-border))] p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-semibold">Комнаты</h3>
+          <button
+            onClick={() =>
+              setState((prev) => ({
+                ...prev,
+                rooms: [
+                  ...prev.rooms,
+                  {
+                    id: crypto.randomUUID(),
+                    name: `Новая комната ${prev.rooms.length + 1}`,
+                    capacity: 1,
+                    status: 'ACTIVE',
+                  },
+                ],
+              }))
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] px-2 py-1 text-sm"
+          >
+            + Добавить комнату
+          </button>
+        </div>
+        <div className="space-y-2">
+          {state.rooms.map((room, idx) => {
+            const linkedZones = room.id ? roomZonesUsingRoom(room.id) : [];
+            const onPlan = linkedZones.length > 0;
+            return (
+              <div
+                key={room.id || idx}
+                className="rounded-lg border border-[rgb(var(--tc-border))] p-2"
+              >
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{room.name || `Комната ${idx + 1}`}</span>
+                  <button
+                    type="button"
+                    disabled={onPlan}
+                    title={
+                      onPlan
+                        ? 'Комната назначена на плане — сначала снимите привязку в зоне'
+                        : 'Удалить комнату из списка'
+                    }
+                    onClick={() => deleteRoom(idx)}
+                    className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                      onPlan
+                        ? 'cursor-not-allowed border-[rgb(var(--tc-border))] text-[rgb(var(--tc-muted))] opacity-50'
+                        : 'border-red-300 text-red-700 hover:bg-red-50'
+                    }`}
+                  >
+                    Удалить
+                  </button>
+                </div>
+                {onPlan && (
+                  <p className="mb-2 text-xs text-amber-800 dark:text-amber-200">
+                    На плане: {linkedZones.length} {linkedZones.length === 1 ? 'зона' : 'зоны'} с
+                    этой комнатой. Удаление недоступно, пока комната привязана к контуру.
+                  </p>
+                )}
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div>
+                    <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                      Название
+                    </label>
+                    <input
+                      value={room.name || ''}
+                      onChange={(e) => updateRoom(idx, { name: e.target.value })}
+                      placeholder="Например, Зал А"
+                      className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                      Вместимость (чел.)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={room.capacity || 0}
+                      onChange={(e) => updateRoom(idx, { capacity: Number(e.target.value) || 0 })}
+                      className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                      Статус комнаты
+                    </label>
+                    <select
+                      value={room.status || 'ACTIVE'}
+                      onChange={(e) => updateRoom(idx, { status: e.target.value })}
+                      className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                    >
+                      <option value="ACTIVE">Активна (в бронировании)</option>
+                      <option value="INACTIVE">Неактивна</option>
+                      <option value="MAINTENANCE">На обслуживании</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                    Описание
+                  </label>
+                  <textarea
+                    value={room.description || ''}
+                    onChange={(e) => updateRoom(idx, { description: e.target.value })}
+                    placeholder="Кратко для гостей и админки"
+                    className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1"
+                    rows={2}
+                  />
+                </div>
+                {(() => {
+                  const billing = parseRoomBilling(room.metadata);
+                  const patchBilling = (p: Partial<ReturnType<typeof parseRoomBilling>>) =>
+                    updateRoom(idx, { metadata: patchRoomBilling(room.metadata, p) });
+                  return (
+                    <div className="mt-3 grid gap-3 border-t border-[rgb(var(--tc-border))]/60 pt-3 md:grid-cols-2">
+                      <p className="md:col-span-2 text-xs font-semibold text-[rgb(var(--tc-muted))]">
+                        Тарификация аренды (почасовая и/или поминутная)
+                      </p>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={billing.hourlyEnabled}
+                          onChange={(e) => patchBilling({ hourlyEnabled: e.target.checked })}
+                        />
+                        Почасовая
+                      </label>
+                      <div>
+                        <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                          <CurrencyUnitLabel unit="час" />
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={10}
+                          disabled={!billing.hourlyEnabled}
+                          value={billing.hourlyRateRub}
+                          onChange={(e) =>
+                            patchBilling({ hourlyRateRub: Number(e.target.value) || 0 })
+                          }
+                          className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1 disabled:opacity-40"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={billing.minuteEnabled}
+                          onChange={(e) => patchBilling({ minuteEnabled: e.target.checked })}
+                        />
+                        Поминутная
+                      </label>
+                      <div>
+                        <label className="mb-0.5 block text-xs text-[rgb(var(--tc-muted))]">
+                          <CurrencyUnitLabel unit="мин" />
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.5}
+                          disabled={!billing.minuteEnabled}
+                          value={billing.minuteRateRub}
+                          onChange={(e) =>
+                            patchBilling({ minuteRateRub: Number(e.target.value) || 0 })
+                          }
+                          className="w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-2 py-1 disabled:opacity-40"
+                        />
+                      </div>
+                      <p className="md:col-span-2 text-xs text-[rgb(var(--tc-muted))]">
+                        Почасовая: округление вверх до целого часа. Поминутная: цена × минуты.
+                        {billingModesAvailable(billing).length === 0 && (
+                          <span className="text-red-600"> Включите хотя бы один тариф.</span>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })()}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {roomPickerZoneId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-4 text-[rgb(var(--tc-fg))] shadow-lg">
+            <h3 className="mb-2 text-lg font-semibold">Назначение комнаты</h3>
+            <p className="mb-3 text-sm text-[rgb(var(--tc-muted))]">
+              Выберите комнату для выделенной зоны или пропустите.
+            </p>
+            <select
+              value={roomPickerValue}
+              onChange={(e) => setRoomPickerValue(e.target.value)}
+              className="mb-4 w-full rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-[rgb(var(--tc-fg))] outline-none ring-[rgb(var(--tc-accent))] focus:ring-2"
+            >
+              <option value="" className="bg-[rgb(var(--tc-bg))] text-[rgb(var(--tc-fg))]">
+                Комната не назначена
+              </option>
+              {state.rooms.map((room) => (
+                <option
+                  key={room.id}
+                  value={room.id}
+                  className="bg-[rgb(var(--tc-bg))] text-[rgb(var(--tc-fg))]"
+                >
+                  {room.name || `Комната ${room.id}`}
+                </option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => applyRoomPicker(true)}
+                className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm text-[rgb(var(--tc-fg))]"
+              >
+                Пропустить
+              </button>
+              <button
+                onClick={() => applyRoomPicker(false)}
+                className="rounded-lg bg-[rgb(var(--tc-accent))] px-3 py-2 text-sm text-white"
+              >
+                Применить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {saveGeometryIssues &&
+        (saveGeometryIssues.wallIds.size > 0 ||
+          saveGeometryIssues.zoneIds.size > 0 ||
+          saveGeometryIssues.tableIds.size > 0 ||
+          saveGeometryIssues.chairIds.size > 0 ||
+          saveGeometryIssues.fixtureIds.size > 0) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] p-4 text-[rgb(var(--tc-fg))] shadow-xl">
+              <h3 className="mb-2 text-lg font-semibold text-red-600">Конфликты геометрии</h3>
+              <p className="mb-3 text-sm text-[rgb(var(--tc-muted))]">
+                Красным отмечены пересекающиеся стены, зоны с наложением площади и мебель с
+                пересечением габаритов. Сохранить в таком виде или вернуться к правкам?
+              </p>
+              <div className="mb-4 max-h-[280px] overflow-auto rounded-lg border border-[rgb(var(--tc-border))] bg-[#fafafa] p-1">
+                <svg
+                  viewBox={`0 0 ${contentWidth} ${contentHeight}`}
+                  className="h-auto w-full"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <rect x="0" y="0" width={contentWidth} height={contentHeight} fill="#fafafa" />
+                  {walls.map((wall) => (
+                    <line
+                      key={`c-${wall.id}`}
+                      x1={wall.start.x}
+                      y1={wall.start.y}
+                      x2={wall.end.x}
+                      y2={wall.end.y}
+                      stroke={saveGeometryIssues.wallIds.has(wall.id) ? '#dc2626' : '#111827'}
+                      strokeWidth={saveGeometryIssues.wallIds.has(wall.id) ? 8 : 5}
+                      strokeLinecap="round"
+                    />
+                  ))}
+                  {roomZones.map((zone) => (
+                    <polygon
+                      key={`cz-${zone.id}`}
+                      points={zone.points.map((p) => `${p.x},${p.y}`).join(' ')}
+                      fill={
+                        saveGeometryIssues.zoneIds.has(zone.id)
+                          ? 'rgba(220,38,38,0.35)'
+                          : 'rgba(59,130,246,0.08)'
+                      }
+                      stroke={saveGeometryIssues.zoneIds.has(zone.id) ? '#dc2626' : '#94a3b8'}
+                      strokeWidth={saveGeometryIssues.zoneIds.has(zone.id) ? 3 : 1.5}
+                    />
+                  ))}
+                  {tables.map((table) => {
+                    const b = furnitureBoundsPx(table, PX_PER_METER);
+                    const conflict = saveGeometryIssues.tableIds.has(table.id);
+                    return (
+                      <rect
+                        key={`ct-${table.id}`}
+                        x={b.x}
+                        y={b.y}
+                        width={b.w}
+                        height={b.h}
+                        rx={4}
+                        fill={conflict ? 'rgba(220,38,38,0.35)' : 'rgba(146,64,14,0.25)'}
+                        stroke={conflict ? '#dc2626' : '#92400e'}
+                        strokeWidth={conflict ? 3 : 2}
+                      />
+                    );
+                  })}
+                  {chairs.map((chair) => {
+                    const b = furnitureBoundsPx(chair, PX_PER_METER);
+                    const conflict = saveGeometryIssues.chairIds.has(chair.id);
+                    return (
+                      <g key={`cc-${chair.id}`}>
+                        <rect
+                          x={b.x + b.w * 0.12}
+                          y={b.y + b.h * 0.08}
+                          width={b.w * 0.76}
+                          height={b.h * 0.22}
+                          rx={3}
+                          fill={conflict ? 'rgba(220,38,38,0.35)' : 'rgba(87,83,78,0.25)'}
+                          stroke={conflict ? '#dc2626' : '#57534e'}
+                          strokeWidth={conflict ? 3 : 1.5}
+                        />
+                        <rect
+                          x={b.x + b.w * 0.18}
+                          y={b.y + b.h * 0.3}
+                          width={b.w * 0.64}
+                          height={b.h * 0.55}
+                          rx={4}
+                          fill={conflict ? 'rgba(220,38,38,0.35)' : 'rgba(87,83,78,0.25)'}
+                          stroke={conflict ? '#dc2626' : '#57534e'}
+                          strokeWidth={conflict ? 3 : 2}
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSaveGeometryIssues(null)}
+                  className="rounded-lg border border-[rgb(var(--tc-border))] px-3 py-2 text-sm"
+                >
+                  Вернуться к редактированию
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void save()}
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm text-white"
+                >
+                  Сохранить как есть
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+    </div>
+  );
+}
