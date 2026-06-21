@@ -170,7 +170,7 @@ export function segmentsForConfirmDialog(
 
 export function formatScheduleLinesForConfirm(
   schedule: WorkerMeSchedule,
-  labels: { cafe: string; worker: string; dayOff: string },
+  labels: { cafe: string; worker: string; dayOff: string; nearestShift?: string },
 ): string {
   const src = (source: 'WORKER' | 'CAFE') => (source === 'CAFE' ? labels.cafe : labels.worker);
 
@@ -181,10 +181,27 @@ export function formatScheduleLinesForConfirm(
 
   const wd = weekdayKeyFromYmd(schedule.todayMsk);
   const dayRow = workerTemplateDays(schedule).find((d) => d.key === wd);
-  if (dayRow?.text === 'Выходной') return labels.dayOff;
+  if (dayRow?.text === 'Выходной') {
+    return withNearestShift(schedule, labels.dayOff, labels.nearestShift);
+  }
   if (dayRow && dayRow.text !== '—') {
     return `${dayRow.text} (${labels.worker})`;
   }
 
-  return '';
+  if (todayWorkSummary(schedule) === '—') {
+    return withNearestShift(schedule, labels.dayOff, labels.nearestShift);
+  }
+
+  return labels.dayOff;
+}
+
+function withNearestShift(
+  schedule: WorkerMeSchedule,
+  main: string,
+  nearestLabel = 'Ближайшая смена',
+): string {
+  const rows = weekScheduleRows(schedule);
+  const next = rows.find((r) => r.ymd >= schedule.todayMsk && r.summary !== '—');
+  if (!next) return main;
+  return `${main}\n${nearestLabel}: ${next.label}, ${next.summary}`;
 }

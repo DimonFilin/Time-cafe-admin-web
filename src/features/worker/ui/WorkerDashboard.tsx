@@ -147,11 +147,10 @@ export function WorkerDashboard() {
       const lines = formatScheduleLinesForConfirm(sch, {
         cafe: t('worker.dashboard.sourceCafe'),
         worker: t('worker.dashboard.sourceWorker'),
-        dayOff: 'Выходной',
+        dayOff: t('worker.dashboard.dayOff'),
+        nearestShift: t('worker.dashboard.nearestShift'),
       });
-      const secondBody = lines
-        ? `${t('worker.dashboard.confirmOutsideSecond')}\n${lines}`
-        : `${t('worker.dashboard.confirmOutsideSecond')}\n${t('worker.dashboard.noScheduleToday')}`;
+      const secondBody = `${t('worker.dashboard.confirmOutsideSecond')}\n${lines}`;
       if (!window.confirm(secondBody)) return;
 
       try {

@@ -14,6 +14,12 @@ mkdir -p logs
 echo "==> Pull latest admin"
 cd Time-cafe-admin-web && git pull && npm ci && rm -rf .next && npm run build && cd ..
 
+# Ensure logout redirect uses public IP, not localhost
+ADMIN_ENV=Time-cafe-admin-web/.env
+if [ -f "$ADMIN_ENV" ] && ! grep -q '^PUBLIC_APP_URL=' "$ADMIN_ENV"; then
+  echo 'PUBLIC_APP_URL=http://68.183.212.112:3001' >>"$ADMIN_ENV"
+fi
+
 echo "==> Pull latest backend (if needed)"
 cd Time-cafe-backend && git pull && npm ci && npm run build:api && cd ..
 
