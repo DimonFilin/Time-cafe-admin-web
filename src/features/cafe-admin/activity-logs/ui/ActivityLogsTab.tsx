@@ -13,8 +13,17 @@ import { ActivityLogDetailsModal } from './ActivityLogDetailsModal';
 import { ActivityLogsStats } from './ActivityLogsStats';
 import { exportLogsToCSV } from '../lib/export-csv';
 import { t } from '@/i18n';
+import {
+  consumeActivityLogsWorker,
+  type ActivityLogsPreselectedWorker,
+} from '@/shared/lib/activity-logs-worker-bridge';
 
-export function ActivityLogsTab() {
+type Props = {
+  preselectedWorker?: ActivityLogsPreselectedWorker | null;
+  selectionKey?: number;
+};
+
+export function ActivityLogsTab({ preselectedWorker = null, selectionKey = 0 }: Props) {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,22 +36,24 @@ export function ActivityLogsTab() {
     sortOrder: 'desc',
   });
 
+  const [initialWorker, setInitialWorker] = useState<ActivityLogsPreselectedWorker | null>(null);
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Check for pre-selected worker from localStorage
   useEffect(() => {
-    const selectedWorkerId = localStorage.getItem('activityLogs_selectedWorkerId');
-    if (selectedWorkerId) {
-      setFilters((prev) => ({
-        ...prev,
-        workerId: selectedWorkerId,
-      }));
-      // Clear from localStorage after applying
-      localStorage.removeItem('activityLogs_selectedWorkerId');
-    }
+    const { workerId, worker } = consumeActivityLogsWorker();
+    if (!workerId) return;
+    setFilters((prev) => ({ ...prev, workerId }));
+    if (worker) setInitialWorker(worker);
   }, []);
+
+  useEffect(() => {
+    if (!preselectedWorker?.id) return;
+    setFilters((prev) => ({ ...prev, workerId: preselectedWorker.id }));
+    setInitialWorker(preselectedWorker);
+    setPage(1);
+  }, [preselectedWorker, selectionKey]);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -73,7 +84,8 @@ export function ActivityLogsTab() {
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     });
-    setPage(1); // Reset to first page when filters change
+    if (!newFilters.workerId) setInitialWorker(null);
+    setPage(1);
   };
 
   const handleResetFilters = () => {
@@ -81,6 +93,7 @@ export function ActivityLogsTab() {
       sortBy: 'createdAt',
       sortOrder: 'desc',
     });
+    setInitialWorker(null);
     setPage(1);
   };
 
@@ -102,10 +115,9 @@ export function ActivityLogsTab() {
     setExporting(true);
     setError(null);
     try {
-      // Fetch all logs with current filters (no pagination limit)
       const data = await getActivityLogs({
         ...filters,
-        limit: 10000, // Large limit for export
+        limit: 10000,
       });
 
       if (data.logs.length === 0) {
@@ -152,6 +164,7 @@ export function ActivityLogsTab() {
 
       <ActivityLogsFiltersComponent
         filters={filters}
+        initialWorker={initialWorker}
         onFiltersChange={handleFiltersChange}
         onReset={handleResetFilters}
       />

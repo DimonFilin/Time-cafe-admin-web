@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
 import { t } from '@/i18n';
@@ -10,21 +10,59 @@ import {
   type ActivityLogsFilters,
 } from '../api/activity-logs-api';
 import { WorkerSelectModal } from './WorkerSelectModal';
-import type { WorkerProfile } from '../../workers/api/workers';
+import { listWorkers, type WorkerProfile } from '../../workers/api/workers';
+import type { ActivityLogsPreselectedWorker } from '@/shared/lib/activity-logs-worker-bridge';
 
 interface ActivityLogsFiltersProps {
   filters: ActivityLogsFilters;
+  initialWorker?: ActivityLogsPreselectedWorker | null;
   onFiltersChange: (filters: ActivityLogsFilters) => void;
   onReset: () => void;
 }
 
 export function ActivityLogsFiltersComponent({
   filters,
+  initialWorker = null,
   onFiltersChange,
   onReset,
 }: ActivityLogsFiltersProps) {
   const [workerSelectOpen, setWorkerSelectOpen] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState<WorkerProfile | null>(null);
+  const [manualWorker, setManualWorker] = useState<WorkerProfile | null>(null);
+  const [fetchedWorker, setFetchedWorker] = useState<WorkerProfile | null>(null);
+
+  const displayWorker = (() => {
+    if (!filters.workerId) return null;
+    if (manualWorker?.id === filters.workerId) return manualWorker;
+    if (
+      initialWorker?.id === filters.workerId &&
+      (initialWorker.firstName || initialWorker.email)
+    ) {
+      return initialWorker as WorkerProfile;
+    }
+    if (fetchedWorker?.id === filters.workerId) return fetchedWorker;
+    return null;
+  })();
+
+  useEffect(() => {
+    if (!filters.workerId) return;
+    if (manualWorker?.id === filters.workerId) return;
+    if (
+      initialWorker?.id === filters.workerId &&
+      (initialWorker.firstName || initialWorker.email)
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    void listWorkers({ limit: 500 }).then((data) => {
+      if (cancelled) return;
+      const found = data.items.find((w) => w.id === filters.workerId) ?? null;
+      setFetchedWorker(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filters.workerId, initialWorker, manualWorker]);
 
   const updateFilter = (key: keyof ActivityLogsFilters, value: unknown) => {
     onFiltersChange({
@@ -34,12 +72,13 @@ export function ActivityLogsFiltersComponent({
   };
 
   const handleWorkerSelect = (worker: WorkerProfile) => {
-    setSelectedWorker(worker);
+    setManualWorker(worker);
     updateFilter('workerId', worker.id);
   };
 
   const handleClearWorker = () => {
-    setSelectedWorker(null);
+    setManualWorker(null);
+    setFetchedWorker(null);
     updateFilter('workerId', undefined);
   };
 
@@ -55,13 +94,13 @@ export function ActivityLogsFiltersComponent({
             <label className="mb-1 block text-xs font-medium text-[rgb(var(--tc-muted))]">
               {t('cafeAdmin.activityLogs.worker')}
             </label>
-            {selectedWorker ? (
+            {displayWorker ? (
               <div className="flex items-center gap-2">
                 <div className="flex-1 rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] px-3 py-2 text-sm">
                   <div className="font-medium">
-                    {selectedWorker.firstName} {selectedWorker.lastName}
+                    {displayWorker.firstName} {displayWorker.lastName}
                   </div>
-                  <div className="text-xs text-[rgb(var(--tc-muted))]">{selectedWorker.email}</div>
+                  <div className="text-xs text-[rgb(var(--tc-muted))]">{displayWorker.email}</div>
                 </div>
                 <Button variant="ghost" onClick={handleClearWorker} className="text-sm">
                   {t('cafeAdmin.activityLogs.clear')}
@@ -239,10 +278,10 @@ export function ActivityLogsFiltersComponent({
 
         {hasActiveFilters && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {selectedWorker && (
+            {displayWorker && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-[rgb(var(--tc-surface-2))] px-2 py-1 text-xs">
-                {t('cafeAdmin.activityLogs.worker')}: {selectedWorker.firstName}{' '}
-                {selectedWorker.lastName}
+                {t('cafeAdmin.activityLogs.worker')}: {displayWorker.firstName}{' '}
+                {displayWorker.lastName}
                 <button
                   onClick={handleClearWorker}
                   className="ml-1 hover:text-[rgb(var(--tc-danger))]"

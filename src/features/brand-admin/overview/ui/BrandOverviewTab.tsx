@@ -351,36 +351,57 @@ export function BrandOverviewTab() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
-                {stats.cafesCount}
-              </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-                {t('brandAdmin.overview.cafesCount')}
-              </p>
+          <button
+            type="button"
+            aria-label={t('brandAdmin.overview.cafesCount')}
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', { detail: { tab: 'cafes' } }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-4 text-center transition-colors hover:bg-[rgb(var(--tc-surface-2))] cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
+              {stats.cafesCount}
             </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
-                {stats.workersCount}
-              </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-                {t('brandAdmin.overview.workersCount')}
-              </p>
+            <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.cafesCount')}
+            </p>
+          </button>
+          <button
+            type="button"
+            aria-label={t('brandAdmin.overview.workersCount')}
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', { detail: { tab: 'workers' } }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-4 text-center transition-colors hover:bg-[rgb(var(--tc-surface-2))] cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
+              {stats.workersCount}
             </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
-                {stats.ordersCount}
-              </div>
-              <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
-                {t('brandAdmin.overview.ordersCount')}
-              </p>
+            <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.workersCount')}
+            </p>
+          </button>
+          <button
+            type="button"
+            aria-label={t('brandAdmin.overview.ordersCount')}
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent('brandAdminSwitchTab', { detail: { tab: 'analytics' } }),
+              )
+            }
+            className="rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-4 text-center transition-colors hover:bg-[rgb(var(--tc-surface-2))] cursor-pointer"
+          >
+            <div className="text-3xl font-bold text-[rgb(var(--tc-accent))]">
+              {stats.ordersCount}
             </div>
-          </Card>
+            <p className="mt-1 text-sm text-[rgb(var(--tc-muted))]">
+              {t('brandAdmin.overview.ordersCount')}
+            </p>
+          </button>
         </div>
       )}
 

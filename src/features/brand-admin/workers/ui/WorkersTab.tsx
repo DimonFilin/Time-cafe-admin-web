@@ -12,6 +12,10 @@ import { InviteWorkerModal, type InviteFormData } from './InviteWorkerModal';
 import { EditWorkerModal, type EditFormData } from './EditWorkerModal';
 import { getCafes, type CafeListItem } from '../../cafes/api/cafes';
 import { t } from '@/i18n';
+import {
+  dispatchSwitchToActivityLogs,
+  storeActivityLogsWorker,
+} from '@/shared/lib/activity-logs-worker-bridge';
 
 export function WorkersTab({
   initialOpenInvite = false,
@@ -50,12 +54,9 @@ export function WorkersTab({
     }
   }, [initialOpenInvite, onInviteHandled]);
 
-  // Callback для переключения на таб Activity Logs
-  const onViewLogs = (workerId: string) => {
-    // Сохраняем workerId в localStorage для передачи в Activity Logs
-    localStorage.setItem('activityLogs_selectedWorkerId', workerId);
-    // Триггерим событие для переключения таба
-    window.dispatchEvent(new CustomEvent('switchToActivityLogs', { detail: { workerId } }));
+  const onViewLogs = (worker: WorkerProfile) => {
+    storeActivityLogsWorker(worker);
+    dispatchSwitchToActivityLogs({ workerId: worker.id, worker });
   };
 
   const fetchWorkers = useCallback(async () => {
@@ -194,7 +195,7 @@ export function WorkersTab({
       header: t('workers.actions'),
       render: (w) => (
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => onViewLogs(w.id)} className="text-xs">
+          <Button variant="secondary" onClick={() => onViewLogs(w)} className="text-xs">
             {t('brandAdmin.workers.viewLogs')}
           </Button>
           <Button

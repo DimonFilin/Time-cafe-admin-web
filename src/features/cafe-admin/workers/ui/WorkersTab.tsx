@@ -11,6 +11,10 @@ import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { InviteWorkerModal } from './InviteWorkerModal';
 import { EditWorkerModal } from './EditWorkerModal';
 import { t } from '@/i18n';
+import {
+  dispatchSwitchToActivityLogs,
+  storeActivityLogsWorker,
+} from '@/shared/lib/activity-logs-worker-bridge';
 
 export function WorkersTab({
   initialOpenInvite = false,
@@ -43,10 +47,9 @@ export function WorkersTab({
     }
   }, [initialOpenInvite, onInviteHandled]);
 
-  // Callback для переключения на таб Activity Logs
-  const onViewLogs = (workerId: string) => {
-    localStorage.setItem('activityLogs_selectedWorkerId', workerId);
-    window.dispatchEvent(new CustomEvent('switchToActivityLogs', { detail: { workerId } }));
+  const onViewLogs = (worker: WorkerResponse) => {
+    storeActivityLogsWorker(worker);
+    dispatchSwitchToActivityLogs({ workerId: worker.id, worker });
   };
 
   const fetchWorkers = useCallback(async () => {
@@ -130,7 +133,7 @@ export function WorkersTab({
       header: t('common.actions'),
       render: (w) => (
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => onViewLogs(w.id)} className="text-xs">
+          <Button variant="secondary" onClick={() => onViewLogs(w)} className="text-xs">
             {t('dashboard.activityLogs')}
           </Button>
           <Button

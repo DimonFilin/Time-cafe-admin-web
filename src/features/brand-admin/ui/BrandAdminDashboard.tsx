@@ -17,6 +17,11 @@ import {
   ActivityAction,
   ActivityCategory,
 } from '@/features/brand-admin/activity-logs/api/activity-logs-api';
+import type { ActivityLogsPreselectedWorker } from '@/shared/lib/activity-logs-worker-bridge';
+import {
+  SWITCH_TO_ACTIVITY_LOGS_EVENT,
+  type SwitchToActivityLogsDetail,
+} from '@/shared/lib/activity-logs-worker-bridge';
 
 type TabId =
   | 'overview'
@@ -47,10 +52,26 @@ export function BrandAdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [workersOpenInvite, setWorkersOpenInvite] = useState(false);
   const [unreadChatsCount, setUnreadChatsCount] = useState(0);
+  const [activityLogsWorker, setActivityLogsWorker] =
+    useState<ActivityLogsPreselectedWorker | null>(null);
+  const [activityLogsSeed, setActivityLogsSeed] = useState(0);
 
   useEffect(() => {
-    const handleSwitchToActivityLogs = () => {
+    const handleSwitchToActivityLogs = (e: Event) => {
+      const detail = (e as CustomEvent<SwitchToActivityLogsDetail>).detail;
       setActiveTab('activity-logs');
+      if (detail?.worker) {
+        setActivityLogsWorker(detail.worker);
+        setActivityLogsSeed((s) => s + 1);
+      } else if (detail?.workerId) {
+        setActivityLogsWorker({
+          id: detail.workerId,
+          email: '',
+          firstName: '',
+          lastName: '',
+        });
+        setActivityLogsSeed((s) => s + 1);
+      }
     };
 
     const handleSwitchTab = (e: CustomEvent<{ tab: string; openInvite?: boolean }>) => {
@@ -59,14 +80,11 @@ export function BrandAdminDashboard() {
       if (openInvite) setWorkersOpenInvite(true);
     };
 
-    window.addEventListener('switchToActivityLogs', handleSwitchToActivityLogs as EventListener);
+    window.addEventListener(SWITCH_TO_ACTIVITY_LOGS_EVENT, handleSwitchToActivityLogs);
     window.addEventListener('brandAdminSwitchTab', handleSwitchTab as EventListener);
 
     return () => {
-      window.removeEventListener(
-        'switchToActivityLogs',
-        handleSwitchToActivityLogs as EventListener,
-      );
+      window.removeEventListener(SWITCH_TO_ACTIVITY_LOGS_EVENT, handleSwitchToActivityLogs);
       window.removeEventListener('brandAdminSwitchTab', handleSwitchTab as EventListener);
     };
   }, []);
@@ -130,7 +148,9 @@ export function BrandAdminDashboard() {
       case 'layout':
         return <CafeLayoutEditorTab scope="brand-admin" />;
       case 'activity-logs':
-        return <ActivityLogsTab />;
+        return (
+          <ActivityLogsTab preselectedWorker={activityLogsWorker} selectionKey={activityLogsSeed} />
+        );
       default:
         return null;
     }
