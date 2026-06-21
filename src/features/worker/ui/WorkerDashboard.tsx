@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { t } from '@/i18n';
 import { workerApi, type ToggleShiftError } from '../api/worker-api';
 import type { WorkerMeSchedule, WorkerWithRelations } from '../types/worker.types';
+import { formatScheduleLinesForConfirm } from '../lib/schedule-display';
 import { OrdersTab } from '../orders/ui/OrdersTab';
 import { AppointmentsTab } from '../appointments/ui/AppointmentsTab';
 import { TasksTab } from '../tasks/ui/TasksTab';
@@ -31,15 +32,6 @@ function isRequireConfirmError(error: unknown): error is ToggleShiftError {
     'requireConfirm' in error &&
     (error as ToggleShiftError).requireConfirm === true
   );
-}
-
-function formatTodayLines(schedule: WorkerMeSchedule): string {
-  const src = (s: string) =>
-    s === 'CAFE' ? t('worker.dashboard.sourceCafe') : t('worker.dashboard.sourceWorker');
-  return schedule.effectiveSegments
-    .filter((seg) => seg.startDateMsk === schedule.todayMsk)
-    .map((seg) => `${seg.open}–${seg.close} (${src(seg.source)})`)
-    .join('\n');
 }
 
 export function WorkerDashboard() {
@@ -152,10 +144,14 @@ export function WorkerDashboard() {
 
       if (!window.confirm(t('worker.dashboard.confirmOutsideFirst'))) return;
 
-      const lines = formatTodayLines(sch);
+      const lines = formatScheduleLinesForConfirm(sch, {
+        cafe: t('worker.dashboard.sourceCafe'),
+        worker: t('worker.dashboard.sourceWorker'),
+        dayOff: 'Выходной',
+      });
       const secondBody = lines
-        ? `${t('worker.dashboard.confirmOutsideSecond')}\n\n${lines}`
-        : t('worker.dashboard.confirmOutsideSecond');
+        ? `${t('worker.dashboard.confirmOutsideSecond')}\n${lines}`
+        : `${t('worker.dashboard.confirmOutsideSecond')}\n${t('worker.dashboard.noScheduleToday')}`;
       if (!window.confirm(secondBody)) return;
 
       try {

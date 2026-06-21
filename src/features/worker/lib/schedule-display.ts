@@ -80,6 +80,14 @@ function weekdayLabelFromYmd(ymd: string): string {
   return DAY_LABELS[DAY_KEYS[idx]];
 }
 
+function weekdayKeyFromYmd(ymd: string): (typeof DAY_KEYS)[number] {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  const jsDay = dt.getUTCDay();
+  const idx = jsDay === 0 ? 6 : jsDay - 1;
+  return DAY_KEYS[idx];
+}
+
 function segmentsForDate(
   schedule: WorkerMeSchedule,
   ymd: string,
@@ -137,4 +145,46 @@ export function workerTemplateDays(schedule: WorkerMeSchedule): WorkerTemplateDa
 
 export function isWorkerTemplateEmpty(schedule: WorkerMeSchedule): boolean {
   return workerTemplateDays(schedule).every((d) => d.text === '—');
+}
+
+/** Segments for shift confirm: today + overnight shift that started yesterday. */
+export function segmentsForConfirmDialog(
+  schedule: WorkerMeSchedule,
+): WorkerMeScheduleEffectiveSegment[] {
+  const today = schedule.todayMsk;
+  const yesterday = addDaysYmd(today, -1);
+  const seen = new Set<string>();
+  const out: WorkerMeScheduleEffectiveSegment[] = [];
+
+  for (const seg of schedule.effectiveSegments) {
+    const overnightFromYesterday = seg.startDateMsk === yesterday && seg.close <= seg.open;
+    if (seg.startDateMsk !== today && !overnightFromYesterday) continue;
+    const key = `${seg.startIso}|${seg.endIso}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(seg);
+  }
+
+  return out.sort((a, b) => a.open.localeCompare(b.open));
+}
+
+export function formatScheduleLinesForConfirm(
+  schedule: WorkerMeSchedule,
+  labels: { cafe: string; worker: string; dayOff: string },
+): string {
+  const src = (source: 'WORKER' | 'CAFE') => (source === 'CAFE' ? labels.cafe : labels.worker);
+
+  const segs = segmentsForConfirmDialog(schedule);
+  if (segs.length) {
+    return segs.map((seg) => `${seg.open}–${seg.close} (${src(seg.source)})`).join('\n');
+  }
+
+  const wd = weekdayKeyFromYmd(schedule.todayMsk);
+  const dayRow = workerTemplateDays(schedule).find((d) => d.key === wd);
+  if (dayRow?.text === 'Выходной') return labels.dayOff;
+  if (dayRow && dayRow.text !== '—') {
+    return `${dayRow.text} (${labels.worker})`;
+  }
+
+  return '';
 }

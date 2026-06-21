@@ -182,7 +182,8 @@ export function LoginFlow() {
                     {t('auth.login.email')}
                   </span>
                   <Input
-                    autoComplete="email"
+                    autoComplete="off"
+                    name="tc-login-email"
                     inputMode="email"
                     placeholder="you@example.com"
                     value={email}
@@ -209,7 +210,8 @@ export function LoginFlow() {
                     {t('auth.login.password')}
                   </span>
                   <Input
-                    autoComplete="current-password"
+                    autoComplete="new-password"
+                    name="tc-login-password"
                     type="password"
                     placeholder="••••••••"
                     value={password}

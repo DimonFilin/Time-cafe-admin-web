@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { isAuthCookieSecure } from '@/shared/lib/cookie-secure';
+import { resolvePublicOrigin } from '@/shared/lib/request-origin';
 
 function cookieOptions(secure: boolean) {
   return {
@@ -14,7 +15,7 @@ function cookieOptions(secure: boolean) {
 
 export async function POST(req: Request) {
   const secure = isAuthCookieSecure();
-  const next = NextResponse.redirect(new URL('/login', req.url), 303);
+  const next = NextResponse.redirect(new URL('/login', resolvePublicOrigin(req)), 303);
 
   // Auth cookies
   next.cookies.set('tc_access', '', cookieOptions(secure));

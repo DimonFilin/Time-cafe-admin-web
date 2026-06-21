@@ -6,7 +6,7 @@ import { WorkerActivityRouteBeacon } from '@/shared/lib/worker-activity-route-be
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <Suspense fallback={null}>
         <WorkerActivityRouteBeacon />
       </Suspense>

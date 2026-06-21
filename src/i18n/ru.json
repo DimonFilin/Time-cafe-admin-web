@@ -591,6 +591,7 @@
       "scheduleLoadFailed": "Не удалось загрузить расписание",
       "confirmOutsideFirst": "Время вне ±10 минут от графика. Продолжить?",
       "confirmOutsideSecond": "Напоминание: сегодня по графику:",
+      "noScheduleToday": "на сегодня в графике нет запланированных окон смены",
       "scheduleTabHint": "Смены кафе и ваши смены показаны ниже.",
       "sourceCafe": "кафе",
       "sourceWorker": "шаблон",
