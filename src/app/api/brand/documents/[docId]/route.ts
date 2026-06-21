@@ -1,41 +1,19 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
+import { fetchBrandIdOrAuthError } from '@/shared/lib/brand-worker-auth';
 import { t } from '@/i18n';
 
-interface WorkerResponse {
-  brandId: string;
-  [key: string]: unknown;
-}
-
-async function getWorkerWithAuthRefresh(): Promise<WorkerResponse> {
-  const workerUrl = `${env.backendUrl}/auth/workers/me`;
-  const response = await fetchWithAuthRefresh(workerUrl, { method: 'GET', cache: 'no-store' });
-
-  if (!response || typeof response.status !== 'number') {
-    throw new Error(t('apiErrors.invalidWorkerResponse'));
-  }
-
-  if (response.status >= 400) {
-    const text = await response.text().catch(() => '');
-    throw new Error(t('apiErrors.fetchWorkerAuth'));
-  }
-
-  const text = await response.text().catch(() => '');
-  return text ? JSON.parse(text) : { brandId: '' }; // Return empty object with brandId property
-}
-
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ docId: string }> },
 ) {
   try {
-    const worker = await getWorkerWithAuthRefresh();
-    if (!worker.brandId)
-      return NextResponse.json({ message: t('apiErrors.noBrandAssociated') }, { status: 400 });
+    const auth = await fetchBrandIdOrAuthError();
+    if (!auth.ok) return auth.response;
 
     const { docId } = await params;
-    const url = `${env.backendUrl}/brands/${worker.brandId}/documents/${docId}`;
+    const url = `${env.backendUrl}/brands/${auth.brandId}/documents/${docId}`;
     return await fetchWithAuthRefresh(url, { method: 'DELETE', cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/documents/[docId]] DELETE error:', error);
@@ -44,16 +22,15 @@ export async function DELETE(
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ docId: string }> },
 ) {
   try {
-    const worker = await getWorkerWithAuthRefresh();
-    if (!worker.brandId)
-      return NextResponse.json({ message: t('apiErrors.noBrandAssociated') }, { status: 400 });
+    const auth = await fetchBrandIdOrAuthError();
+    if (!auth.ok) return auth.response;
 
     const { docId } = await params;
-    const url = `${env.backendUrl}/brands/${worker.brandId}/documents/${docId}`;
+    const url = `${env.backendUrl}/brands/${auth.brandId}/documents/${docId}`;
     return await fetchWithAuthRefresh(url, { method: 'GET', cache: 'no-store' });
   } catch (error) {
     console.error('[api/brand/documents/[docId]] GET error:', error);
