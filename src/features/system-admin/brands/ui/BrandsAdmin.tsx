@@ -482,7 +482,6 @@ export function BrandsAdmin() {
           name: form.name || undefined,
           email: form.email || undefined,
           phone: form.phone || undefined,
-          address: form.address || undefined,
           description: form.description || undefined,
           website: form.website || undefined,
         });
@@ -661,14 +660,16 @@ export function BrandsAdmin() {
               onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))}
             />
           </div>
-          <div className="grid gap-1">
-            <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.address')} *</div>
-            <input
-              className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
-              value={form.address}
-              onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
-            />
-          </div>
+          {!editId && (
+            <div className="grid gap-1">
+              <div className="text-xs text-[rgb(var(--tc-muted))]">{t('common.address')} *</div>
+              <input
+                className="w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm"
+                value={form.address}
+                onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
+              />
+            </div>
+          )}
           <div className="grid gap-1">
             <div className="text-xs text-[rgb(var(--tc-muted))]">
               {t('systemAdmin.brands.website')}

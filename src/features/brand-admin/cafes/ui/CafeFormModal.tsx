@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card } from '@/shared/ui/card/Card';
 import { Button } from '@/shared/ui/button/Button';
+import { Modal } from '@/shared/ui/modal/Modal';
 import { CafeCardForm } from '@/features/cafe-card/ui/CafeCardForm';
 import { createEmptyCafeCardValues } from '@/features/cafe-card/lib/defaults';
 import { cafeRecordToCardValues } from '@/features/cafe-card/lib/map-from-cafe';
@@ -57,8 +57,6 @@ export function CafeFormModal({ cafe, regions, isOpen, onClose, onSave }: CafeFo
     void load();
   }, [isOpen, cafe, regions]);
 
-  if (!isOpen) return null;
-
   const submit = async () => {
     try {
       setLoading(true);
@@ -73,40 +71,35 @@ export function CafeFormModal({ cafe, regions, isOpen, onClose, onSave }: CafeFo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-        <h2 className="text-xl font-semibold">
-          {cafe ? t('brandAdmin.cafes.editCafe') : t('brandAdmin.cafes.newCafe')}
-        </h2>
-
-        {error && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        <div className="mt-6">
-          <CafeCardForm
-            variant="brand"
-            mode={cafe ? 'edit' : 'create'}
-            values={values}
-            onChange={setValues}
-            cafeId={cafe?.id != null ? String(cafe.id) : undefined}
-            regions={regions}
-            formId="brand-cafe-form"
-            onSubmit={() => void submit()}
-          />
-        </div>
-
-        <div className="mt-6 flex gap-3">
+    <Modal
+      open={isOpen}
+      title={cafe ? t('brandAdmin.cafes.editCafe') : t('brandAdmin.cafes.newCafe')}
+      onClose={onClose}
+      size="2xl"
+      footer={
+        <div className="flex justify-end gap-2">
           <Button type="button" onClick={onClose} variant="secondary" disabled={loading}>
-            Отмена
+            {t('common.cancel')}
           </Button>
           <Button type="submit" form="brand-cafe-form" disabled={loading}>
-            {loading ? 'Сохранение…' : cafe ? 'Сохранить' : 'Создать'}
+            {loading ? t('common.saving') : cafe ? t('common.save') : t('common.create')}
           </Button>
         </div>
-      </Card>
-    </div>
+      }
+    >
+      {error ? (
+        <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+      ) : null}
+      <CafeCardForm
+        variant="brand"
+        mode={cafe ? 'edit' : 'create'}
+        values={values}
+        onChange={setValues}
+        cafeId={cafe?.id != null ? String(cafe.id) : undefined}
+        regions={regions}
+        formId="brand-cafe-form"
+        onSubmit={() => void submit()}
+      />
+    </Modal>
   );
 }

@@ -61,7 +61,6 @@ export function EditCafeModal({ open, cafe, onClose, onSuccess }: EditCafeModalP
       title={t('cafeAdmin.cafeInfo.editCafeTitle')}
       onClose={onClose}
       size="lg"
-      bodyClassName="max-h-[min(70vh,560px)] overflow-y-auto pr-1"
       footer={
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>

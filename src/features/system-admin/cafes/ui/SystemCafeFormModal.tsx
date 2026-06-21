@@ -84,6 +84,16 @@ export function SystemCafeFormModal({
       title={editId ? t('systemAdmin.cafes.editCafeModal') : t('systemAdmin.cafes.createCafeModal')}
       onClose={onClose}
       size="2xl"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose} disabled={loading}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" form="system-cafe-form" disabled={loading}>
+            {loading ? t('common.saving') : t('common.save')}
+          </Button>
+        </div>
+      }
     >
       {error ? (
         <Card className="mb-3 p-3 text-sm text-[rgb(var(--tc-danger))]">{error}</Card>
@@ -100,14 +110,6 @@ export function SystemCafeFormModal({
         formId="system-cafe-form"
         onSubmit={() => void submit()}
       />
-      <div className="mt-4 flex justify-end gap-2">
-        <Button variant="secondary" onClick={onClose} disabled={loading}>
-          {t('common.cancel')}
-        </Button>
-        <Button type="submit" form="system-cafe-form" disabled={loading}>
-          {loading ? t('common.saving') : t('common.save')}
-        </Button>
-      </div>
     </Modal>
   );
 }

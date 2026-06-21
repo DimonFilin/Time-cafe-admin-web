@@ -135,17 +135,6 @@ export function BrandSettingsEditModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">{t('common.address')}</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address || ''}
-                  onChange={handleChange}
-                  className="w-full rounded-lg border border-[rgb(var(--tc-border))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-1">{t('common.website')}</label>
                 <input
                   type="url"

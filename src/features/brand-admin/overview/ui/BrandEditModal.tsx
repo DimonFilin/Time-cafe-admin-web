@@ -164,18 +164,6 @@ export function BrandEditModal({ brand, isOpen, onClose, onSave }: BrandEditModa
             />
           </div>
 
-          {/* Address */}
-          <div>
-            <label className="block text-sm font-medium">{t('common.address')}</label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address || ''}
-              onChange={handleChange}
-              className="mt-1 w-full rounded-lg border border-[rgb(var(--tc-border))] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--tc-accent))]"
-            />
-          </div>
-
           <div className="space-y-3">
             <label className="block text-sm font-medium">
               {t('brandAdmin.modals.brandColors')}
