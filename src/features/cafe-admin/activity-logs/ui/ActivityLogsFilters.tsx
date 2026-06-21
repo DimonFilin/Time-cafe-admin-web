@@ -273,7 +273,8 @@ export function ActivityLogsFiltersComponent({
                 variant="ghost"
                 onClick={() => {
                   onReset();
-                  setSelectedWorker(null);
+                  setManualWorker(null);
+                  setFetchedWorker(null);
                 }}
                 className="text-sm"
               >
