@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { isAuthCookieSecure } from '@/shared/lib/cookie-secure';
 import { env } from '@/shared/config/env';
 
 export interface RefreshTokenResponse {
@@ -79,7 +80,7 @@ export async function setTokenCookies(
   const cookieStore = await cookies();
   const accountId = cookieStore.get('tc_account_id')?.value;
 
-  const secure = process.env.NODE_ENV === 'production';
+  const secure = isAuthCookieSecure();
   // expiresIn is in seconds, ensure at least 60 seconds (1 minute) for access token
   const accessMaxAge = Math.max(60, Math.floor(tokens.expiresIn));
   const refreshMaxAge = 60 * 60 * 24; // 24 hours

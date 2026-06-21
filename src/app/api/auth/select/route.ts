@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { isAuthCookieSecure } from '@/shared/lib/cookie-secure';
 import { env } from '@/shared/config/env';
 import { handleBackendError, processBackendResponse } from '@/shared/lib/handle-backend-error';
 
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
   console.log('[auth/select] Refresh token length:', payload.refreshToken.length);
   console.log('[auth/select] Expires in:', payload.expiresIn, 'seconds');
 
-  const secure = process.env.NODE_ENV === 'production';
+  const secure = isAuthCookieSecure();
   const accessMaxAge = Math.max(60, Math.floor(payload.expiresIn)); // At least 60 seconds
   const refreshMaxAge = 60 * 60 * 24 * 30; // 30 days (frontend-side policy)
 

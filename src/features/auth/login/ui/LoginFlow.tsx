@@ -40,9 +40,8 @@ function roleRoute(role: AccountSummary['role']) {
 export function LoginFlow() {
   const router = useRouter();
   const [step, setStep] = useState<LoginStep>('email');
-  // Default values for quick testing
-  const [email, setEmail] = useState('multiacc.email@gmail.com');
-  const [password, setPassword] = useState('MultiAccount2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [accounts, setAccounts] = useState<AccountSummary[]>([]);
   const [lookupToken, setLookupToken] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

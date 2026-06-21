@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { isAuthCookieSecure } from '@/shared/lib/cookie-secure';
+
 function cookieOptions(secure: boolean) {
   return {
     httpOnly: true,
@@ -11,7 +13,7 @@ function cookieOptions(secure: boolean) {
 }
 
 export async function POST(req: Request) {
-  const secure = process.env.NODE_ENV === 'production';
+  const secure = isAuthCookieSecure();
   const next = NextResponse.redirect(new URL('/login', req.url), 303);
 
   // Auth cookies
