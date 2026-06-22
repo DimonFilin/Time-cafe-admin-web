@@ -40,6 +40,7 @@ export function QrScanModal({
 
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [phoneValue, setPhoneValue] = useState('');
+  const [cardValue, setCardValue] = useState('');
   const [isScanning, setIsScanning] = useState(false);
 
   const scanOnly = mode === 'appointment';
@@ -73,8 +74,15 @@ export function QrScanModal({
   const handleClose = () => {
     setIsScanning(false);
     setPhoneValue('');
+    setCardValue('');
     stopCamera();
     onClose();
+  };
+
+  const submitManualCard = () => {
+    const trimmed = cardValue.trim();
+    if (!trimmed) return;
+    onDetected(trimmed);
   };
 
   useEffect(() => {
@@ -86,6 +94,7 @@ export function QrScanModal({
 
     setCameraError(null);
     setPhoneValue('');
+    setCardValue('');
 
     if (!cameraAvailable) {
       if (scanOnly) {
@@ -163,10 +172,10 @@ export function QrScanModal({
   }, [cameraAvailable, isScanning, onDetected, open, scanOnly]);
 
   useEffect(() => {
-    if (open && cameraAvailable) {
+    if (open && cameraAvailable && scanOnly) {
       setIsScanning(true);
     }
-  }, [cameraAvailable, open]);
+  }, [cameraAvailable, open, scanOnly]);
 
   return (
     <Modal
@@ -185,7 +194,70 @@ export function QrScanModal({
         </div>
       ) : null}
 
-      {cameraAvailable && isScanning ? (
+      {phoneFallback ? (
+        <div className="space-y-3 rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-4">
+          <div className="text-sm font-medium">Сканирование карты СКУД</div>
+
+          {cameraAvailable && isScanning ? (
+            <div className="rounded-2xl border border-[rgb(var(--tc-border))] bg-black/5 p-2">
+              <video
+                ref={videoRef}
+                className={cn('aspect-video w-full rounded-xl bg-black')}
+                muted
+                playsInline
+              />
+              <div className="mt-2 text-xs text-[rgb(var(--tc-muted))]">
+                Наведите камеру на QR-код. После распознавания данные отправятся автоматически.
+              </div>
+            </div>
+          ) : null}
+
+          {cameraAvailable && !isScanning ? (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setCameraError(null);
+                setIsScanning(true);
+              }}
+            >
+              Сканировать QR
+            </Button>
+          ) : null}
+
+          {!cameraAvailable ? (
+            <p className="text-xs text-[rgb(var(--tc-muted))]">
+              Камера на HTTP недоступна — введите номер карты СКУД или данные из QR вручную.
+            </p>
+          ) : (
+            <p className="text-xs text-[rgb(var(--tc-muted))]">
+              Или введите номер карты / JSON из QR вручную.
+            </p>
+          )}
+
+          <input
+            type="text"
+            autoComplete="off"
+            value={cardValue}
+            onChange={(e) => setCardValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && cardValue.trim()) submitManualCard();
+            }}
+            placeholder="Номер карты или JSON из QR"
+            className={cn(
+              'w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm',
+              'text-[rgb(var(--tc-fg))] placeholder:text-[rgb(var(--tc-muted))]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--tc-ring))]',
+            )}
+          />
+          <div className="flex justify-end">
+            <Button onClick={submitManualCard} disabled={!cardValue.trim()}>
+              Применить
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {scanOnly && cameraAvailable && isScanning ? (
         <div className="rounded-2xl border border-[rgb(var(--tc-border))] bg-black/5 p-2">
           <video
             ref={videoRef}
@@ -199,7 +271,7 @@ export function QrScanModal({
         </div>
       ) : null}
 
-      {cameraAvailable && !isScanning && scanOnly ? (
+      {scanOnly && cameraAvailable && !isScanning ? (
         <Button variant="secondary" onClick={() => setIsScanning(true)}>
           Запустить камеру
         </Button>
@@ -207,40 +279,24 @@ export function QrScanModal({
 
       {phoneFallback ? (
         <div className="space-y-3 rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-4">
-          <div className="text-sm font-medium">
-            {cameraAvailable ? 'Или найти по телефону' : 'Введите телефон клиента'}
-          </div>
-          {!cameraAvailable ? (
-            <p className="text-xs text-[rgb(var(--tc-muted))]">
-              Камера на HTTP недоступна — используйте номер телефона из профиля гостя.
-            </p>
-          ) : null}
+          <div className="text-sm font-medium">Или найти по телефону</div>
           <input
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             value={phoneValue}
             onChange={(e) => setPhoneValue(e.target.value)}
-            placeholder="+375-29-123-45-67"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && phoneValue.trim()) onPhoneSubmit?.(phoneValue.trim());
+            }}
+            placeholder="291234567, 80291234567, +375-29-123-45-67"
             className={cn(
               'w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm',
               'text-[rgb(var(--tc-fg))] placeholder:text-[rgb(var(--tc-muted))]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--tc-ring))]',
             )}
           />
-          <div className="flex flex-wrap gap-2">
-            {cameraAvailable ? (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setCameraError(null);
-                  setIsScanning(true);
-                }}
-              >
-                Сканировать QR
-              </Button>
-            ) : null}
-            <div className="flex-1" />
+          <div className="flex justify-end">
             <Button
               onClick={() => onPhoneSubmit?.(phoneValue.trim())}
               disabled={!phoneValue.trim() || !onPhoneSubmit}
