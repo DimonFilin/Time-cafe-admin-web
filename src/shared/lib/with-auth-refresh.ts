@@ -50,12 +50,7 @@ export async function fetchWithAuthRefresh(
     const refreshed = await refreshAccessToken();
 
     if (refreshed) {
-      console.log(
-        '[with-auth-refresh] Token refreshed, waiting 3 seconds before using new token...',
-      );
-      // Wait 3 seconds to ensure cookies are properly set
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      console.log('[with-auth-refresh] Using new access token for request');
+      console.log('[with-auth-refresh] Token refreshed, using new access token for request');
 
       // Use refreshed token for the request
       let response: Response;
@@ -131,10 +126,7 @@ export async function fetchWithAuthRefresh(
     const refreshed = await refreshAccessToken();
 
     if (refreshed) {
-      console.log('[with-auth-refresh] Token refreshed, waiting 3 seconds before retry...');
-      // Wait 3 seconds to ensure cookies are properly set
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      console.log('[with-auth-refresh] Retrying request with new token');
+      console.log('[with-auth-refresh] Token refreshed, retrying request with new token');
 
       // Retry with new token
       let retryResponse: Response;

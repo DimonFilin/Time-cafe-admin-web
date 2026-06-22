@@ -4,39 +4,47 @@ import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/shared/lib/cn';
-import { parseAppointmentQr } from '@/shared/lib/appointment-qr';
 import { Button } from '@/shared/ui/button/Button';
 import { Modal } from '@/shared/ui/modal/Modal';
+
+export type QrScanModalMode = 'appointment' | 'reception';
+
+function canUseCamera(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean(window.isSecureContext && navigator.mediaDevices?.getUserMedia);
+}
 
 export function QrScanModal({
   open,
   title = 'Сканировать QR-код',
-  description = 'Наведите камеру на QR-код бронирования.',
+  description = 'Наведите камеру на QR-код.',
   errorText,
-  contextCafeId,
-  debugRaw,
-  debugParsed,
+  mode = 'appointment',
   onClose,
   onDetected,
+  onPhoneSubmit,
 }: {
   open: boolean;
   title?: string;
   description?: string;
   errorText?: string | null;
-  contextCafeId?: string | null;
-  debugRaw?: string | null;
-  debugParsed?: string | null;
+  mode?: QrScanModalMode;
   onClose: () => void;
   onDetected: (text: string) => void;
+  /** Reception only: lookup guest by phone when camera is unavailable */
+  onPhoneSubmit?: (phone: string) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [manualValue, setManualValue] = useState('');
-  const [lastDetected, setLastDetected] = useState<string | null>(null);
+  const [phoneValue, setPhoneValue] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+
+  const scanOnly = mode === 'appointment';
+  const phoneFallback = mode === 'reception';
+  const cameraAvailable = useMemo(() => canUseCamera(), [open]);
 
   const combinedError = useMemo(() => errorText ?? cameraError, [cameraError, errorText]);
 
@@ -64,6 +72,7 @@ export function QrScanModal({
 
   const handleClose = () => {
     setIsScanning(false);
+    setPhoneValue('');
     stopCamera();
     onClose();
   };
@@ -76,7 +85,16 @@ export function QrScanModal({
     }
 
     setCameraError(null);
-    setLastDetected(null);
+    setPhoneValue('');
+
+    if (!cameraAvailable) {
+      if (scanOnly) {
+        setCameraError(
+          'Камера недоступна (нужен HTTPS). Сканирование брони с этой страницы невозможно.',
+        );
+      }
+      return;
+    }
 
     if (!isScanning) {
       stopCamera();
@@ -86,6 +104,12 @@ export function QrScanModal({
     const start = async () => {
       if (!videoRef.current) {
         setCameraError('Не удалось инициализировать предпросмотр камеры');
+        setIsScanning(false);
+        return;
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError('Браузер не поддерживает доступ к камере на этом адресе');
         setIsScanning(false);
         return;
       }
@@ -109,16 +133,14 @@ export function QrScanModal({
           (result, error) => {
             if (result) {
               const text = result.getText();
-              setLastDetected(text);
-              setManualValue(text);
               setIsScanning(false);
               stopCamera();
+              onDetected(text);
               return;
             }
 
             if (!error) return;
             const name = (error as { name?: string } | null)?.name;
-            // NotFoundException is expected when no code is in frame.
             if (name === 'NotFoundException') return;
             setCameraError('Ошибка сканирования. Проверьте доступ к камере и попробуйте снова.');
           },
@@ -138,18 +160,13 @@ export function QrScanModal({
     return () => {
       stopCamera();
     };
-  }, [open, isScanning]);
+  }, [cameraAvailable, isScanning, onDetected, open, scanOnly]);
 
-  const debugInfo = useMemo(() => {
-    const raw = (debugRaw ?? lastDetected ?? '').trim();
-    if (!raw) return null;
-    const parsed = parseAppointmentQr(raw);
-    const cafeMatch =
-      parsed.ok && parsed.cafeId && contextCafeId
-        ? String(parsed.cafeId) === String(contextCafeId)
-        : null;
-    return { raw, parsed, cafeMatch };
-  }, [contextCafeId, debugRaw, lastDetected]);
+  useEffect(() => {
+    if (open && cameraAvailable) {
+      setIsScanning(true);
+    }
+  }, [cameraAvailable, open]);
 
   return (
     <Modal
@@ -168,46 +185,7 @@ export function QrScanModal({
         </div>
       ) : null}
 
-      {debugInfo ? (
-        <details className="rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-3">
-          <summary className="cursor-pointer select-none text-sm font-medium">
-            Debug: данные из QR
-          </summary>
-          <div className="mt-3 space-y-3">
-            {contextCafeId ? (
-              <div className="text-xs text-[rgb(var(--tc-muted))]">
-                Текущее кафе: <span className="font-mono">{contextCafeId}</span>
-              </div>
-            ) : null}
-
-            <div>
-              <div className="text-xs text-[rgb(var(--tc-muted))]">RAW</div>
-              <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-3 font-mono text-xs">
-                {debugInfo.raw}
-              </pre>
-            </div>
-
-            <div>
-              <div className="text-xs text-[rgb(var(--tc-muted))]">PARSED</div>
-              <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] p-3 font-mono text-xs">
-                {debugParsed ?? JSON.stringify(debugInfo.parsed, null, 2)}
-              </pre>
-            </div>
-
-            {debugInfo.cafeMatch === true ? (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-                QR относится к текущему кафе
-              </div>
-            ) : debugInfo.cafeMatch === false ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                QR относится к другому кафе
-              </div>
-            ) : null}
-          </div>
-        </details>
-      ) : null}
-
-      {isScanning ? (
+      {cameraAvailable && isScanning ? (
         <div className="rounded-2xl border border-[rgb(var(--tc-border))] bg-black/5 p-2">
           <video
             ref={videoRef}
@@ -216,49 +194,67 @@ export function QrScanModal({
             playsInline
           />
           <div className="mt-2 text-xs text-[rgb(var(--tc-muted))]">
-            Наведите камеру на QR-код. После распознавания код подставится в поле ниже.
+            Наведите камеру на QR-код. После распознавания данные отправятся автоматически.
           </div>
         </div>
       ) : null}
 
-      <div className="space-y-3">
-        <div className="text-sm font-medium">Код (вставьте вручную или отсканируйте)</div>
-        <textarea
-          value={manualValue}
-          onChange={(e) => setManualValue(e.target.value)}
-          placeholder='Например: {"v":1,"t":"a","a":"123","u":null,"c":"1","n":"Cafe"}'
-          className={cn(
-            'min-h-[140px] w-full resize-y rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-3 text-sm',
-            'text-[rgb(var(--tc-fg))] placeholder:text-[rgb(var(--tc-muted))]',
-            'transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--tc-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--tc-bg))]',
-          )}
-        />
+      {cameraAvailable && !isScanning && scanOnly ? (
+        <Button variant="secondary" onClick={() => setIsScanning(true)}>
+          Запустить камеру
+        </Button>
+      ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setCameraError(null);
-              setIsScanning(true);
-            }}
-          >
-            Сканировать
-          </Button>
-
-          <div className="flex-1" />
-
-          <Button
-            onClick={() => onDetected(manualValue)}
-            disabled={!manualValue.trim()}
-            title={manualValue.trim() ? undefined : 'Введите значение'}
-          >
-            Открыть бронь
-          </Button>
-
-          <Button variant="secondary" onClick={handleClose}>
-            Отмена
-          </Button>
+      {phoneFallback ? (
+        <div className="space-y-3 rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-4">
+          <div className="text-sm font-medium">
+            {cameraAvailable ? 'Или найти по телефону' : 'Введите телефон клиента'}
+          </div>
+          {!cameraAvailable ? (
+            <p className="text-xs text-[rgb(var(--tc-muted))]">
+              Камера на HTTP недоступна — используйте номер телефона из профиля гостя.
+            </p>
+          ) : null}
+          <input
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={phoneValue}
+            onChange={(e) => setPhoneValue(e.target.value)}
+            placeholder="+375-29-123-45-67"
+            className={cn(
+              'w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm',
+              'text-[rgb(var(--tc-fg))] placeholder:text-[rgb(var(--tc-muted))]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--tc-ring))]',
+            )}
+          />
+          <div className="flex flex-wrap gap-2">
+            {cameraAvailable ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCameraError(null);
+                  setIsScanning(true);
+                }}
+              >
+                Сканировать QR
+              </Button>
+            ) : null}
+            <div className="flex-1" />
+            <Button
+              onClick={() => onPhoneSubmit?.(phoneValue.trim())}
+              disabled={!phoneValue.trim() || !onPhoneSubmit}
+            >
+              Найти
+            </Button>
+          </div>
         </div>
+      ) : null}
+
+      <div className="flex justify-end">
+        <Button variant="secondary" onClick={handleClose}>
+          Отмена
+        </Button>
       </div>
     </Modal>
   );

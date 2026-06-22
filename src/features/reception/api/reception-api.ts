@@ -30,10 +30,11 @@ export type ReceptionScanResult = {
 };
 
 export const receptionApi = {
-  scan(params: { payload?: string; accessCardNumber?: string; cafeId?: string }) {
+  scan(params: { payload?: string; accessCardNumber?: string; phone?: string; cafeId?: string }) {
     const q = new URLSearchParams();
     if (params.payload) q.set('payload', params.payload);
     if (params.accessCardNumber) q.set('accessCardNumber', params.accessCardNumber);
+    if (params.phone) q.set('phone', params.phone);
     if (params.cafeId) q.set('cafeId', params.cafeId);
     return clientFetch<ReceptionScanResult>(`/api/cafe-worker/reception/scan?${q.toString()}`);
   },

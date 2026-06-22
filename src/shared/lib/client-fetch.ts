@@ -1,8 +1,11 @@
+'use client';
+
 /**
  * Client-side fetch wrapper with token handling
  * For use in client components
  */
 
+import { fetchWithAuthRetry } from '@/shared/lib/fetch-with-retry';
 import { t } from '@/i18n';
 
 function messageFromErrorBody(body: unknown, status: number): string {
@@ -15,9 +18,8 @@ function messageFromErrorBody(body: unknown, status: number): string {
 }
 
 export async function clientFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetchWithAuthRetry(url, {
     ...options,
-    credentials: 'include', // Include cookies
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,

@@ -1,9 +1,11 @@
+import { NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh } from '@/shared/lib/with-auth-refresh';
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
-  const url = `${env.backendUrl}/cafe-worker/orders/${id}`;
+  const query = req.nextUrl.searchParams.toString();
+  const url = `${env.backendUrl}/cafe-worker/orders/${id}${query ? `?${query}` : ''}`;
 
   return fetchWithAuthRefresh(url, {
     method: 'GET',

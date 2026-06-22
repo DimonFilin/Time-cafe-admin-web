@@ -1,5 +1,7 @@
 /** Wall-snapped windows for cafe layout editor */
 
+import { newLayoutId } from './layout-id';
+
 export type Point = { x: number; y: number };
 
 export type WallSegment = { id: string; start: Point; end: Point };
@@ -517,7 +519,7 @@ export function extractWindows(elements: Array<unknown>): PlanWindow[] {
       }
       if (!spans.length) return null;
       return {
-        id: String(e.id || crypto.randomUUID()),
+        id: String(e.id || newLayoutId()),
         name: String(e.name || 'Окно'),
         widthM,
         spans,

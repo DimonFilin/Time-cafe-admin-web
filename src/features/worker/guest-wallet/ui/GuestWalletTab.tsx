@@ -104,12 +104,17 @@ export function GuestWalletTab() {
       )}
       <QrScanModal
         open={qrOpen}
+        mode="reception"
         title="Сканировать карту СКУД"
         description="QR с карты клиента или пропуска"
         onClose={() => setQrOpen(false)}
         onDetected={(text) => {
           setQrOpen(false);
           void lookupByValue(text);
+        }}
+        onPhoneSubmit={(phone) => {
+          setQrOpen(false);
+          void lookupByValue(phone);
         }}
       />
     </Card>

@@ -19,12 +19,23 @@ type Props = {
 };
 
 export function ReceptionScanTab({ cafeId }: Props) {
-  const [manualCard, setManualCard] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
   const [scanOpen, setScanOpen] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ReceptionScanResult | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<ReceptionAppointment | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const applyResult = (data: ReceptionScanResult) => {
+    setResult(data);
+    if (data.openAppointmentId) {
+      const apt = data.appointmentsToday.find((a) => a.id === data.openAppointmentId);
+      setSelectedAppointment(apt ?? null);
+    } else {
+      setSelectedAppointment(null);
+    }
+    setScanOpen(false);
+  };
 
   const applyScan = async (raw: string) => {
     setLoading(true);
@@ -32,20 +43,29 @@ export function ReceptionScanTab({ cafeId }: Props) {
     try {
       const card = parseScudQrPayload(raw);
       const data = await receptionApi.scan({
-        payload: card ? raw.trim() : undefined,
-        accessCardNumber: card ?? raw.trim(),
+        payload: raw.trim(),
+        accessCardNumber: card ?? undefined,
         cafeId,
       });
-      setResult(data);
-      if (data.openAppointmentId) {
-        const apt = data.appointmentsToday.find((a) => a.id === data.openAppointmentId);
-        setSelectedAppointment(apt ?? null);
-      } else {
-        setSelectedAppointment(null);
-      }
-      setScanOpen(false);
+      applyResult(data);
     } catch (e) {
       setScanError(e instanceof Error ? e.message : 'Сканирование не удалось');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyByPhone = async (phone: string) => {
+    const trimmed = phone.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    setScanError(null);
+    try {
+      const data = await receptionApi.scan({ phone: trimmed, cafeId });
+      applyResult(data);
+      setManualPhone(trimmed);
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : 'Клиент не найден');
     } finally {
       setLoading(false);
     }
@@ -71,13 +91,20 @@ export function ReceptionScanTab({ cafeId }: Props) {
           <Button onClick={() => setScanOpen(true)}>Сканировать QR</Button>
           <input
             className="min-w-[200px] flex-1 rounded-lg border px-3 py-2 text-sm"
-            placeholder="Номер карты вручную"
-            value={manualCard}
-            onChange={(e) => setManualCard(e.target.value)}
+            type="tel"
+            inputMode="tel"
+            placeholder="Телефон клиента"
+            value={manualPhone}
+            onChange={(e) => setManualPhone(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && manualPhone.trim()) {
+                void applyByPhone(manualPhone);
+              }
+            }}
           />
           <Button
-            disabled={!manualCard.trim() || loading}
-            onClick={() => void applyScan(manualCard)}
+            disabled={!manualPhone.trim() || loading}
+            onClick={() => void applyByPhone(manualPhone)}
           >
             Найти
           </Button>
@@ -141,11 +168,13 @@ export function ReceptionScanTab({ cafeId }: Props) {
 
       <QrScanModal
         open={scanOpen}
+        mode="reception"
         title="Сканировать карту СКУД"
         description="Наведите камеру на QR-код карты клиента."
         errorText={scanError}
         onClose={() => setScanOpen(false)}
         onDetected={(text) => void applyScan(text)}
+        onPhoneSubmit={(phone) => void applyByPhone(phone)}
       />
     </div>
   );

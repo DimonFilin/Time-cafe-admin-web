@@ -1,13 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
+import { connectAdminSocket } from '@/shared/lib/admin-socket';
 import { MediaImage } from '@/shared/ui/media/MediaImage';
 import { proxiedMediaUrl } from '@/shared/lib/proxied-media-url';
 import { chatsApi, ChatAuthorWorker, ChatMessage, ChatSummary } from '../api/chats-api';
 import { t } from '@/i18n';
 
-const wsUrl = process.env.NEXT_PUBLIC_SHARED_API_URL || 'http://localhost:3000';
 type ChatStatusFilter = 'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 
 function workerNameFrom(worker: ChatAuthorWorker): string {
@@ -78,7 +78,12 @@ export function ChatsTab() {
       setMessages([...res.items].reverse());
       const last = res.items[0];
       if (last) {
-        void chatsApi.markRead(activeChatId, last.id);
+        void chatsApi.markRead(activeChatId, last.id).then(() => {
+          setChats((prev) =>
+            prev.map((c) => (c.id === activeChatId ? { ...c, unreadCount: 0 } : c)),
+          );
+          void loadChatsRef.current();
+        });
       }
     });
   }, [activeChatId]);
@@ -96,28 +101,33 @@ export function ChatsTab() {
 
   useEffect(() => {
     let disposed = false;
-    const s = io(`${wsUrl}/order-chats`, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      withCredentials: true,
-    });
-    s.on('chat:message:new', (message: ChatMessage) => {
-      if (message.chatId === activeChatIdRef.current) {
-        setMessages((prev) => appendUniqueMessage(prev, message));
+    let s: Socket | null = null;
+
+    void (async () => {
+      s = await connectAdminSocket('/order-chats');
+      if (!s || disposed) {
+        s?.disconnect();
+        return;
       }
-      void loadChatsRef.current();
-    });
-    s.on('chat:unread:update', () => {
-      void loadChatsRef.current();
-    });
-    if (!disposed) {
+
+      s.on('chat:message:new', (message: ChatMessage) => {
+        if (message.chatId === activeChatIdRef.current) {
+          setMessages((prev) => appendUniqueMessage(prev, message));
+        }
+        void loadChatsRef.current();
+      });
+      s.on('chat:unread:update', () => {
+        void loadChatsRef.current();
+      });
+      s.on('chat:list:update', () => {
+        void loadChatsRef.current();
+      });
       setSocket(s);
-    }
+    })();
 
     return () => {
       disposed = true;
-      s.disconnect();
+      s?.disconnect();
     };
   }, []);
 

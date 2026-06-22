@@ -131,7 +131,7 @@ export function BrandAdminDashboard() {
       case 'menu':
         return <BrandMenuTab />;
       case 'chats':
-        return <ChatsTab />;
+        return null;
       case 'documents':
         return <DocumentsTab />;
       case 'workers':
@@ -180,7 +180,12 @@ export function BrandAdminDashboard() {
       </div>
 
       {/* Tab content */}
-      <div className="w-full">{renderTab()}</div>
+      <div className="w-full">
+        <div className={activeTab === 'chats' ? '' : 'hidden'} aria-hidden={activeTab !== 'chats'}>
+          <ChatsTab />
+        </div>
+        {activeTab !== 'chats' ? renderTab() : null}
+      </div>
     </div>
   );
 }

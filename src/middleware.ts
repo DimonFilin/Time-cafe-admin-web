@@ -10,8 +10,13 @@ export function middleware(req: NextRequest) {
 
   const access = req.cookies.get('tc_access')?.value;
   const accountId = req.cookies.get('tc_account_id')?.value;
+  const refresh = req.cookies.get('tc_refresh')?.value;
 
-  if (!access || !accountId) {
+  // tc_access expires in ~5 min; tc_refresh lasts longer. Allow navigation when
+  // refresh + account are present — BFF routes refresh the access token on API calls.
+  const hasSession = Boolean(accountId && (access || refresh));
+
+  if (!hasSession) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('next', pathname);

@@ -6,10 +6,5 @@ export async function GET(req: NextRequest) {
   const url = new URL(`${env.backendUrl}/order-chats`);
   const incoming = new URL(req.url);
   incoming.searchParams.forEach((value, key) => url.searchParams.set(key, value));
-  const response = await fetchWithAuthRefresh(url.toString(), { method: 'GET' });
-  const text = await response.text();
-  return new Response(text, {
-    status: response.status,
-    headers: { 'Content-Type': response.headers.get('content-type') || 'application/json' },
-  });
+  return fetchWithAuthRefresh(url.toString(), { method: 'GET', cache: 'no-store' });
 }

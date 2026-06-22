@@ -1,6 +1,7 @@
 /** Wall-snapped doors for layout editor */
 
 import type { DoorKind, DoorSwing } from './layout-editor-catalog';
+import { newLayoutId } from './layout-id';
 import type { Point } from './layout-pick';
 import type { WallSegment } from './layout-windows';
 import { proposeWindowPlacement, wallNormal, wallUnit, type WindowSpan } from './layout-windows';
@@ -133,7 +134,7 @@ export function extractDoors(elements: Array<unknown>): PlanDoor[] {
       const widthM = Number(g.widthM ?? (e.props as Record<string, unknown>)?.widthM) || 0.9;
       const p = (e.props || {}) as Record<string, unknown>;
       return {
-        id: String(e.id || crypto.randomUUID()),
+        id: String(e.id || newLayoutId()),
         name: String(e.name || 'Дверь'),
         widthM,
         spans,

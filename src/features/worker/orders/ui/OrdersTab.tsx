@@ -8,6 +8,7 @@ import { OrderCard } from './OrderCard';
 import { OrderDetailsModal } from './OrderDetailsModal';
 import { CancelOrderModal } from './CancelOrderModal';
 import { CafeMenuModal } from './CafeMenuModal';
+import { useCafeRealtime } from '@/shared/hooks/useCafeRealtime';
 
 interface OrdersTabProps {
   cafeId: string;
@@ -51,12 +52,13 @@ export function OrdersTab({ cafeId }: OrdersTabProps) {
 
   useEffect(() => {
     fetchOrders();
-    // Auto-refresh every 30 seconds for active orders
-    if (filter === 'active' && cafeId) {
-      const interval = setInterval(fetchOrders, 30000);
-      return () => clearInterval(interval);
-    }
   }, [cafeId, fetchOrders, filter]);
+
+  useCafeRealtime(cafeId, {
+    onOrderUpdated: () => {
+      void fetchOrders();
+    },
+  });
 
   const handleConfirm = async (orderId: string) => {
     try {

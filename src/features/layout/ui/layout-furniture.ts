@@ -2,6 +2,7 @@
 
 import type { ChairVariant } from './layout-editor-catalog';
 import type { LayoutElementRecord } from './layout-api-types';
+import { newLayoutId } from './layout-id';
 
 export type Point = { x: number; y: number };
 
@@ -174,6 +175,28 @@ function elementProps(el: LayoutElementRecord): Record<string, unknown> {
   return el.props && typeof el.props === 'object' ? el.props : {};
 }
 
+/** Editor canvas: GRID_STEP=20px per 0.1m → 200px per meter */
+export const LEGACY_PX_PER_METER = 200;
+
+export function geometrySizeMeters(
+  g: Record<string, unknown>,
+  props?: Record<string, unknown>,
+  pxPerMeter = LEGACY_PX_PER_METER,
+): { widthM: number; heightM: number } | null {
+  let widthM = Number(g.widthM ?? props?.widthM);
+  let heightM = Number(g.heightM ?? props?.heightM);
+  if (!Number.isFinite(widthM) || !Number.isFinite(heightM)) {
+    const w = Number(g.w);
+    const h = Number(g.h);
+    if (Number.isFinite(w) && Number.isFinite(h)) {
+      widthM = w / pxPerMeter;
+      heightM = h / pxPerMeter;
+    }
+  }
+  if (!Number.isFinite(widthM) || !Number.isFinite(heightM)) return null;
+  return { widthM, heightM };
+}
+
 export function extractTables(elements: LayoutElementRecord[]): PlanTable[] {
   return (elements || [])
     .filter((el) => el?.elementType === 'TABLE')
@@ -182,14 +205,14 @@ export function extractTables(elements: LayoutElementRecord[]): PlanTable[] {
       const props = elementProps(el);
       const x = Number(g.x);
       const y = Number(g.y);
-      const widthM = Number(g.widthM ?? props.widthM);
-      const heightM = Number(g.heightM ?? props.heightM);
-      if (![x, y, widthM, heightM].every(Number.isFinite)) return null;
+      const size = geometrySizeMeters(g, props);
+      if (!size || ![x, y].every(Number.isFinite)) return null;
+      const { widthM, heightM } = size;
       const shapeRaw = props.shape ?? g.shape;
       const shape: TableShape = shapeRaw === 'rounded' || shapeRaw === 'oval' ? shapeRaw : 'rect';
       const rotationDeg = Number(props.rotationDeg ?? g.rotationDeg);
       return {
-        id: String(el.id || crypto.randomUUID()),
+        id: String(el.id || newLayoutId()),
         name: String(el.name || 'Стол'),
         x,
         y,
@@ -211,9 +234,9 @@ export function extractChairs(elements: LayoutElementRecord[]): PlanChair[] {
       const props = elementProps(el);
       const x = Number(g.x);
       const y = Number(g.y);
-      const widthM = Number(g.widthM ?? props.widthM);
-      const heightM = Number(g.heightM ?? props.heightM);
-      if (![x, y, widthM, heightM].every(Number.isFinite)) return null;
+      const size = geometrySizeMeters(g, props);
+      if (!size || ![x, y].every(Number.isFinite)) return null;
+      const { widthM, heightM } = size;
       const rotationDeg = Number(props.rotationDeg ?? g.rotationDeg);
       const variantRaw = props.variant;
       const variant: ChairVariant =
@@ -221,7 +244,7 @@ export function extractChairs(elements: LayoutElementRecord[]): PlanChair[] {
           ? variantRaw
           : 'standard';
       return {
-        id: String(el.id || crypto.randomUUID()),
+        id: String(el.id || newLayoutId()),
         name: String(el.name || 'Стул'),
         x,
         y,

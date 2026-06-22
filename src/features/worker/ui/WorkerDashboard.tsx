@@ -343,7 +343,12 @@ export function WorkerDashboard() {
           {activeTab === 'appointments' && <AppointmentsTab cafeId={worker.cafeId} />}
           {activeTab === 'reception' && <ReceptionScanTab cafeId={worker.cafeId} />}
           {activeTab === 'tasks' && <TasksTab />}
-          {activeTab === 'chats' && <ChatsTab />}
+          <div
+            className={activeTab === 'chats' ? '' : 'hidden'}
+            aria-hidden={activeTab !== 'chats'}
+          >
+            <ChatsTab />
+          </div>
           {activeTab === 'layout' && <CafeLayoutEditorTab scope="worker" />}
           {activeTab === 'wallet' && <GuestWalletTab />}
           {activeTab === 'profile' && (

@@ -1031,8 +1031,8 @@
       "photos": "Фото"
     },
     "workersManagement": {
-      "title": "Работники (SYSTEM_ADMIN)",
-      "subtitle": "Список берётся из `GET /admin/workers` (по умолчанию скрывает soft-deleted).",
+      "title": "Сотрудники",
+      "subtitle": "Управление персоналом: роли, привязка к брендам и кафе, регистрация и редактирование.",
       "addWorker": "Добавить работника",
       "editWorker": "Редактировать работника",
       "registerWorker": "Зарегистрировать работника",
@@ -1048,7 +1048,7 @@
       "lastNameRequired": "Фамилия *",
       "roleRequired": "Роль *",
       "empty": "(пусто)",
-      "cannotDeleteSystemAdmin": "Нельзя удалить SYSTEM_ADMIN",
+      "cannotDeleteSystemAdmin": "Нельзя удалить системного администратора",
       "cannotDeleteSelf": "Нельзя удалить самого себя"
     },
     "appointmentsManagement": {

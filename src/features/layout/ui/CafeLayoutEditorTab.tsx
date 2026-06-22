@@ -112,6 +112,7 @@ import {
 } from './layout-stairs';
 import { StairShape } from './layout-stair-render';
 import { readPlanBackground, type PlanBackgroundImage } from './layout-plan-background';
+import { newLayoutId } from './layout-id';
 import { billingModesAvailable, parseRoomBilling, patchRoomBilling } from './room-billing';
 import type {
   EditorRoomRecord,
@@ -419,7 +420,7 @@ function extractWalls(elements: LayoutElementRecord[]): WallSegment[] {
       const y2 = Number(g.y2);
       if (![x1, y1, x2, y2].every(Number.isFinite)) return null;
       return {
-        id: String(el.id || crypto.randomUUID()),
+        id: String(el.id || newLayoutId()),
         start: { x: x1, y: y1 },
         end: { x: x2, y: y2 },
       } satisfies WallSegment;
@@ -442,7 +443,7 @@ function extractRoomZones(elements: LayoutElementRecord[]): RoomZone[] {
         .filter((p: Point) => Number.isFinite(p.x) && Number.isFinite(p.y));
       if (points.length < 3) return null;
       return {
-        id: String(el.id || crypto.randomUUID()),
+        id: String(el.id || newLayoutId()),
         points,
         roomId: el.props && typeof el.props.roomId === 'string' ? el.props.roomId : null,
       } satisfies RoomZone;
@@ -1407,7 +1408,11 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       ...walls.flatMap((w) => [w.start, w.end]),
       ...roomZones.flatMap((z) => z.points),
     ];
-    const nearest = nearestPoint(allNodes, cursorPoint);
+    const snapNodes =
+      drawMode === 'WALL' && draftWallStart
+        ? allNodes.filter((p) => distance(p, draftWallStart) >= GRID_STEP / 2)
+        : allNodes;
+    const nearest = nearestPoint(snapNodes, cursorPoint);
     const base = nearest ?? snapToGrid(cursorPoint);
     if (drawMode === 'WALL' && draftWallStart && shiftPressed) {
       return constrainOrthoHV(draftWallStart, base);
@@ -2785,9 +2790,9 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     const point = snappedCursor;
 
     if (drawMode === 'TABLE') {
-      const presetId = tablePresetPick !== '__new__' ? tablePresetPick : crypto.randomUUID();
+      const presetId = tablePresetPick !== '__new__' ? tablePresetPick : newLayoutId();
       const item: PlanTable = {
-        id: crypto.randomUUID(),
+        id: newLayoutId(),
         name: tableDraft.name.trim() || 'Стол',
         x: point.x,
         y: point.y,
@@ -2813,9 +2818,9 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     }
 
     if (drawMode === 'CHAIR') {
-      const presetId = chairPresetPick !== '__new__' ? chairPresetPick : crypto.randomUUID();
+      const presetId = chairPresetPick !== '__new__' ? chairPresetPick : newLayoutId();
       const item: PlanChair = {
-        id: crypto.randomUUID(),
+        id: newLayoutId(),
         name: chairDraft.name.trim() || 'Стул',
         x: point.x,
         y: point.y,
@@ -2843,9 +2848,9 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
     if (drawMode === 'WINDOW') {
       const proposal = proposeWindowPlacement(walls, point, windowDraft.widthM, PX_PER_METER);
       if (!proposal) return;
-      const presetId = windowPresetPick !== '__new__' ? windowPresetPick : crypto.randomUUID();
+      const presetId = windowPresetPick !== '__new__' ? windowPresetPick : newLayoutId();
       const item: PlanWindow = {
-        id: crypto.randomUUID(),
+        id: newLayoutId(),
         name: windowDraft.name.trim() || 'Окно',
         widthM: proposal.widthM,
         spans: proposal.spans,
@@ -2868,7 +2873,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       const proposal = proposeDoorPlacement(walls, point, doorDraft.widthM, PX_PER_METER);
       if (!proposal) return;
       const item: PlanDoor = {
-        id: crypto.randomUUID(),
+        id: newLayoutId(),
         name: doorDraft.name.trim() || 'Дверь',
         widthM: proposal.widthM,
         spans: proposal.spans,
@@ -2885,11 +2890,11 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
 
     if (drawMode === 'STAIR') {
       if (stairKind === 'half_room') {
-        const pairId = halfStairPending?.pairId ?? crypto.randomUUID();
+        const pairId = halfStairPending?.pairId ?? newLayoutId();
         const pairRole = halfStairPending ? 'down' : 'up';
         const item: PlanStair = {
           ...stairDraft,
-          id: crypto.randomUUID(),
+          id: newLayoutId(),
           x: point.x,
           y: point.y,
           kind: 'half_room',
@@ -2906,7 +2911,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       }
       const item: PlanStair = {
         ...stairDraft,
-        id: crypto.randomUUID(),
+        id: newLayoutId(),
         x: point.x,
         y: point.y,
         kind: stairKind,
@@ -2922,7 +2927,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       const kind = interiorTool as FixtureKind;
       const item: PlanFixture = {
         ...fixtureDraft,
-        id: crypto.randomUUID(),
+        id: newLayoutId(),
         x: point.x,
         y: point.y,
         kind,
@@ -2944,7 +2949,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       }
       if (distance(draftWallStart, point) < 1) return;
       commitGeometry(
-        [...walls, { id: crypto.randomUUID(), start: draftWallStart, end: point }],
+        [...walls, { id: newLayoutId(), start: draftWallStart, end: point }],
         roomZones,
         { label: 'Добавлена стена', kind: 'draw' },
       );
@@ -2961,7 +2966,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
       return;
     }
     if (draftRoomPoints.length < 3) return;
-    const zoneId = crypto.randomUUID();
+    const zoneId = newLayoutId();
     const points = draftRoomPoints.map((p) => ({ ...p }));
     const nextZones = [...roomZones, { id: zoneId, points, roomId: null }];
     commitGeometry(walls, nextZones, { label: 'Новая зона', kind: 'draw' });
@@ -4929,7 +4934,7 @@ export function CafeLayoutEditorTab({ scope }: { scope: 'cafe-admin' | 'brand-ad
                 rooms: [
                   ...prev.rooms,
                   {
-                    id: crypto.randomUUID(),
+                    id: newLayoutId(),
                     name: `Новая комната ${prev.rooms.length + 1}`,
                     capacity: 1,
                     status: 'ACTIVE',

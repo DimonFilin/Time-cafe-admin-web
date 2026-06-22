@@ -12,6 +12,7 @@ import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { t } from '@/i18n';
+import { workerRoleLabel } from '@/shared/lib/worker-role-label';
 import {
   deleteWorker,
   listWorkers,
@@ -174,7 +175,7 @@ export function WorkersAdmin() {
       {
         key: 'role',
         header: t('workers.role'),
-        render: (w) => <span className="font-mono text-xs">{w.role}</span>,
+        render: (w) => <span className="text-xs">{workerRoleLabel(w.role)}</span>,
       },
       {
         key: 'brand',
@@ -375,7 +376,7 @@ export function WorkersAdmin() {
               <option value="">{t('common.all')}</option>
               {roles.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {workerRoleLabel(r)}
                 </option>
               ))}
             </select>
@@ -429,7 +430,8 @@ export function WorkersAdmin() {
               <span className="ml-2">
                 {roles.map((r) => (
                   <span key={r} className="mr-3">
-                    {r}: <span className="font-mono">{stats[countsKey(r)] ?? '-'}</span>
+                    {workerRoleLabel(r)}:{' '}
+                    <span className="font-mono">{stats[countsKey(r)] ?? '-'}</span>
                   </span>
                 ))}
               </span>
@@ -549,7 +551,7 @@ export function WorkersAdmin() {
             >
               {roles.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {workerRoleLabel(r)}
                 </option>
               ))}
             </select>

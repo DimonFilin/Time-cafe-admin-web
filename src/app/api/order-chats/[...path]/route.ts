@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { env } from '@/shared/config/env';
 import { fetchWithAuthRefresh, type AuthFetchOptions } from '@/shared/lib/with-auth-refresh';
 
@@ -22,12 +22,7 @@ async function forward(req: NextRequest, params: { path: string[] }) {
     }
   }
 
-  const response = await fetchWithAuthRefresh(url.toString(), init);
-  const text = await response.text();
-  return new NextResponse(text, {
-    status: response.status,
-    headers: { 'Content-Type': response.headers.get('content-type') || 'application/json' },
-  });
+  return fetchWithAuthRefresh(url.toString(), init);
 }
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {

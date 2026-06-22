@@ -1,5 +1,6 @@
 import type { StairKind } from './layout-editor-catalog';
-import { furnitureBoundsPx } from './layout-furniture';
+import { furnitureBoundsPx, geometrySizeMeters } from './layout-furniture';
+import { newLayoutId } from './layout-id';
 
 export type Point = { x: number; y: number };
 
@@ -36,16 +37,16 @@ export function extractStairs(elements: Array<unknown>): PlanStair[] {
     .map((el) => {
       const e = el as Record<string, unknown>;
       const g = (e.geometry || {}) as Record<string, unknown>;
+      const props = (e.props || {}) as Record<string, unknown>;
       const x = Number(g.x);
       const y = Number(g.y);
-      const widthM = Number(g.widthM);
-      const heightM = Number(g.heightM);
-      if (![x, y, widthM, heightM].every(Number.isFinite)) return null;
-      const kindRaw = (e.props as Record<string, unknown>)?.kind;
+      const size = geometrySizeMeters(g, props);
+      if (!size || ![x, y].every(Number.isFinite)) return null;
+      const { widthM, heightM } = size;
+      const kindRaw = props.kind;
       const kind: StairKind = kindRaw === 'round' || kindRaw === 'half_room' ? kindRaw : 'rect';
-      const props = (e.props || {}) as Record<string, unknown>;
       return {
-        id: String(e.id || crypto.randomUUID()),
+        id: String(e.id || newLayoutId()),
         name: String(e.name || 'Лестница'),
         x,
         y,

@@ -154,7 +154,7 @@ export function CafeAdminDashboard() {
       case 'cafe-info':
         return <CafeInfoTab />;
       case 'chats':
-        return <ChatsTab />;
+        return null;
       case 'activity-logs':
         return (
           <ActivityLogsTab preselectedWorker={activityLogsWorker} selectionKey={activityLogsSeed} />
@@ -190,7 +190,12 @@ export function CafeAdminDashboard() {
       </div>
 
       {/* Tab content */}
-      <div className="w-full">{renderTab()}</div>
+      <div className="w-full">
+        <div className={activeTab === 'chats' ? '' : 'hidden'} aria-hidden={activeTab !== 'chats'}>
+          <ChatsTab />
+        </div>
+        {activeTab !== 'chats' ? renderTab() : null}
+      </div>
     </div>
   );
 }

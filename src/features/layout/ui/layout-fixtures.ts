@@ -1,6 +1,7 @@
 import type { SofaStyle } from './layout-editor-catalog';
 import { findPlacementCollisionIds } from './layout-collision';
-import { furnitureBoundsPx } from './layout-furniture';
+import { furnitureBoundsPx, geometrySizeMeters } from './layout-furniture';
+import { newLayoutId } from './layout-id';
 
 export type Point = { x: number; y: number };
 
@@ -84,13 +85,14 @@ export function extractFixtures(elements: Array<unknown>): PlanFixture[] {
       const kind = kindMap[et];
       if (!kind) return null;
       const g = (e.geometry || {}) as Record<string, unknown>;
+      const props = (e.props || {}) as Record<string, unknown>;
       const x = Number(g.x);
       const y = Number(g.y);
-      const widthM = Number(g.widthM ?? (e.props as Record<string, unknown>)?.widthM);
-      const heightM = Number(g.heightM ?? (e.props as Record<string, unknown>)?.heightM);
-      if (![x, y, widthM, heightM].every(Number.isFinite)) return null;
+      const size = geometrySizeMeters(g, props);
+      if (!size || ![x, y].every(Number.isFinite)) return null;
+      const { widthM, heightM } = size;
       return {
-        id: String(e.id || crypto.randomUUID()),
+        id: String(e.id || newLayoutId()),
         name: String(e.name || DEFAULTS[kind].name),
         kind,
         x,

@@ -20,6 +20,7 @@ import type { DataTableColumn } from '@/shared/ui/data-table/DataTable';
 import { ConfirmModal } from '@/shared/ui/modal/ConfirmModal';
 import { Modal } from '@/shared/ui/modal/Modal';
 import { t } from '@/i18n';
+import { workerRoleLabel } from '@/shared/lib/worker-role-label';
 
 type WorkerFormState = {
   email: string;
@@ -175,7 +176,7 @@ export function WorkerAccountsAdmin() {
         header: t('workers.role'),
         render: (w) => (
           <span className="inline-flex items-center rounded-full bg-[rgb(var(--tc-accent))]/10 px-3 py-1 text-xs font-medium text-[rgb(var(--tc-accent))]">
-            {w.role}
+            {workerRoleLabel(w.role)}
           </span>
         ),
       },

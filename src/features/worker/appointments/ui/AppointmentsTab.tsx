@@ -14,6 +14,7 @@ import {
   getAppointmentDateTime,
   normalizeAppointmentStatus,
 } from '../lib/appointmentView';
+import { useCafeRealtime } from '@/shared/hooks/useCafeRealtime';
 
 interface AppointmentsTabProps {
   cafeId: string;
@@ -80,12 +81,13 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
 
   useEffect(() => {
     fetchAppointments();
-    // Auto-refresh every 30 seconds for active appointments
-    if (filter === 'active' && cafeId) {
-      const interval = setInterval(fetchAppointments, 30000);
-      return () => clearInterval(interval);
-    }
   }, [cafeId, fetchAppointments, filter]);
+
+  useCafeRealtime(cafeId, {
+    onAppointmentUpdated: () => {
+      void fetchAppointments();
+    },
+  });
 
   const handleConfirm = async (appointmentId: string) => {
     try {
@@ -268,6 +270,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
 
       <QrScanModal
         open={isQrOpen}
+        mode="appointment"
         onClose={() => setIsQrOpen(false)}
         errorText={qrError}
         onDetected={handleQrDetected}
