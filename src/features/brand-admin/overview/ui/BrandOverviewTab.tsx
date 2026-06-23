@@ -136,11 +136,27 @@ export function BrandOverviewTab() {
       const brandData = await brandRes.json();
       setBrand(brandData);
 
-      // Fetch stats from API proxy
-      const statsRes = await fetch('/api/brand/stats');
+      const [statsRes, workersRes] = await Promise.all([
+        fetch('/api/brand/stats'),
+        fetch('/api/brand/workers?page=1&limit=1', { credentials: 'include' }),
+      ]);
       if (!statsRes.ok) throw new Error(t('brandAdmin.modals.fetchStatsFailed'));
-      const statsData = await statsRes.json();
-      setStats(statsData);
+      const statsData = (await statsRes.json()) as {
+        totalCafes?: number;
+        totalOrders?: number;
+        averageRating?: number;
+      };
+      let workersCount = 0;
+      if (workersRes.ok) {
+        const workersData = (await workersRes.json()) as { total?: number };
+        workersCount = workersData.total ?? 0;
+      }
+      setStats({
+        cafesCount: statsData.totalCafes ?? 0,
+        workersCount,
+        ordersCount: statsData.totalOrders ?? 0,
+        reviewsAverage: statsData.averageRating ?? 0,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errors.unknown'));
     } finally {

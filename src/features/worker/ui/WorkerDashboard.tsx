@@ -15,6 +15,7 @@ import { CafeLayoutEditorTab } from '@/features/layout/ui/CafeLayoutEditorTab';
 import { GuestWalletTab } from '../guest-wallet/ui/GuestWalletTab';
 import { ReceptionScanTab } from '@/features/reception/ui/ReceptionScanTab';
 import { chatsApi } from '@/features/chats/api/chats-api';
+import { connectAdminSocket } from '@/shared/lib/admin-socket';
 
 type Tab =
   | 'orders'
@@ -83,15 +84,32 @@ export function WorkerDashboard() {
   useEffect(() => {
     const refreshUnread = async () => {
       try {
-        const data = await chatsApi.list({ unreadOnly: true, limit: 1 });
-        setUnreadChatsCount(data.total || 0);
+        const data = await chatsApi.list({ unreadOnly: true, limit: 100 });
+        const count =
+          data.total > 0 ? data.total : data.items.filter((c) => c.unreadCount > 0).length;
+        setUnreadChatsCount(count);
       } catch {
         // noop
       }
     };
     void refreshUnread();
     const timer = setInterval(() => void refreshUnread(), 15000);
-    return () => clearInterval(timer);
+
+    let socket: Awaited<ReturnType<typeof connectAdminSocket>> = null;
+    const onUpdate = () => void refreshUnread();
+    void connectAdminSocket('/order-chats').then((s) => {
+      socket = s;
+      if (!s) return;
+      s.on('chat:unread:update', onUpdate);
+      s.on('chat:list:update', onUpdate);
+    });
+
+    return () => {
+      clearInterval(timer);
+      socket?.off('chat:unread:update', onUpdate);
+      socket?.off('chat:list:update', onUpdate);
+      socket?.disconnect();
+    };
   }, []);
 
   const handleShiftToggle = async () => {

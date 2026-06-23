@@ -5,6 +5,7 @@ import { Card } from '@/shared/ui/card/Card';
 import { MoneyAmount } from '@/shared/ui/currency/MoneyAmount';
 import { t } from '@/i18n';
 import { getMyCafe } from '../../cafe/api/cafe-api';
+import { getCafeOverviewStats } from '../api/overview-api';
 import type { Cafe } from '../../cafe/types/cafe.types';
 
 function switchTab(tab: string, extra?: Record<string, unknown>) {
@@ -18,6 +19,8 @@ interface OverviewStats {
   totalWorkers: number;
   tasksToday: number;
   completedTasks: number;
+  ordersToday: number;
+  revenueToday: number;
 }
 
 export function OverviewTab() {
@@ -34,15 +37,18 @@ export function OverviewTab() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const cafeData = await getMyCafe();
+        const [cafeData, overviewStats] = await Promise.all([
+          getMyCafe(),
+          getCafeOverviewStats(todayYmd()),
+        ]);
         setCafe(cafeData);
-
-        // TODO: Fetch real stats from API
         setStats({
-          activeWorkers: 0,
-          totalWorkers: 0,
-          tasksToday: 0,
-          completedTasks: 0,
+          activeWorkers: overviewStats.activeWorkers,
+          totalWorkers: overviewStats.totalWorkers,
+          tasksToday: overviewStats.tasksToday,
+          completedTasks: overviewStats.completedTasks,
+          ordersToday: overviewStats.ordersToday,
+          revenueToday: overviewStats.revenueToday,
         });
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -146,10 +152,7 @@ export function OverviewTab() {
           <div className="text-sm font-medium text-[rgb(var(--tc-muted))]">
             {t('cafeAdmin.overview.ordersToday')}
           </div>
-          <div className="mt-2 text-2xl font-bold">0</div>
-          <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            {t('cafeAdmin.overview.comingSoon')}
-          </div>
+          <div className="mt-2 text-2xl font-bold">{stats?.ordersToday ?? 0}</div>
         </Card>
 
         <Card className="p-6">
@@ -157,10 +160,7 @@ export function OverviewTab() {
             {t('cafeAdmin.overview.revenueToday')}
           </div>
           <div className="mt-2 text-2xl font-bold">
-            <MoneyAmount value={0} iconClassName="h-[1.15em] w-[0.95em]" />
-          </div>
-          <div className="mt-1 text-xs text-[rgb(var(--tc-muted))]">
-            {t('cafeAdmin.overview.comingSoon')}
+            <MoneyAmount value={stats?.revenueToday ?? 0} iconClassName="h-[1.15em] w-[0.95em]" />
           </div>
         </Card>
       </div>
