@@ -30,6 +30,7 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
   const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
+  const [scanInput, setScanInput] = useState('');
 
   const fetchAppointments = useCallback(async () => {
     if (!cafeId) {
@@ -154,7 +155,14 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
 
     setQrError(null);
     setIsQrOpen(false);
+    setScanInput('');
     router.push(`/worker/appointments/${encodeURIComponent(parsed.appointmentId)}`);
+  };
+
+  const submitScanInput = () => {
+    const trimmed = scanInput.trim();
+    if (!trimmed) return;
+    handleQrDetected(trimmed);
   };
 
   return (
@@ -184,6 +192,30 @@ export function AppointmentsTab({ cafeId }: AppointmentsTabProps) {
           </button>
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-1))] p-3">
+        <input
+          type="text"
+          autoComplete="off"
+          value={scanInput}
+          onChange={(e) => setScanInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') submitScanInput();
+          }}
+          placeholder="Сканер: JSON из QR брони или ID брони"
+          className="min-w-[220px] flex-1 rounded-lg border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-bg))] px-3 py-2 text-sm"
+        />
+        <button
+          type="button"
+          onClick={submitScanInput}
+          disabled={!scanInput.trim()}
+          className="rounded-lg bg-[rgb(var(--tc-accent))] px-4 py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
+        >
+          Открыть бронь
+        </button>
+      </div>
+
+      {qrError ? <p className="text-sm text-red-600">{qrError}</p> : null}
 
       {/* Filter tabs */}
       <div className="flex gap-2 border-b border-[rgb(var(--tc-border))]">

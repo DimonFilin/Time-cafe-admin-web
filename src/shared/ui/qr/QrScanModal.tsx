@@ -43,7 +43,7 @@ export function QrScanModal({
   const [cardValue, setCardValue] = useState('');
   const [isScanning, setIsScanning] = useState(false);
 
-  const scanOnly = mode === 'appointment';
+  const isAppointment = mode === 'appointment';
   const phoneFallback = mode === 'reception';
   const cameraAvailable = useMemo(() => canUseCamera(), [open]);
 
@@ -97,7 +97,9 @@ export function QrScanModal({
     setCardValue('');
 
     if (!cameraAvailable) {
-      if (scanOnly) {
+      if (isAppointment) {
+        setIsScanning(false);
+      } else {
         setCameraError(
           'Камера недоступна (нужен HTTPS). Сканирование брони с этой страницы невозможно.',
         );
@@ -169,13 +171,13 @@ export function QrScanModal({
     return () => {
       stopCamera();
     };
-  }, [cameraAvailable, isScanning, onDetected, open, scanOnly]);
+  }, [cameraAvailable, isAppointment, isScanning, onDetected, open]);
 
   useEffect(() => {
-    if (open && cameraAvailable && scanOnly) {
+    if (open && cameraAvailable && isAppointment) {
       setIsScanning(true);
     }
-  }, [cameraAvailable, open, scanOnly]);
+  }, [cameraAvailable, isAppointment, open]);
 
   return (
     <Modal
@@ -194,9 +196,11 @@ export function QrScanModal({
         </div>
       ) : null}
 
-      {phoneFallback ? (
+      {phoneFallback || isAppointment ? (
         <div className="space-y-3 rounded-2xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface-2))] p-4">
-          <div className="text-sm font-medium">Сканирование карты СКУД</div>
+          <div className="text-sm font-medium">
+            {isAppointment ? 'Сканер или ручной ввод' : 'Сканирование карты СКУД'}
+          </div>
 
           {cameraAvailable && isScanning ? (
             <div className="rounded-2xl border border-[rgb(var(--tc-border))] bg-black/5 p-2">
@@ -226,23 +230,30 @@ export function QrScanModal({
 
           {!cameraAvailable ? (
             <p className="text-xs text-[rgb(var(--tc-muted))]">
-              Камера на HTTP недоступна — введите номер карты СКУД или данные из QR вручную.
+              {isAppointment
+                ? 'Камера на HTTP недоступна — отсканируйте USB-сканером в поле ниже или введите данные вручную.'
+                : 'Камера на HTTP недоступна — введите номер карты СКУД или данные из QR вручную.'}
             </p>
           ) : (
             <p className="text-xs text-[rgb(var(--tc-muted))]">
-              Или введите номер карты / JSON из QR вручную.
+              {isAppointment
+                ? 'Или отсканируйте USB-сканером в поле ниже (Enter) / введите JSON из QR или ID брони.'
+                : 'Или введите номер карты / JSON из QR вручную.'}
             </p>
           )}
 
           <input
             type="text"
             autoComplete="off"
+            autoFocus={isAppointment}
             value={cardValue}
             onChange={(e) => setCardValue(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && cardValue.trim()) submitManualCard();
             }}
-            placeholder="Номер карты или JSON из QR"
+            placeholder={
+              isAppointment ? 'JSON из QR брони или ID брони' : 'Номер карты или JSON из QR'
+            }
             className={cn(
               'w-full rounded-xl border border-[rgb(var(--tc-border))] bg-[rgb(var(--tc-surface))] px-3 py-2 text-sm',
               'text-[rgb(var(--tc-fg))] placeholder:text-[rgb(var(--tc-muted))]',
@@ -255,26 +266,6 @@ export function QrScanModal({
             </Button>
           </div>
         </div>
-      ) : null}
-
-      {scanOnly && cameraAvailable && isScanning ? (
-        <div className="rounded-2xl border border-[rgb(var(--tc-border))] bg-black/5 p-2">
-          <video
-            ref={videoRef}
-            className={cn('aspect-video w-full rounded-xl bg-black')}
-            muted
-            playsInline
-          />
-          <div className="mt-2 text-xs text-[rgb(var(--tc-muted))]">
-            Наведите камеру на QR-код. После распознавания данные отправятся автоматически.
-          </div>
-        </div>
-      ) : null}
-
-      {scanOnly && cameraAvailable && !isScanning ? (
-        <Button variant="secondary" onClick={() => setIsScanning(true)}>
-          Запустить камеру
-        </Button>
       ) : null}
 
       {phoneFallback ? (
