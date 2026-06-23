@@ -102,9 +102,6 @@ export function ActivityLogsFiltersComponent({
                   </div>
                   <div className="text-xs text-[rgb(var(--tc-muted))]">{displayWorker.email}</div>
                 </div>
-                <Button variant="ghost" onClick={handleClearWorker} className="text-sm">
-                  {t('cafeAdmin.activityLogs.clear')}
-                </Button>
               </div>
             ) : (
               <Button
